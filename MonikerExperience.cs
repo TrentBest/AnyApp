@@ -50,9 +50,9 @@ public static class MonikerExperience
                 ((phaseIndex++ % 12) / 12d).ToString(CultureInfo.InvariantCulture);
         }
 
-        var children = node.Children
-            .Select(child => ApplyWave(child, ref phaseIndex))
-            .ToArray();
+        var children = new GuiNode[node.Children.Count];
+        for (var index = 0; index < node.Children.Count; index++)
+            children[index] = ApplyWave(node.Children[index], ref phaseIndex);
 
         return new GuiNode(
             node.Kind,
