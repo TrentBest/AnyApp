@@ -81,7 +81,7 @@ public sealed class MonikerMicroBundle : IMicroBundle, IAnyAppSurface
 );
         }
 
-        return row.Build();
+        return row;
     }
 
     public bool Arbitrate(ArbitrationContext context, int roundIndex)
