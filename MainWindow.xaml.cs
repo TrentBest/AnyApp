@@ -38,6 +38,6 @@ public partial class MainWindow : Window
             return;
         }
 
-        RootHost.Children.Add(WpfGuiRenderer.Render(surface.Root));
+        RootHost.Children.Add(WpfGuiRenderer.Render(MonikerExperience.ExecutePresentation(surface.Root)));
     }
 }
