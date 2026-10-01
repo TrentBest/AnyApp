@@ -1,11 +1,14 @@
+using System.Globalization;
 using TheSingularityWorkshop.FSM_API;
 using TheSingularityWorkshop.FSM_COS;
+using TheSingularityWorkshop.Workshop.Gui;
 
 namespace TheSingularityWorkshop.AnyApp;
 
 /// <summary>
-/// The first configured AnyApp Experience. Its manifest contains the Moniker
-/// MicroBundle and its context; the host does not hard-code the presentation.
+/// The first configured AnyApp Experience. The manifest composes the static
+/// Moniker MicroBundle; presentation behavior is applied only when this
+/// Experience executes, keeping composition preview motion-free.
 /// </summary>
 public static class MonikerExperience
 {
@@ -20,6 +23,45 @@ public static class MonikerExperience
 
     public static IMicroBundleCatalog CreateCatalog() =>
         new SingleBundleCatalog(new MonikerMicroBundle());
+
+    /// <summary>
+    /// Executes the Moniker presentation layer over an already composed surface.
+    /// The MicroBundle itself remains static and previewable.
+    /// </summary>
+    public static GuiNode ExecutePresentation(GuiNode root)
+    {
+        ArgumentNullException.ThrowIfNull(root);
+
+        var phaseIndex = 0;
+        return ApplyWave(root, ref phaseIndex);
+    }
+
+    private static GuiNode ApplyWave(GuiNode node, ref int phaseIndex)
+    {
+        var properties = new Dictionary<string, string>(node.Properties, StringComparer.Ordinal);
+
+        if (node.Kind == GuiKinds.Text &&
+            node.Id.StartsWith("moniker-", StringComparison.Ordinal))
+        {
+            properties["wavePeriod"] = "3.8";
+            properties["waveAmplitude"] = "7";
+            properties["waveRotation"] = "2.5";
+            properties["wavePhase"] =
+                ((phaseIndex++ % 12) / 12d).ToString(CultureInfo.InvariantCulture);
+        }
+
+        var children = node.Children
+            .Select(child => ApplyWave(child, ref phaseIndex))
+            .ToArray();
+
+        return new GuiNode(
+            node.Kind,
+            node.Id,
+            node.Text,
+            node.Source,
+            properties,
+            children);
+    }
 
     private sealed class SingleBundleCatalog : IMicroBundleCatalog
     {
