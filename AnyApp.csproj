@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>TheSingularityWorkshop.AnyApp</AssemblyName>
+    <RootNamespace>TheSingularityWorkshop.AnyApp</RootNamespace>
+    <PackageId>TheSingularityWorkshop.AnyApp</PackageId>
+    <Version>0.1.0-alpha.1</Version>
+    <Authors>The Singularity Workshop</Authors>
+    <Company>The Singularity Workshop</Company>
+    <RepositoryUrl>https://github.com/TrentBest/AnyApp</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <Description>Desktop AnyApp host proving FSM_COS composition through GUI.WPF.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="TheSingularityWorkshop.FSM_COS" Version="0.1.0-alpha.4" />
+    <PackageReference Include="TheSingularityWorkshop.GUI.WPF" Version="0.1.0-alpha.2" />
+  </ItemGroup>
+</Project>
