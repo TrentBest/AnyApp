@@ -31,16 +31,6 @@ public sealed class MonikerMicroBundle : IMicroBundle, IAnyAppSurface
     {
         ArgumentNullException.ThrowIfNull(context);
 
-        _root = GuiBuilders.Panel("moniker-root")
-            .Property("background", "#020711")
-            .Child(
-                GuiBuilders.Column("moniker-column")
-                    .Property("horizontalAlignment", "Center")
-                    .Property("verticalAlignment", "Center")
-                    .Property("padding", "24"))
-            .Build();
-
-        var column = _root.Children[0];
         var builder = GuiBuilders.Column("moniker-column")
             .Property("horizontalAlignment", "Center")
             .Property("verticalAlignment", "Center")
