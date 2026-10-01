@@ -6,9 +6,9 @@ public static class AnyAppRuntime
 {
     public const ulong RuntimeId = MonikerExperience.RuntimeId;
 
-    public static RuntimeAssembly Compose(RuntimeManifest? manifest = null)
+    public static RuntimeAssembly Compose(RuntimeManifest manifest)
     {
-        manifest ??= MonikerExperience.CreateManifest();
+        ArgumentNullException.ThrowIfNull(manifest);
 
         var cos = new FsmCos(MonikerExperience.CreateCatalog());
         return cos.Execute(manifest);
