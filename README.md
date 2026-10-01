@@ -2,120 +2,112 @@
 
 AnyApp is the desktop proof of the composition architecture.
 
-It is the Windows desktop counterpart to the browser-facing WebPage/WebForge host: the **desktop of the Workshop**, not another application-specific framework.
+It is the Windows desktop counterpart to the browser-facing WebPage/WebForge host: the desktop of the Workshop, not another application-specific framework.
 
-## Purpose
+## Startup is now Experience selection
 
-The first responsibility of AnyApp is deliberately small:
+AnyApp is a host. It no longer embeds an Experience manifest in MainWindow.xaml.cs.
 
-1. create a runtime manifest;
-2. hand that manifest to FSM_COS;
-3. let FSM_COS compose the requested MicroBundle;
-4. retrieve the composed capability from the resulting RuntimeAssembly;
-5. hand its platform-neutral GUI surface to GUI.WPF;
-6. manifest that surface as native WPF controls.
-
-The boundary is:
+When no explicit launch manifest is supplied, AnyApp enters the Experience Browser flow:
 
 ~~~text
 AnyApp
   |
-  | RuntimeManifest
+  | no launch manifest
+  v
+Experience Browser endpoint
+  |
+  | published Experiences
+  v
+user selection
+  |
+  | selected artifact
+  v
+Experience manifest
+  |
   v
 FSM_COS
   |
-  | RuntimeAssembly
   v
-Experience MicroBundle
+RuntimeAssembly
   |
-  | semantic GuiNode
   v
 GUI.WPF
-  |
-  v
-native WPF desktop
 ~~~
 
-AnyApp therefore gives us a concrete desktop validation path for FSM_COS without making FSM_COS depend on WPF.
+For local development, an explicit manifest can be supplied without making it part of the host:
 
-## What this proves
+~~~powershell
+dotnet run --project AnyApp.csproj -- --experience-file=experiences/moniker/1.0.0/manifest.json
+~~~
 
-The first vertical slice proves:
+The repository endpoint can be overridden for the browser flow:
+
+~~~powershell
+dotnet run --project AnyApp.csproj -- --repository-endpoint=http://localhost:5000/
+~~~
+
+The first serialized Experience lives in its own versioned folder:
 
 ~~~text
-MicroBundle
-    ↓
-FSM_COS
-    ↓
-RuntimeAssembly
-    ↓
-semantic GUI
-    ↓
-GUI.WPF
-    ↓
-desktop
+experiences/
+└── moniker/
+    └── 1.0.0/
+        └── manifest.json
 ~~~
 
-The MicroBundle does not reference WPF controls or WPF lifecycle. FSM_COS does not reference GUI.WPF. GUI.WPF does not reference AnyApp.
+That source artifact is the shape we will publish into the immutable .experience repository artifact. AnyApp does not treat the source file as a built-in startup manifest.
 
-The host is the place where those pieces are deliberately brought together.
+## Composition boundary
 
-## Current scope
+Once a manifest has been selected, the runtime path remains:
 
-This is a proof surface, not the finished AnyApp shell. It establishes:
+~~~text
+RuntimeManifest
+      |
+      v
+   FSM_COS
+      |
+      v
+RuntimeAssembly
+      |
+      v
+MonikerMicroBundle
+      |
+      v
+semantic GuiNode
+      |
+      v
+GUI.WPF
+      |
+      v
+native WPF
+~~~
 
-- .NET 8 WPF application packaging;
-- NuGet consumption of TheSingularityWorkshop.FSM_COS;
-- NuGet consumption of TheSingularityWorkshop.GUI.WPF;
-- composition through FsmCos;
-- RuntimeAssembly retrieval;
-- semantic GUI creation inside the composed Experience MicroBundle;
-- native WPF manifestation;
-- an automated test proving the COS path.
-
-The next layers can add independent MicroBundles, Hub routing, Workshop navigation, repository-backed artifact delivery, and richer desktop behavior without changing this boundary.
+The MicroBundle remains static and previewable. MonikerExperience.ExecutePresentation(...) adds the wave behavior only when the selected Experience executes.
 
 ## Architectural intent
 
 AnyApp should remain the host.
 
-It should **not** absorb:
+It should not absorb:
 
 - FSM_COS composition semantics;
 - GUI.Core semantic definitions;
 - GUI.WPF renderer internals;
 - MicroBundle repository semantics;
-- Workshop experience logic.
+- Workshop Experience logic.
 
-The eventual desktop path is therefore:
-
-~~~text
-AnyApp
-  ↓
-FSM_COS
-  ↓
-independently published MicroBundles
-  ↓
-RuntimeAssembly
-  ↓
-GUI semantic surface / Hub
-  ↓
-GUI.WPF
-  ↓
-WPF desktop
-~~~
-
-This is the desktop proof that the same composition boundary can support desktop manifestation without coupling the composition kernel to the platform.
+The repository is responsible for discovering and delivering published Experience artifacts. AnyApp is responsible for selecting one and handing its manifest to FSM_COS.
 
 ## Development
 
-The repository includes `AnyApp.sln`, containing both the WPF host and its test project. After cloning, restore the solution before building so the generated `obj/project.assets.json` files are created locally.
+The repository includes AnyApp.sln, containing both the WPF host and its test project.
 
 ~~~powershell
 dotnet restore AnyApp.sln
 dotnet build AnyApp.sln --configuration Release
 dotnet test AnyApp.sln --configuration Release
-dotnet run --project AnyApp.csproj
 ~~~
 
 The CI workflow uses a Windows runner because WPF is Windows-specific.
