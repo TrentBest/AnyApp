@@ -37,8 +37,27 @@ public sealed class AnyAppRuntimeTests
         Assert.Equal("Row", word!.Kind);
         Assert.Contains(
             word.Children,
-            child => child.Text == "S" && child.Properties.ContainsKey("wavePeriod"));
+            child => child.Text == "S" && !child.Properties.ContainsKey("wavePeriod"));
     }
+    [Fact]
+    public void ExperienceExecution_AddsWavePresentationWithoutMutatingBundle()
+    {
+        var runtime = AnyAppRuntime.Compose();
+
+        Assert.True(runtime.TryGetBundle<MonikerMicroBundle>(
+            MonikerMicroBundle.BundleId,
+            out var bundle));
+        var surface = Assert.IsAssignableFrom<IAnyAppSurface>(bundle);
+
+        var presented = MonikerExperience.ExecutePresentation(surface.Root);
+
+        Assert.True(presented.TryFind("moniker-singularity-0", out var glyph));
+        Assert.Equal("S", glyph!.Text);
+        Assert.Equal("3.8", glyph.Properties["wavePeriod"]);
+        Assert.Equal("7", glyph.Properties["waveAmplitude"]);
+        Assert.False(surface.Root.Find("moniker-singularity-0").Properties.ContainsKey("wavePeriod"));
+    }
+
     [Fact]
     public void EmptyManifest_ComposesWithoutThrowing()
     {
