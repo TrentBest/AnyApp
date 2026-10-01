@@ -1,0 +1,71 @@
+name: AnyApp Baseline
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "master" ]
+
+jobs:
+  publish-baseline:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v5
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v5
+      with:
+        dotnet-version: 8.0.x
+
+    - name: Restore
+      run: dotnet restore AnyApp.csproj
+
+    - name: Publish framework-dependent
+      run: dotnet publish AnyApp.csproj --configuration Release --runtime win-x64 --self-contained false --output artifacts/framework-dependent --no-restore
+
+    - name: Publish self-contained
+      run: dotnet publish AnyApp.csproj --configuration Release --runtime win-x64 --self-contained true --output artifacts/self-contained --no-restore
+
+    - name: Publish single-file self-contained
+      run: dotnet publish AnyApp.csproj --configuration Release --runtime win-x64 --self-contained true --property:PublishSingleFile=true --output artifacts/single-file --no-restore
+
+    - name: Publish trimmed single-file (experimental)
+      continue-on-error: true
+      run: dotnet publish AnyApp.csproj --configuration Release --runtime win-x64 --self-contained true --property:PublishSingleFile=true --property:PublishTrimmed=true --output artifacts/single-file-trimmed --no-restore
+
+    - name: Measure outputs
+      shell: pwsh
+      run: |
+        $summary = @()
+        $summary += '# AnyApp publish baseline'
+        $summary += ''
+        $summary += '| Configuration | Directory size | EXE size | EXE |'
+        $summary += '|---|---:|---:|---|'
+
+        foreach ($dir in @('framework-dependent', 'self-contained', 'single-file', 'single-file-trimmed')) {
+          $path = Join-Path $PWD "artifacts/$dir"
+          if (-not (Test-Path $path)) { continue }
+
+          $files = Get-ChildItem $path -Recurse -File
+          $bytes = ($files | Measure-Object -Property Length -Sum).Sum
+          $exe = $files | Where-Object Extension -eq '.exe' | Sort-Object Length -Descending | Select-Object -First 1
+          $directorySize = '{0:N2} MB' -f ($bytes / 1MB)
+          $exeSize = if ($exe) { '{0:N2} MB' -f ($exe.Length / 1MB) } else { 'n/a' }
+          $exeName = if ($exe) { $exe.Name } else { 'n/a' }
+          $summary += "| $dir | $directorySize | $exeSize | $exeName |"
+        }
+
+        $summary += ''
+        $summary += 'These measurements are the physical baseline for the current AnyApp composition slice. They are intentionally kept separate from FSM_COS semantics.'
+        $summary | Tee-Object -FilePath baseline.md | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8
+        Get-Content baseline.md
+
+    - name: Upload publish outputs
+      uses: actions/upload-artifact@v5
+      with:
+        name: anyapp-publish-baseline
+        path: |
+          artifacts/
+          baseline.md
+        if-no-files-found: error
