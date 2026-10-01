@@ -2,7 +2,9 @@ using System.IO;
 using System.Net.Http;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Animation;
 using TheSingularityWorkshop.GUI.WPF;
 using TheSingularityWorkshop.Workshop.Gui;
 
@@ -11,8 +13,7 @@ namespace TheSingularityWorkshop.AnyApp;
 public partial class MainWindow : Window
 {
     private static readonly Uri DefaultRepositoryEndpoint = new("http://localhost:5000/");
-    private readonly ListBox _experienceList = new();
-    private readonly Button _launchButton = new();
+    private readonly WrapPanel _experienceDoors = new();
     private readonly TextBlock _status = new();
 
     public MainWindow()
@@ -44,33 +45,128 @@ public partial class MainWindow : Window
             using var client = new ExperienceCatalogClient(endpoint);
             var experiences = await client.ListAsync();
 
-            _experienceList.ItemsSource = experiences;
-            _experienceList.DisplayMemberPath = nameof(PublishedExperience.ExperienceId);
-            _launchButton.IsEnabled = experiences.Count > 0;
+            BuildExperienceDoors(experiences);
 
             _status.Text = experiences.Count == 0
-                ? "No published Experiences are available."
-                : $"{experiences.Count} published Experience(s) available.";
+                ? "The Workshop has no published Experiences yet."
+                : $"{experiences.Count} Experience door(s) are open.";
         }
         catch (HttpRequestException)
         {
-            _status.Text = $"Experience Browser endpoint is unavailable: {endpoint}";
+            ShowRepositoryUnavailable(endpoint);
         }
         catch (Exception ex)
         {
-            _status.Text = $"Experience Browser failed: {ex.Message}";
+            _status.Text = $"The Experience Browser could not open: {ex.Message}";
         }
     }
 
-    private async void LaunchSelectedExperience(object sender, RoutedEventArgs e)
+    private void BuildExperienceDoors(IReadOnlyList<PublishedExperience> experiences)
     {
-        if (_experienceList.SelectedItem is not PublishedExperience selected)
+        _experienceDoors.Children.Clear();
+
+        foreach (var experience in experiences)
+        {
+            _experienceDoors.Children.Add(CreateExperienceDoor(experience));
+        }
+    }
+
+    private Border CreateExperienceDoor(PublishedExperience experience)
+    {
+        var accent = new SolidColorBrush(Color.FromRgb(0, 168, 255));
+        var border = new Border
+        {
+            Width = 280,
+            Height = 190,
+            Margin = new Thickness(12),
+            CornerRadius = new CornerRadius(6),
+            BorderBrush = new SolidColorBrush(Color.FromRgb(38, 68, 92)),
+            BorderThickness = new Thickness(1),
+            Background = new LinearGradientBrush(
+                Color.FromRgb(5, 14, 25),
+                Color.FromRgb(2, 7, 17),
+                90),
+            Cursor = Cursors.Hand,
+            RenderTransformOrigin = new Point(0.5, 0.5),
+            RenderTransform = new ScaleTransform(1, 1),
+            ToolTip = "Enter this Experience"
+        };
+
+        var content = new StackPanel
+        {
+            Margin = new Thickness(22),
+            VerticalAlignment = VerticalAlignment.Center
+        };
+
+        content.Children.Add(new TextBlock
+        {
+            Text = "EXPERIENCE",
+            FontSize = 12,
+            FontWeight = FontWeights.Bold,
+            Foreground = accent,
+            LetterSpacing = 2,
+            Margin = new Thickness(0, 0, 0, 12)
+        });
+
+        content.Children.Add(new TextBlock
+        {
+            Text = $"#{experience.ExperienceId}",
+            FontSize = 30,
+            FontWeight = FontWeights.SemiBold,
+            Foreground = Brushes.White
+        });
+
+        content.Children.Add(new TextBlock
+        {
+            Text = $"Version {experience.Version}",
+            FontSize = 13,
+            Foreground = new SolidColorBrush(Color.FromRgb(166, 188, 207)),
+            Margin = new Thickness(0, 6, 0, 18)
+        });
+
+        content.Children.Add(new TextBlock
+        {
+            Text = "ENTER  →",
+            FontSize = 13,
+            FontWeight = FontWeights.Bold,
+            Foreground = Brushes.White
+        });
+
+        border.Child = content;
+        border.MouseEnter += (_, _) => AnimateDoor(border, 1.035, true);
+        border.MouseLeave += (_, _) => AnimateDoor(border, 1, false);
+        border.MouseLeftButtonUp += (_, _) => _ = EnterExperienceAsync(experience);
+
+        return border;
+    }
+
+    private static void AnimateDoor(Border door, double scale, bool active)
+    {
+        if (door.RenderTransform is not ScaleTransform transform)
             return;
 
+        var animation = new DoubleAnimation
+        {
+            To = scale,
+            Duration = TimeSpan.FromMilliseconds(140),
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+        };
+
+        transform.BeginAnimation(ScaleTransform.ScaleXProperty, animation);
+        transform.BeginAnimation(ScaleTransform.ScaleYProperty, animation);
+
+        door.BorderThickness = new Thickness(active ? 2 : 1);
+        door.BorderBrush = active
+            ? new SolidColorBrush(Color.FromRgb(0, 168, 255))
+            : new SolidColorBrush(Color.FromRgb(38, 68, 92));
+    }
+
+    private async Task EnterExperienceAsync(PublishedExperience selected)
+    {
         try
         {
-            _launchButton.IsEnabled = false;
-            _status.Text = $"Loading Experience {selected.ExperienceId}...";
+            _status.Text = $"Opening Experience {selected.ExperienceId} {selected.Version}...";
+            SetDoorsEnabled(false);
 
             using var client = new ExperienceCatalogClient(GetRepositoryEndpoint());
             var manifest = await client.GetManifestAsync(selected);
@@ -78,9 +174,15 @@ public partial class MainWindow : Window
         }
         catch (Exception ex)
         {
-            _launchButton.IsEnabled = true;
-            _status.Text = $"Unable to launch the selected Experience: {ex.Message}";
+            SetDoorsEnabled(true);
+            _status.Text = $"The Experience could not be entered: {ex.Message}";
         }
+    }
+
+    private void SetDoorsEnabled(bool enabled)
+    {
+        foreach (var child in _experienceDoors.Children)
+            child.IsHitTestVisible = enabled;
     }
 
     private async Task LaunchManifestFileAsync(string path)
@@ -128,47 +230,110 @@ public partial class MainWindow : Window
     private void ShowBrowser()
     {
         RootHost.Children.Clear();
+        RootHost.Background = new LinearGradientBrush(
+            Color.FromRgb(1, 4, 10),
+            Color.FromRgb(3, 12, 24),
+            90);
 
-        var panel = new StackPanel
+        var shell = new Grid
         {
-            Margin = new Thickness(32),
-            VerticalAlignment = VerticalAlignment.Center
+            Margin = new Thickness(42, 34, 42, 28)
         };
 
-        panel.Children.Add(new TextBlock
+        shell.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        shell.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+        shell.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+
+        var heading = new StackPanel();
+
+        heading.Children.Add(new TextBlock
         {
-            Text = "AnyApp — Experience Browser",
-            FontSize = 32,
+            Text = "THE SINGULARITY WORKSHOP",
+            FontSize = 13,
             FontWeight = FontWeights.Bold,
-            Foreground = Brushes.White,
-            Margin = new Thickness(0, 0, 0, 12)
+            Foreground = new SolidColorBrush(Color.FromRgb(0, 168, 255)),
+            LetterSpacing = 3
         });
 
-        panel.Children.Add(new TextBlock
+        heading.Children.Add(new TextBlock
         {
-            Text = "Select an available Experience to compose and run.",
-            FontSize = 16,
-            Foreground = Brushes.LightGray,
-            Margin = new Thickness(0, 0, 0, 20)
+            Text = "Choose a door.",
+            FontSize = 38,
+            FontWeight = FontWeights.SemiBold,
+            Foreground = Brushes.White,
+            Margin = new Thickness(0, 8, 0, 4)
         });
 
-        _experienceList.MinHeight = 140;
-        _experienceList.Margin = new Thickness(0, 0, 0, 12);
-        panel.Children.Add(_experienceList);
+        heading.Children.Add(new TextBlock
+        {
+            Text = "Experiences are places you enter, not applications you launch.",
+            FontSize = 15,
+            Foreground = new SolidColorBrush(Color.FromRgb(166, 188, 207))
+        });
 
-        _launchButton.Content = "Run Selected Experience";
-        _launchButton.Padding = new Thickness(18, 8, 18, 8);
-        _launchButton.HorizontalAlignment = HorizontalAlignment.Left;
-        _launchButton.Click -= LaunchSelectedExperience;
-        _launchButton.Click += LaunchSelectedExperience;
-        panel.Children.Add(_launchButton);
+        Grid.SetRow(heading, 0);
+        shell.Children.Add(heading);
 
-        _status.Text = "Contacting the Experience Browser endpoint...";
-        _status.Foreground = Brushes.LightGray;
-        _status.Margin = new Thickness(0, 16, 0, 0);
-        panel.Children.Add(_status);
+        _experienceDoors.HorizontalAlignment = HorizontalAlignment.Left;
+        _experienceDoors.VerticalAlignment = VerticalAlignment.Center;
+        _experienceDoors.Margin = new Thickness(-12, 18, -12, 18);
+        Grid.SetRow(_experienceDoors, 1);
+        shell.Children.Add(_experienceDoors);
 
-        RootHost.Children.Add(panel);
+        _status.Text = "Opening the Experience repository...";
+        _status.FontSize = 12;
+        _status.Foreground = new SolidColorBrush(Color.FromRgb(128, 151, 171));
+        Grid.SetRow(_status, 2);
+        shell.Children.Add(_status);
+
+        RootHost.Children.Add(shell);
+    }
+
+    private void ShowRepositoryUnavailable(Uri endpoint)
+    {
+        _experienceDoors.Children.Clear();
+
+        var gate = new Border
+        {
+            Width = 420,
+            Height = 170,
+            Margin = new Thickness(12),
+            BorderBrush = new SolidColorBrush(Color.FromRgb(65, 78, 92)),
+            BorderThickness = new Thickness(1),
+            Background = new SolidColorBrush(Color.FromRgb(5, 10, 18))
+        };
+
+        gate.Child = new StackPanel
+        {
+            Margin = new Thickness(24),
+            VerticalAlignment = VerticalAlignment.Center,
+            Children =
+            {
+                new TextBlock
+                {
+                    Text = "THE DOORS ARE CLOSED",
+                    FontSize = 16,
+                    FontWeight = FontWeights.Bold,
+                    Foreground = Brushes.White
+                },
+                new TextBlock
+                {
+                    Text = "No Experience repository is connected.",
+                    FontSize = 14,
+                    Foreground = new SolidColorBrush(Color.FromRgb(166, 188, 207)),
+                    Margin = new Thickness(0, 10, 0, 4)
+                },
+                new TextBlock
+                {
+                    Text = endpoint.ToString(),
+                    FontSize = 12,
+                    Foreground = new SolidColorBrush(Color.FromRgb(128, 151, 171))
+                }
+            }
+        };
+
+        _experienceDoors.Children.Add(gate);
+        _status.Text = "Connect the Experience repository to populate the Workshop doors.";
     }
 
     private void ShowMessage(string title, string detail)
