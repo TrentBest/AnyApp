@@ -8,7 +8,7 @@ It is the Windows desktop counterpart to the browser-facing WebPage/WebForge hos
 
 AnyApp is a host. It no longer embeds an Experience manifest in MainWindow.xaml.cs.
 
-When no explicit launch manifest is supplied, AnyApp enters the Experience Browser flow:
+When no explicit launch manifest is supplied, AnyApp enters the Experience Browser flow. The browser is intentionally spatial rather than a conventional application launcher: published Experiences appear as doors, and entering a door retrieves its manifest before composition:
 
 ~~~text
 AnyApp
@@ -102,12 +102,12 @@ The repository is responsible for discovering and delivering published Experienc
 
 ## Development
 
-The repository includes AnyApp.sln, containing both the WPF host and its test project.
+AnyApp is currently a direct `.csproj` host; the repository does not require a solution file.
 
 ~~~powershell
-dotnet restore AnyApp.sln
-dotnet build AnyApp.sln --configuration Release
-dotnet test AnyApp.sln --configuration Release
+dotnet restore AnyApp.csproj
+dotnet build AnyApp.csproj --configuration Release
+dotnet test tests/TheSingularityWorkshop.AnyApp.Tests/TheSingularityWorkshop.AnyApp.Tests.csproj --configuration Release
 ~~~
 
 The CI workflow uses a Windows runner because WPF is Windows-specific.
