@@ -11,13 +11,13 @@ public partial class MainWindow : Window
 
         var runtime = AnyAppRuntime.Compose();
 
-        if (!runtime.TryGetBundle<IAnyAppSurface>(
+        if (!runtime.TryGetBundle<AnyAppMicroBundle>(
                 AnyAppMicroBundle.BundleId,
-                out var surface) ||
-            surface is null)
+                out var bundle) ||
+            bundle is not IAnyAppSurface surface)
         {
             throw new InvalidOperationException(
-                "FSM_COS composed the runtime, but the AnyApp surface was not present.");
+                "FSM_COS composed the runtime, but the AnyApp GUI surface was not present.");
         }
 
         RootHost.Children.Add(WpfGuiRenderer.Render(surface.Root));
