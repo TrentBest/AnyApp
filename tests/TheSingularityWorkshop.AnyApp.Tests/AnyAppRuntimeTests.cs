@@ -39,4 +39,13 @@ public sealed class AnyAppRuntimeTests
             word.Children,
             child => child.Text == "S" && child.Properties.ContainsKey("wavePeriod"));
     }
+    [Fact]
+    public void EmptyManifest_ComposesWithoutThrowing()
+    {
+        var runtime = AnyAppRuntime.Compose(RuntimeManifest.Empty(999));
+
+        Assert.Equal(999UL, runtime.RuntimeId);
+        Assert.Empty(runtime.Bundles);
+        Assert.Equal(0, runtime.ArbitrationRounds);
+    }
 }
