@@ -104,7 +104,6 @@ public partial class MainWindow : Window
             FontSize = 12,
             FontWeight = FontWeights.Bold,
             Foreground = accent,
-            LetterSpacing = 2,
             Margin = new Thickness(0, 0, 0, 12)
         });
 
@@ -252,7 +251,6 @@ public partial class MainWindow : Window
             FontSize = 13,
             FontWeight = FontWeights.Bold,
             Foreground = new SolidColorBrush(Color.FromRgb(0, 168, 255)),
-            LetterSpacing = 3
         });
 
         heading.Children.Add(new TextBlock
