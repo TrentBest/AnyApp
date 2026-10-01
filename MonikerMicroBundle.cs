@@ -78,11 +78,7 @@ public sealed class MonikerMicroBundle : IMicroBundle, IAnyAppSurface
                     .Property("fontSize", "76")
                     .Property("fontWeight", "700")
                     .Property("fontFamily", "Consolas")
-                    .Property("wavePeriod", "3.8")
-                    .Property("waveAmplitude", "7")
-                    .Property("waveRotation", "2.5")
-                    .Property("wavePhase", ((offset + index) % 12 / 12d).ToString(
-                        System.Globalization.CultureInfo.InvariantCulture)));
+);
         }
 
         return row.Build();
