@@ -109,9 +109,12 @@ This is the desktop proof that the same composition boundary can support desktop
 
 ## Development
 
+The repository includes `AnyApp.sln`, containing both the WPF host and its test project. After cloning, restore the solution before building so the generated `obj/project.assets.json` files are created locally.
+
 ~~~powershell
-dotnet build AnyApp.csproj --configuration Release
-dotnet test tests/TheSingularityWorkshop.AnyApp.Tests/TheSingularityWorkshop.AnyApp.Tests.csproj --configuration Release
+dotnet restore AnyApp.sln
+dotnet build AnyApp.sln --configuration Release
+dotnet test AnyApp.sln --configuration Release
 dotnet run --project AnyApp.csproj
 ~~~
 
