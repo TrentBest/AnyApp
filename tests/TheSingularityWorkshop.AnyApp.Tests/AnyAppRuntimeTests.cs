@@ -56,7 +56,7 @@ public sealed class AnyAppRuntimeTests
     [Fact]
     public void SerializedManifest_RehydratesRuntimeManifest()
     {
-        var json = "{\"experienceId\":3101,\"version\":\"1.0.0\",\"runtimeId\":3111,\"bundles\":[{\"bundleId\":3101,\"configurationBase64\":\"\}]";
+        var json = "{\"experienceId\":3101,\"version\":\"1.0.0\",\"runtimeId\":3111,\"bundles\":[{\"bundleId\":3101,\"configurationBase64\":\"\"}]}";
         var manifest = ExperienceManifest.Parse(Encoding.UTF8.GetBytes(json));
         Assert.Equal(3101UL, manifest.ExperienceId);
         Assert.Equal("1.0.0", manifest.Version);
