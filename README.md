@@ -26,7 +26,7 @@ FSM_COS
   |
   | RuntimeAssembly
   v
-AnyApp MicroBundle
+Experience MicroBundle
   |
   | semantic GuiNode
   v
@@ -69,7 +69,7 @@ This is a proof surface, not the finished AnyApp shell. It establishes:
 - NuGet consumption of TheSingularityWorkshop.GUI.WPF;
 - composition through FsmCos;
 - RuntimeAssembly retrieval;
-- semantic GUI creation inside the composed MicroBundle;
+- semantic GUI creation inside the composed Experience MicroBundle;
 - native WPF manifestation;
 - an automated test proving the COS path.
 
