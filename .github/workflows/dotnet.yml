@@ -12,13 +12,13 @@ jobs:
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
     - name: Setup .NET
-      uses: actions/setup-dotnet@v4
+      uses: actions/setup-dotnet@v5
       with:
         dotnet-version: 8.0.x
     - name: Restore
-      run: dotnet restore AnyApp.csproj
+      run: dotnet restore tests/TheSingularityWorkshop.AnyApp.Tests/TheSingularityWorkshop.AnyApp.Tests.csproj
     - name: Build
       run: dotnet build AnyApp.csproj --configuration Release --no-restore
     - name: Test
