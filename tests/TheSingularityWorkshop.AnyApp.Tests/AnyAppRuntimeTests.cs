@@ -24,11 +24,14 @@ public sealed class AnyAppRuntimeTests
     {
         var runtime = AnyAppRuntime.Compose();
 
-        Assert.True(runtime.TryGetBundle<IAnyAppSurface>(
+        Assert.True(runtime.TryGetBundle<AnyAppMicroBundle>(
             AnyAppMicroBundle.BundleId,
-            out var surface));
-        Assert.NotNull(surface);
-        Assert.Equal("anyapp-root", surface!.Root.Id);
+            out var bundle));
+        Assert.NotNull(bundle);
+
+        var surface = Assert.IsAssignableFrom<IAnyAppSurface>(bundle);
+
+        Assert.Equal("anyapp-root", surface.Root.Id);
         Assert.Equal("Column", surface.Root.Kind);
         Assert.Contains(
             surface.Root.Children,
