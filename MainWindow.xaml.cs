@@ -181,7 +181,10 @@ public partial class MainWindow : Window
     private void SetDoorsEnabled(bool enabled)
     {
         foreach (var child in _experienceDoors.Children)
-            child.IsHitTestVisible = enabled;
+        {
+            if (child is UIElement element)
+                element.IsHitTestVisible = enabled;
+        }
     }
 
     private async Task LaunchManifestFileAsync(string path)
