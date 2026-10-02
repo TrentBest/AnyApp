@@ -20,6 +20,7 @@ public static class StartupSplash
 
     public static async Task PresentAsync(
         Panel host,
+        Task? compositionTask = null,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(host);
@@ -114,6 +115,10 @@ public static class StartupSplash
         await FadeAsync(ring, 0, 1, 180, cancellationToken);
         await FadeAsync(image, 0, 1, 420, cancellationToken);
         await Task.Delay(650, cancellationToken);
+
+        if (compositionTask is not null)
+            await compositionTask;
+
         await FadeAsync(overlay, 1, 0, 420, cancellationToken);
     }
 
