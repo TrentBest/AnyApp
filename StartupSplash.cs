@@ -76,7 +76,7 @@ public static class StartupSplash
             Height = 132,
             Stroke = new SolidColorBrush(Color.FromRgb(0, 234, 255)),
             StrokeThickness = 4,
-            StrokeDashArray = [0.01, 100],
+            StrokeDashArray = new DoubleCollection { 0.01, 100 },
             StrokeDashCap = PenLineCap.Round,
             RenderTransformOrigin = new Point(.5, .5),
             RenderTransform = new RotateTransform(-90)
@@ -108,7 +108,8 @@ public static class StartupSplash
             cancellationToken.ThrowIfCancellationRequested();
 
             percent.Text = $"{value}%";
-            progress.StrokeDashArray = [Math.Max(.01, value * 0.8), 100];
+            progress.StrokeDashArray =
+                new DoubleCollection { Math.Max(.01, value * 0.8), 100 };
             await Task.Delay(18, cancellationToken);
         }
 
