@@ -17,6 +17,24 @@ jobs:
       uses: actions/setup-dotnet@v5
       with:
         dotnet-version: 8.0.x
+    - name: Checkout MicroBundleRepository dependency
+      uses: actions/checkout@v5
+      with:
+        repository: TrentBest/TheSingularityWorkshop.MicroBundleRepository
+        ref: fix/repository-boundary
+        path: _dependencies/MicroBundleRepository
+
+    - name: Pack MicroBundleRepository dependency
+      run: |
+        dotnet restore _dependencies/MicroBundleRepository/TheSingularityWorkshop.MicroBundleRepository.slnx
+        dotnet build _dependencies/MicroBundleRepository/TheSingularityWorkshop.MicroBundleRepository.slnx --configuration Release --no-restore
+        New-Item -ItemType Directory -Force -Path _dependencies/nuget | Out-Null
+        dotnet pack _dependencies/MicroBundleRepository/src/Core/TheSingularityWorkshop.MicroBundleRepository.Core/TheSingularityWorkshop.MicroBundleRepository.Core.csproj --configuration Release --no-build --output _dependencies/nuget
+        dotnet pack _dependencies/MicroBundleRepository/src/REST/TheSingularityWorkshop.MicroBundleRepository.Rest/TheSingularityWorkshop.MicroBundleRepository.Rest.csproj --configuration Release --no-build --output _dependencies/nuget
+
+    - name: Add local dependency feed
+      run: dotnet nuget add source "$env:GITHUB_WORKSPACE/_dependencies/nuget" --name MicroBundleRepositoryLocal
+
     - name: Restore
       run: dotnet restore tests/TheSingularityWorkshop.AnyApp.Tests/TheSingularityWorkshop.AnyApp.Tests.csproj
     - name: Build
