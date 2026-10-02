@@ -10,7 +10,7 @@ public static class AnyAppRuntime
     {
         ArgumentNullException.ThrowIfNull(manifest);
 
-        var cos = new FsmCos(MonikerExperience.CreateCatalog());
+        var cos = new FsmCos(new AnyAppMicroBundleCatalog());
         return cos.Execute(manifest);
     }
 }
