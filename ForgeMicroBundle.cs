@@ -10,6 +10,8 @@ namespace TheSingularityWorkshop.AnyApp;
 /// </summary>
 public sealed class ForgeMicroBundle : IMicroBundle, IAnyAppSurface
 {
+    public const ulong ExperienceId = 3201;
+    public const ulong RuntimeId = 3211;
     public const ulong BundleId = 3201;
     public const string ProviderId = "workshop-forge";
 
