@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using System.IO;
 using TheSingularityWorkshop.FSM_Serialization;
 
 namespace TheSingularityWorkshop.AnyApp;
@@ -84,11 +85,11 @@ public sealed class MicroBundleAssemblyPayload : IBinarySerializable
 
     public static MicroBundleAssemblyPayload FromBytes(ReadOnlyMemory<byte> bytes)
     {
-        using var stream = new MemoryBinaryStream(bytes);
+        using var stream = new MemoryBinaryStream(bytes.ToArray());
 
         // The envelope itself establishes identity during Unpack; constructor values
         // here only satisfy the invariant required by the mutable deserialization path.
-        var payload = new MicroBundleAssemblyPayload(1, [1]);
+        var payload = new MicroBundleAssemblyPayload(1, new byte[] { 1 });
         payload.Unpack(stream);
         return payload;
     }
