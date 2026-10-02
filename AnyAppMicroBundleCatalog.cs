@@ -15,6 +15,6 @@ public sealed class AnyAppMicroBundleCatalog : IMicroBundleCatalog
             [ForgeMicroBundle.BundleId] = new ForgeMicroBundle()
         };
 
-    public IMicroBundle? Find(ulong bundleId) =>
-        _bundles.TryGetValue(bundleId, out var bundle) ? bundle : null;
+    public bool TryResolve(ulong bundleId, out IMicroBundle? bundle) =>
+        _bundles.TryGetValue(bundleId, out bundle);
 }
