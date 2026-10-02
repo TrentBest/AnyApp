@@ -17,6 +17,9 @@ public sealed record ExperienceManifest(
         PropertyNameCaseInsensitive = true
     };
 
+    public bool UsesRepositoryArtifacts =>
+        Bundles.Count > 0 && Bundles.All(bundle => bundle.HasArtifactIdentity);
+
     public RuntimeManifest ToRuntimeManifest()
     {
         var requests = Bundles
@@ -37,4 +40,11 @@ public sealed record ExperienceManifest(
 
 public sealed record ExperienceBundleRequest(
     ulong BundleId,
-    string ConfigurationBase64);
+    string ConfigurationBase64,
+    string? ArtifactVersion = null,
+    string? ContentHash = null)
+{
+    public bool HasArtifactIdentity =>
+        !string.IsNullOrWhiteSpace(ArtifactVersion) &&
+        !string.IsNullOrWhiteSpace(ContentHash);
+}
