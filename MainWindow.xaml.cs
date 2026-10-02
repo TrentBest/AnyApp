@@ -7,6 +7,7 @@ using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
+using TheSingularityWorkshop.FSM_COS;
 using TheSingularityWorkshop.GUI.WPF;
 using TheSingularityWorkshop.Workshop.Gui;
 
@@ -35,7 +36,40 @@ public partial class MainWindow : Window
             return;
         }
 
-        await BrowseExperiencesAsync(GetRepositoryEndpoint());
+        await StartDefaultExperienceAsync();
+    }
+
+    private async Task StartDefaultExperienceAsync()
+    {
+        ExperienceManifest? lastManifest = null;
+
+        try
+        {
+            lastManifest = await LastManifestStore.TryLoadAsync();
+        }
+        catch
+        {
+            // A damaged local last-run record must never prevent startup.
+        }
+
+        if (lastManifest is not null)
+        {
+            try
+            {
+                await LaunchManifestAsync(
+                    lastManifest,
+                    persistLastManifest: true,
+                    showStartupSplash: true);
+                return;
+            }
+            catch
+            {
+                // The previous Experience is no longer launchable.
+                // Fall through to the user's Forge entry Experience.
+            }
+        }
+
+        await LaunchForgeAsync(showStartupSplash: true);
     }
 
     private async Task BrowseExperiencesAsync(Uri endpoint)
@@ -47,15 +81,20 @@ public partial class MainWindow : Window
             using var client = new ExperienceCatalogClient(endpoint);
             var experiences = await client.ListAsync();
 
+            if (experiences.Count == 0)
+            {
+                await LaunchForgeAsync();
+                return;
+            }
+
             BuildExperienceDoors(experiences);
 
-            _status.Text = experiences.Count == 0
-                ? "The Workshop has no published Experiences yet."
-                : $"{experiences.Count} Experience door(s) are open.";
+            _status.Text =
+                $"{experiences.Count} Experience door(s) are open.";
         }
         catch (HttpRequestException)
         {
-            ShowRepositoryUnavailable(endpoint);
+            await LaunchForgeAsync();
         }
         catch (Exception ex)
         {
@@ -68,9 +107,7 @@ public partial class MainWindow : Window
         _experienceDoors.Children.Clear();
 
         foreach (var experience in experiences)
-        {
             _experienceDoors.Children.Add(CreateExperienceDoor(experience));
-        }
     }
 
     private Border CreateExperienceDoor(PublishedExperience experience)
@@ -166,12 +203,13 @@ public partial class MainWindow : Window
     {
         try
         {
-            _status.Text = $"Opening Experience {selected.ExperienceId} {selected.Version}...";
+            _status.Text =
+                $"Opening Experience {selected.ExperienceId} {selected.Version}...";
             SetDoorsEnabled(false);
 
             using var client = new ExperienceCatalogClient(GetRepositoryEndpoint());
             var manifest = await client.GetManifestAsync(selected);
-            LaunchManifest(manifest);
+            await LaunchManifestAsync(manifest, persistLastManifest: true);
         }
         catch (Exception ex)
         {
@@ -194,7 +232,9 @@ public partial class MainWindow : Window
         try
         {
             var content = await File.ReadAllBytesAsync(path);
-            LaunchManifest(ExperienceManifest.Parse(content));
+            await LaunchManifestAsync(
+                ExperienceManifest.Parse(content),
+                persistLastManifest: true);
         }
         catch (Exception ex)
         {
@@ -202,10 +242,31 @@ public partial class MainWindow : Window
         }
     }
 
-    private void LaunchManifest(ExperienceManifest manifest)
+    private async Task LaunchManifestAsync(
+        ExperienceManifest manifest,
+        bool persistLastManifest,
+        bool showStartupSplash = false)
     {
-        var runtime = AnyAppRuntime.Compose(manifest.ToRuntimeManifest());
+        ArgumentNullException.ThrowIfNull(manifest);
 
+        var compositionTask = Task.Run(
+            () => AnyAppRuntime.Compose(manifest.ToRuntimeManifest()));
+
+        if (showStartupSplash)
+            await StartupSplash.PresentAsync(RootHost, compositionTask);
+        
+        var runtime = await compositionTask;
+        RenderRuntime(manifest, runtime);
+
+        if (persistLastManifest &&
+            manifest.ExperienceId != ForgeMicroBundle.ExperienceId)
+        {
+            await LastManifestStore.SaveAsync(manifest);
+        }
+    }
+
+    private void RenderRuntime(ExperienceManifest manifest, RuntimeAssembly runtime)
+    {
         if (manifest.Bundles.Count == 0)
         {
             ShowMessage(
@@ -214,21 +275,90 @@ public partial class MainWindow : Window
             return;
         }
 
-        if (!runtime.TryGetBundle<MonikerMicroBundle>(
+        var bundleId = manifest.Bundles[0].BundleId;
+
+        if (bundleId == MonikerMicroBundle.BundleId &&
+            runtime.TryGetBundle<MonikerMicroBundle>(
                 MonikerMicroBundle.BundleId,
-                out var bundle) ||
-            bundle is not IAnyAppSurface surface)
+                out var monikerBundle) &&
+            monikerBundle is IAnyAppSurface monikerSurface)
         {
-            ShowMessage(
-                "The selected Experience could not be manifested.",
-                "The requested MicroBundle is not available in the AnyApp host catalog.");
+            RootHost.Children.Clear();
+            RootHost.Children.Add(
+                WpfGuiRenderer.Render(
+                    MonikerExperience.ExecutePresentation(monikerSurface.Root)));
             return;
         }
 
-        RootHost.Children.Clear();
-        RootHost.Children.Add(
-            WpfGuiRenderer.Render(
-                MonikerExperience.ExecutePresentation(surface.Root)));
+        if (bundleId == ForgeMicroBundle.BundleId &&
+            runtime.TryGetBundle<ForgeMicroBundle>(
+                ForgeMicroBundle.BundleId,
+                out var forgeBundle) &&
+            forgeBundle is IAnyAppSurface forgeSurface)
+        {
+            RootHost.Children.Clear();
+            var rendered = WpfGuiRenderer.Render(forgeSurface.Root);
+            RootHost.Children.Add(rendered);
+            WireForgeNavigation(rendered);
+            return;
+        }
+
+        ShowMessage(
+            "The selected Experience could not be manifested.",
+            $"MicroBundle {bundleId} is not available in the native host catalog.");
+    }
+
+    private void WireForgeNavigation(FrameworkElement root)
+    {
+        if (FindNamedElement(root, "forgeexplore") is Button explore)
+        {
+            explore.Click += async (_, _) =>
+                await BrowseExperiencesAsync(GetRepositoryEndpoint());
+        }
+    }
+
+    private static FrameworkElement? FindNamedElement(
+        DependencyObject root,
+        string name)
+    {
+        if (root is FrameworkElement element &&
+            string.Equals(element.Name, name, StringComparison.Ordinal))
+            return element;
+
+        for (var index = 0; index < VisualTreeHelper.GetChildrenCount(root); index++)
+        {
+            var child = VisualTreeHelper.GetChild(root, index);
+            var match = FindNamedElement(child, name);
+            if (match is not null)
+                return match;
+        }
+
+        return null;
+    }
+
+    private async Task LaunchForgeAsync(bool showStartupSplash = false)
+    {
+        try
+        {
+            var path = Path.Combine(
+                AppContext.BaseDirectory,
+                "experiences",
+                "forge",
+                "1.0.0",
+                "manifest.json");
+
+            var content = await File.ReadAllBytesAsync(path);
+            await LaunchManifestAsync(
+                ExperienceManifest.Parse(content),
+                persistLastManifest: false,
+                showStartupSplash: showStartupSplash);
+        }
+        catch (Exception ex)
+        {
+            ShowMessage(
+                "The Forge could not be opened.",
+                ex.Message);
+        }
     }
 
     private void ShowBrowser()
@@ -369,53 +499,6 @@ public partial class MainWindow : Window
         avatar.Children.Add(portal);
         avatar.Children.Add(you);
         return avatar;
-    }
-
-    private void ShowRepositoryUnavailable(Uri endpoint)
-    {
-        _experienceDoors.Children.Clear();
-
-        var gate = new Border
-        {
-            Width = 420,
-            Height = 170,
-            Margin = new Thickness(12),
-            BorderBrush = new SolidColorBrush(Color.FromRgb(65, 78, 92)),
-            BorderThickness = new Thickness(1),
-            Background = new SolidColorBrush(Color.FromRgb(5, 10, 18))
-        };
-
-        gate.Child = new StackPanel
-        {
-            Margin = new Thickness(24),
-            VerticalAlignment = VerticalAlignment.Center,
-            Children =
-            {
-                new TextBlock
-                {
-                    Text = "THE DOORS ARE CLOSED",
-                    FontSize = 16,
-                    FontWeight = FontWeights.Bold,
-                    Foreground = Brushes.White
-                },
-                new TextBlock
-                {
-                    Text = "No Experience repository is connected.",
-                    FontSize = 14,
-                    Foreground = new SolidColorBrush(Color.FromRgb(166, 188, 207)),
-                    Margin = new Thickness(0, 10, 0, 4)
-                },
-                new TextBlock
-                {
-                    Text = endpoint.ToString(),
-                    FontSize = 12,
-                    Foreground = new SolidColorBrush(Color.FromRgb(128, 151, 171))
-                }
-            }
-        };
-
-        _experienceDoors.Children.Add(gate);
-        _status.Text = "Connect the Experience repository to populate the Workshop doors.";
     }
 
     private void ShowMessage(string title, string detail)
