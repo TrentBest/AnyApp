@@ -93,6 +93,52 @@ native WPF
 
 The MicroBundle remains static and previewable. MonikerExperience.ExecutePresentation(...) adds the wave behavior only when the selected Experience executes.
 
+## Repository-backed composition
+
+Published Experiences can carry immutable artifact identities for their MicroBundles. The host-side composition path keeps repository delivery separate from runtime interpretation:
+
+~~~text
+Experience manifest
+       |
+       | bundle ID + version + SHA-256
+       v
+AnyApp RepositoryMicroBundleCatalog
+       |
+       v
+MicroBundleRepository.Rest
+       |
+       v
+verified opaque artifact bytes
+       |
+       v
+AnyApp artifact materializer
+       |
+       v
+IMicroBundle
+       |
+       v
+FSM_COS
+       |
+       v
+RuntimeAssembly
+~~~
+
+This dependency direction is intentional:
+
+~~~text
+AnyApp
+ ├── FSM_COS
+ ├── MicroBundleRepository.Rest ──> FSM_Rest
+ └── artifact representation/materialization
+          |
+          └── interprets repository bytes
+
+MicroBundleRepository.Core
+ └── artifact identity + opaque bytes + repository contracts
+~~~
+
+The repository does not know how an artifact becomes an `IMicroBundle`. The current AnyApp vertical slice uses a compiled .NET assembly envelope, but that representation is host-owned. If WebForge or another host later needs the same representation, it can become a separate shared artifact-format package based on that demonstrated second consumer.
+
 ## Architectural intent
 
 AnyApp should remain the host.
