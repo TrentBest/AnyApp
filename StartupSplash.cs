@@ -3,7 +3,6 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
-using System.Windows.Media.Animation;
 
 namespace TheSingularityWorkshop.AnyApp;
 
@@ -123,28 +122,22 @@ public static class StartupSplash
         await FadeAsync(overlay, 1, 0, 420, cancellationToken);
     }
 
-    private static Task FadeAsync(
+    private static async Task FadeAsync(
         UIElement element,
         double from,
         double to,
         int milliseconds,
         CancellationToken cancellationToken)
     {
-        var tcs = new TaskCompletionSource(
-            TaskCreationOptions.RunContinuationsAsynchronously);
+        const int steps = 18;
+        var delay = Math.Max(1, milliseconds / steps);
 
-        var animation = new DoubleAnimation
+        for (var step = 1; step <= steps; step++)
         {
-            From = from,
-            To = to,
-            Duration = TimeSpan.FromMilliseconds(milliseconds)
-        };
-
-        animation.Completed += (_, _) => tcs.TrySetResult();
-        element.BeginAnimation(UIElement.OpacityProperty, animation);
-
-        cancellationToken.Register(() => tcs.TrySetCanceled(cancellationToken));
-
-        return tcs.Task;
+            cancellationToken.ThrowIfCancellationRequested();
+            var progress = step / (double)steps;
+            element.Opacity = from + ((to - from) * progress);
+            await Task.Delay(delay, cancellationToken);
+        }
     }
 }
