@@ -340,7 +340,7 @@ public partial class MainWindow : Window
     {
         try
         {
-            var path = Path.Combine(
+            var path = System.IO.Path.Combine(
                 AppContext.BaseDirectory,
                 "experiences",
                 "forge",
