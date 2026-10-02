@@ -6,8 +6,8 @@ namespace TheSingularityWorkshop.AnyApp;
 
 /// <summary>
 /// The first real AnyApp Experience payload: the Workshop Moniker.
-/// Content, presentation semantics, and wave parameters live in the MicroBundle;
-/// the host only asks GUI.WPF to manifest the resulting semantic tree.
+/// The MicroBundle owns static content and semantic GUI structure.
+/// Presentation behavior, including the wave, belongs to the Experience layer.
 /// </summary>
 public sealed class MonikerMicroBundle : IMicroBundle, IAnyAppSurface
 {
