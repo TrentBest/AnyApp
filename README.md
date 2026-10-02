@@ -113,7 +113,7 @@ AnyApp RepositoryMicroBundleCatalog
 MicroBundleRepository.Rest
        |
        v
-verified opaque artifact bytes
+verified opaque assembly bytes
        |
        v
 AnyApp artifact materializer
