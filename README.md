@@ -6,6 +6,11 @@ It is the Windows desktop counterpart to the browser-facing WebPage/WebForge hos
 
 ## Startup is now manifest-driven
 
+
+![AnyApp repository-backed composition](docs/assets/anyapp-composition.svg)
+
+The diagram above is the intended host boundary: the repository delivers verified opaque bytes, AnyApp materializes them, and FSM_COS remains responsible for composition.
+
 AnyApp is the host. It does not choose an Experience by embedding the Experience definition in the host.
 
 Normal startup now follows the Workshop entry sequence:
