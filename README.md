@@ -4,26 +4,26 @@ AnyApp is the desktop proof of the composition architecture.
 
 It is the Windows desktop counterpart to the browser-facing WebPage/WebForge host: the desktop of the Workshop, not another application-specific framework.
 
-## Startup is now Experience selection
+## Startup is now manifest-driven
 
-AnyApp is a host. It no longer embeds an Experience manifest in MainWindow.xaml.cs.
+AnyApp is the host. It does not choose an Experience by embedding the Experience definition in the host.
 
-When no explicit launch manifest is supplied, AnyApp enters the Experience Browser flow. The browser is intentionally spatial rather than a conventional application launcher: published Experiences appear as doors, and entering a door retrieves its manifest before composition:
+Normal startup now follows the Workshop entry sequence:
 
 ~~~text
 AnyApp
   |
-  | no launch manifest
+  | no explicit launch manifest
   v
-Experience Browser endpoint
+Workshop-authored splash sequence
   |
-  | published Experiences
+  | currently one authored image: the Workshop avatar
   v
-user selection
+last successfully run Experience manifest
   |
-  | selected artifact
+  | if none exists or it can no longer compose
   v
-Experience manifest
+Forge Experience manifest
   |
   v
 FSM_COS
@@ -32,31 +32,38 @@ FSM_COS
 RuntimeAssembly
   |
   v
-GUI.WPF
+host manifestation
 ~~~
 
-For local development, an explicit manifest can be supplied without making it part of the host:
+The splash is host-owned presentation around composition; **FSM_COS remains the composition boundary**. The initial splash sequence contains one Workshop-authored image and is intentionally structured so additional authored splash Experiences can be added later without changing the composition kernel.
 
-~~~powershell
-dotnet run --project AnyApp.csproj -- --experience-file=experiences/moniker/1.0.0/manifest.json
-~~~
+The Forge is the user's entry Experience when there is no usable last-run Experience. It is not a special launcher screen. Its semantic surface contains a diegetic EXPLORE EXPERIENCES portal; entering that portal opens the Experience repository flow.
 
-The repository endpoint can be overridden for the browser flow:
-
-~~~powershell
-dotnet run --project AnyApp.csproj -- --repository-endpoint=http://localhost:5000/
-~~~
-
-The first serialized Experience lives in its own versioned folder:
+The Forge manifest lives beside the other source manifests:
 
 ~~~text
 experiences/
+├── forge/
+│   └── 1.0.0/
+│       └── manifest.json
 └── moniker/
     └── 1.0.0/
         └── manifest.json
 ~~~
 
-That source artifact is the shape we will publish into the immutable .experience repository artifact. AnyApp does not treat the source file as a built-in startup manifest.
+A successfully entered non-Forge Experience is persisted as the next startup candidate outside the application binary. Forge itself is not persisted as the last-run Experience, so it remains the fallback entry point.
+
+For local development, an explicit manifest can still be supplied:
+
+~~~powershell
+dotnet run --project AnyApp.csproj -- --experience-file=experiences/moniker/1.0.0/manifest.json
+~~~
+
+The repository endpoint used by the Forge's Experience exploration portal can be overridden:
+
+~~~powershell
+dotnet run --project AnyApp.csproj -- --repository-endpoint=http://localhost:5000/
+~~~
 
 ## Composition boundary
 
