@@ -1,0 +1,11 @@
+{
+  "experienceId": 3201,
+  "version": "1.0.0",
+  "runtimeId": 3211,
+  "bundles": [
+    {
+      "bundleId": 3201,
+      "configurationBase64": ""
+    }
+  ]
+}
