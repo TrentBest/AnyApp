@@ -1,3 +1,4 @@
+using System.Net.Http;
 using TheSingularityWorkshop.FSM_COS;
 using TheSingularityWorkshop.MicroBundleRepository.Core;
 using TheSingularityWorkshop.MicroBundleRepository.Rest;
