@@ -13,9 +13,11 @@ namespace TheSingularityWorkshop.AnyApp;
 /// </summary>
 public static class StartupSplash
 {
-    private const string WorkshopAvatar =
+    private static readonly IReadOnlyList<string> SplashImages =
+    [
         "https://raw.githubusercontent.com/TrentBest/WebPage/master/" +
-        "TheSingularityWorkshop/wwwroot/Images/TheSingularityWorkshopLogo.png";
+        "TheSingularityWorkshop/wwwroot/Images/TheSingularityWorkshopLogo.png"
+    ];
 
     public static async Task PresentAsync(
         Panel host,
@@ -43,15 +45,6 @@ public static class StartupSplash
             Stretch = Stretch.UniformToFill,
             Opacity = 0
         };
-
-        try
-        {
-            image.Source = new BitmapImage(new Uri(WorkshopAvatar, UriKind.Absolute));
-        }
-        catch (UriFormatException)
-        {
-            // The splash remains usable even when the authored image cannot load.
-        }
 
         var ring = new Grid
         {
@@ -113,8 +106,25 @@ public static class StartupSplash
         }
 
         await FadeAsync(ring, 0, 1, 180, cancellationToken);
-        await FadeAsync(image, 0, 1, 420, cancellationToken);
-        await Task.Delay(650, cancellationToken);
+
+        foreach (var source in SplashImages)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            image.Opacity = 0;
+
+            try
+            {
+                image.Source = new BitmapImage(new Uri(source, UriKind.Absolute));
+            }
+            catch (UriFormatException)
+            {
+                image.Source = null;
+            }
+
+            await FadeAsync(image, 0, 1, 420, cancellationToken);
+            await Task.Delay(650, cancellationToken);
+            await FadeAsync(image, 1, 0, 280, cancellationToken);
+        }
 
         if (compositionTask is not null)
             await compositionTask;
