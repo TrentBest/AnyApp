@@ -18,16 +18,26 @@ public partial class MainWindow : Window
     private static readonly Uri DefaultRepositoryEndpoint = new("http://localhost:5000/");
     private readonly WrapPanel _experienceDoors = new();
     private readonly TextBlock _status = new();
+    private AnyAppBridge? _bridge;
 
     public MainWindow()
     {
         InitializeComponent();
         Loaded += OnLoaded;
+        Closed += OnClosed;
     }
 
     private async void OnLoaded(object sender, RoutedEventArgs e)
     {
         Loaded -= OnLoaded;
+
+        var launchRequest = GetLaunchRequest();
+        if (launchRequest is not null)
+        {
+            await StartBridgeAsync(launchRequest.LaunchToken);
+            await LaunchPublishedExperienceAsync(launchRequest);
+            return;
+        }
 
         var launchFile = GetLaunchFile();
         if (launchFile is not null)
@@ -37,6 +47,57 @@ public partial class MainWindow : Window
         }
 
         await StartDefaultExperienceAsync();
+    }
+
+    private async void OnClosed(object? sender, EventArgs e)
+    {
+        Closed -= OnClosed;
+
+        if (_bridge is not null)
+            await _bridge.DisposeAsync();
+    }
+
+    private async Task StartBridgeAsync(string launchToken)
+    {
+        try
+        {
+            _bridge = new AnyAppBridge(launchToken);
+            await _bridge.StartAsync();
+        }
+        catch
+        {
+            _bridge = null;
+        }
+    }
+
+    private async Task LaunchPublishedExperienceAsync(AnyAppLaunchRequest request)
+    {
+        try
+        {
+            using var client = new ExperienceCatalogClient(GetRepositoryEndpoint());
+            var manifest = await client.GetManifestAsync(
+                new PublishedExperience(
+                    request.ExperienceId,
+                    request.Version,
+                    request.ContentHash));
+
+            if (manifest.ExperienceId != request.ExperienceId ||
+                !string.Equals(manifest.Version, request.Version, StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException(
+                    "The published Experience manifest identity does not match the requested deep link.");
+            }
+
+            await LaunchManifestAsync(
+                manifest,
+                persistLastManifest: manifest.ExperienceId != ForgeMicroBundle.ExperienceId);
+        }
+        catch (Exception ex)
+        {
+            ShowMessage(
+                "The requested Experience could not be opened.",
+                ex.Message);
+        }
     }
 
     private async Task StartDefaultExperienceAsync()
@@ -509,6 +570,15 @@ public partial class MainWindow : Window
                 GuiBuilders.Warning("experience-launch", $"{title} {detail}")
                     .Property("margin", "32")
                     .Build()));
+    }
+
+    private static AnyAppLaunchRequest? GetLaunchRequest()
+    {
+        var argument = Environment.GetCommandLineArgs()
+            .FirstOrDefault(value =>
+                value.StartsWith("anyapp://", StringComparison.OrdinalIgnoreCase));
+
+        return AnyAppLaunchRequest.TryParse(argument);
     }
 
     private static string? GetLaunchFile()
