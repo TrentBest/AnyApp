@@ -436,7 +436,7 @@ public partial class MainWindow : Window
 
         return argument is null
             ? null
-            : Path.GetFullPath(argument[prefix.Length..]);
+            : System.IO.Path.GetFullPath(argument[prefix.Length..]);
     }
 
     private static Uri GetRepositoryEndpoint()
