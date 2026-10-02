@@ -17,6 +17,28 @@ public sealed class AnyAppRuntimeTests
         Assert.NotNull(bundle);
     }
 
+    
+    [Fact]
+    public void Compose_ProducesForgeEntryExperienceThroughCos()
+    {
+        var manifest = new ExperienceManifest(
+            ForgeMicroBundle.ExperienceId,
+            "1.0.0",
+            ForgeMicroBundle.RuntimeId,
+            [new ExperienceBundleRequest(ForgeMicroBundle.BundleId, "")]);
+
+        var runtime = AnyAppRuntime.Compose(manifest.ToRuntimeManifest());
+
+        Assert.Equal(ForgeMicroBundle.RuntimeId, runtime.RuntimeId);
+        Assert.True(runtime.TryGetBundle<ForgeMicroBundle>(
+            ForgeMicroBundle.BundleId,
+            out var bundle));
+        var surface = Assert.IsAssignableFrom<IAnyAppSurface>(bundle);
+        Assert.Equal("forge-root", surface.Root.Id);
+        Assert.True(surface.Root.TryFind("forge-explore", out var portal));
+        Assert.Equal("Button", portal!.Kind);
+    }
+
     [Fact]
     public void ComposedBundle_ExposesSemanticGuiSurface()
     {
