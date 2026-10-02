@@ -249,12 +249,13 @@ public partial class MainWindow : Window
     {
         ArgumentNullException.ThrowIfNull(manifest);
 
-        var compositionTask = Task.Run(
-            () => AnyAppRuntime.Compose(manifest.ToRuntimeManifest()));
+        var compositionTask = AnyAppRuntime.ComposeAsync(
+            manifest,
+            GetRepositoryEndpoint());
 
         if (showStartupSplash)
             await StartupSplash.PresentAsync(RootHost, compositionTask);
-        
+
         var runtime = await compositionTask;
         RenderRuntime(manifest, runtime);
 
