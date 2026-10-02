@@ -23,6 +23,7 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        AnyAppProtocolRegistration.Register();
         Loaded += OnLoaded;
         Closed += OnClosed;
     }
