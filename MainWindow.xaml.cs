@@ -5,6 +5,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Media.Imaging;
 using TheSingularityWorkshop.GUI.WPF;
 using TheSingularityWorkshop.Workshop.Gui;
 
@@ -246,7 +247,23 @@ public partial class MainWindow : Window
         shell.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
         shell.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
 
-        var heading = new StackPanel();
+        var hero = new Grid
+        {
+            Margin = new Thickness(0, 0, 0, 8)
+        };
+
+        hero.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(150) });
+        hero.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+        var avatar = CreateWorkshopAvatar();
+        Grid.SetColumn(avatar, 0);
+        hero.Children.Add(avatar);
+
+        var heading = new StackPanel
+        {
+            VerticalAlignment = VerticalAlignment.Center,
+            Margin = new Thickness(18, 0, 0, 0)
+        };
 
         heading.Children.Add(new TextBlock
         {
@@ -267,13 +284,16 @@ public partial class MainWindow : Window
 
         heading.Children.Add(new TextBlock
         {
-            Text = "Experiences are places you enter, not applications you launch.",
+            Text = "You are here. Experiences are places you enter, not applications you launch.",
             FontSize = 15,
             Foreground = new SolidColorBrush(Color.FromRgb(166, 188, 207))
         });
 
-        Grid.SetRow(heading, 0);
-        shell.Children.Add(heading);
+        Grid.SetColumn(heading, 1);
+        hero.Children.Add(heading);
+
+        Grid.SetRow(hero, 0);
+        shell.Children.Add(hero);
 
         _experienceDoors.HorizontalAlignment = HorizontalAlignment.Left;
         _experienceDoors.VerticalAlignment = VerticalAlignment.Center;
@@ -288,6 +308,66 @@ public partial class MainWindow : Window
         shell.Children.Add(_status);
 
         RootHost.Children.Add(shell);
+    }
+
+    private static Grid CreateWorkshopAvatar()
+    {
+        const string source =
+            "https://raw.githubusercontent.com/TrentBest/WebPage/master/" +
+            "TheSingularityWorkshop/wwwroot/Images/TheSingularityWorkshopLogo.png";
+
+        var avatar = new Grid
+        {
+            Width = 132,
+            Height = 132,
+            HorizontalAlignment = HorizontalAlignment.Left,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+
+        var image = new BitmapImage(new Uri(source, UriKind.Absolute));
+        var portal = new Ellipse
+        {
+            Width = 112,
+            Height = 112,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center,
+            Stroke = new SolidColorBrush(Color.FromRgb(0, 234, 255)),
+            StrokeThickness = 2,
+            Fill = new ImageBrush(image)
+            {
+                Stretch = Stretch.UniformToFill
+            },
+            Effect = new System.Windows.Media.Effects.DropShadowEffect
+            {
+                BlurRadius = 22,
+                ShadowDepth = 0,
+                Opacity = 0.7,
+                Color = Color.FromRgb(0, 234, 255)
+            },
+            ToolTip = "Your Workshop avatar"
+        };
+
+        var you = new Border
+        {
+            HorizontalAlignment = HorizontalAlignment.Right,
+            VerticalAlignment = VerticalAlignment.Bottom,
+            Background = new SolidColorBrush(Color.FromRgb(2, 7, 17)),
+            BorderBrush = new SolidColorBrush(Color.FromRgb(0, 168, 255)),
+            BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(3),
+            Padding = new Thickness(7, 3, 7, 3),
+            Child = new TextBlock
+            {
+                Text = "YOU",
+                FontSize = 10,
+                FontWeight = FontWeights.Bold,
+                Foreground = new SolidColorBrush(Color.FromRgb(0, 234, 255))
+            }
+        };
+
+        avatar.Children.Add(portal);
+        avatar.Children.Add(you);
+        return avatar;
     }
 
     private void ShowRepositoryUnavailable(Uri endpoint)
