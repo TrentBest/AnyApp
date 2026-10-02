@@ -18,15 +18,13 @@
     <Description>Desktop AnyApp host proving FSM_COS composition through GUI.WPF.</Description>
   </PropertyGroup>
   <ItemGroup>
-    <!-- The test project is a separate compilation boundary. Prevent the SDK's
-         default recursive Compile glob from pulling test sources into AnyApp. -->
     <Compile Remove="tests\**\*.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="TheSingularityWorkshop.FSM_COS" Version="0.1.0-alpha.4" />
     <PackageReference Include="TheSingularityWorkshop.GUI.WPF" Version="0.1.0-alpha.6" />
+    <PackageReference Include="TheSingularityWorkshop.MicroBundleRepository.Rest" Version="0.1.0-alpha.3" />
   </ItemGroup>
-
   <ItemGroup>
     <None Update="experiences/**/manifest.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
