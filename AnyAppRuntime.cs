@@ -29,8 +29,11 @@ public static class AnyAppRuntime
             repositoryEndpoint,
             experience);
 
-        return await catalog.ComposeAsync(
-            experience.ToRuntimeManifest(),
+        var runtimeManifest = experience.ToRuntimeManifest();
+        await catalog.PreloadClosureAsync(
+            runtimeManifest.Bundles.Select(bundle => bundle.BundleId),
             cancellationToken);
+
+        return new FsmCos(catalog).Execute(runtimeManifest);
     }
 }
