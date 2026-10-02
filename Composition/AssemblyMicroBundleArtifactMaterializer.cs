@@ -14,8 +14,8 @@ public interface IMicroBundleArtifactMaterializer
 }
 
 /// <summary>
-/// Loads a .NET assembly artifact and discovers its public parameterless
-/// MicroBundle by bundle ID.
+/// Loads verified .NET assembly bytes and discovers their public parameterless
+/// MicroBundle by the identity carried by the repository artifact address.
 /// </summary>
 public sealed class AssemblyMicroBundleArtifactMaterializer : IMicroBundleArtifactMaterializer
 {
@@ -23,12 +23,11 @@ public sealed class AssemblyMicroBundleArtifactMaterializer : IMicroBundleArtifa
     {
         ArgumentNullException.ThrowIfNull(artifact);
 
-        var payload = MicroBundleAssemblyPayload.FromBytes(artifact.Content);
-        if (payload.BundleId != artifact.Address.BundleId)
+        if (artifact.Content.IsEmpty)
             throw new InvalidOperationException(
-                $"MicroBundle payload ID {payload.BundleId} does not match artifact ID {artifact.Address.BundleId}.");
+                $"MicroBundle artifact {artifact.Address} contains no assembly bytes.");
 
-        var assembly = Assembly.Load(payload.AssemblyBytes.ToArray());
+        var assembly = Assembly.Load(artifact.Content.ToArray());
         var candidates = assembly
             .GetTypes()
             .Where(type =>
@@ -38,15 +37,12 @@ public sealed class AssemblyMicroBundleArtifactMaterializer : IMicroBundleArtifa
                 type.GetConstructor(Type.EmptyTypes) is not null)
             .Select(type => Activator.CreateInstance(type))
             .OfType<IMicroBundle>()
-            .ToArray();
-
-        var matches = candidates
             .Where(bundle => bundle.Id == artifact.Address.BundleId)
             .ToArray();
 
-        return matches.Length switch
+        return candidates.Length switch
         {
-            1 => matches[0],
+            1 => candidates[0],
             0 => throw new InvalidOperationException(
                 $"Assembly artifact {artifact.Address} does not contain a public parameterless MicroBundle with ID {artifact.Address.BundleId}."),
             _ => throw new InvalidOperationException(
