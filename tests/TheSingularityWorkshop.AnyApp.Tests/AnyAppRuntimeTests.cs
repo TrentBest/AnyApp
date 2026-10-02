@@ -93,7 +93,7 @@ public sealed class AnyAppRuntimeTests
     {
         var hash = new string('a', 64);
         var json =
-            $$"""{"experienceId":3101,"version":"1.0.0","runtimeId":3111,"bundles":[{"bundleId":3101,"configurationBase64":"","artifactVersion":"1.0.0","contentHash":"{{hash}}"}]}"""
+            $$"""{"experienceId":3101,"version":"1.0.0","runtimeId":3111,"bundles":[{"bundleId":3101,"configurationBase64":"","artifactVersion":"1.0.0","contentHash":"{{hash}}"}]}""";
 
         var manifest = ExperienceManifest.Parse(Encoding.UTF8.GetBytes(json));
 
