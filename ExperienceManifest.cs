@@ -1,5 +1,6 @@
 using System.Text.Json;
 using TheSingularityWorkshop.FSM_COS;
+using TheSingularityWorkshop.MicroBundleDomain;
 
 namespace TheSingularityWorkshop.AnyApp;
 
@@ -23,7 +24,7 @@ public sealed record ExperienceManifest(
     public RuntimeManifest ToRuntimeManifest()
     {
         var requests = Bundles
-            .Select(bundle => new BundleRequest(
+            .Select(bundle => new MicroBundleDependencyRequest(
                 bundle.BundleId,
                 string.IsNullOrWhiteSpace(bundle.ConfigurationBase64)
                     ? ReadOnlyMemory<byte>.Empty
