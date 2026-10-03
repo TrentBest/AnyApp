@@ -93,6 +93,36 @@ native WPF
 
 The MicroBundle remains static and previewable. MonikerExperience.ExecutePresentation(...) adds the wave behavior only when the selected Experience executes.
 
+## Physical baseline
+
+AnyApp is currently a **functional-ish desktop proving ground**, not a finished application. That makes its current physical measurements useful as a baseline, but not as a promise of final product size.
+
+The current local baseline is approximately:
+
+| Publish form | Directory | EXE |
+|---|---:|---:|
+| Framework-dependent | 0.33 MB | 0.15 MB |
+| Self-contained | 160.10 MB | 0.15 MB |
+| Single-file self-contained | 154.33 MB | 146.48 MB |
+| Blank WPF Release milestone | — | ~149 KB |
+
+The deployment-mode distinction matters: self-contained and single-file deployments carry the .NET runtime, while the small application executable is a different measurement.
+
+There is **no separate production CLI artifact yet**, so a CLI footprint is intentionally not advertised.
+
+```mermaid
+flowchart LR
+    A[AnyApp] --> B[Framework-dependent]
+    A --> C[Self-contained]
+    A --> D[Single-file]
+    B --> B1["~0.33 MB / ~0.15 MB EXE"]
+    C --> C1["~160.10 MB / ~0.15 MB EXE"]
+    D --> D1["~154.33 MB / ~146.48 MB EXE"]
+    A --> E["~149 KB blank WPF milestone"]
+```
+
+The reproducible CI measurement path lives in [baseline.yml](.github/workflows/baseline.yml), and the surrounding architecture/energy discussion lives in FSM_COS's [Performance, Footprint, and Efficiency](https://github.com/TrentBest/TheSingularityWorkshop.FSM_COS/blob/architecture/domain-owned-microbundle-contract/docs/PERFORMANCE_AND_EFFICIENCY.md).
+
 ## Architectural intent
 
 AnyApp should remain the host.
