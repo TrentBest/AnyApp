@@ -13,10 +13,26 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v5
+
     - name: Setup .NET
       uses: actions/setup-dotnet@v5
       with:
         dotnet-version: 8.0.x
+
+    - name: Checkout MicroBundleDomain dependency
+      uses: actions/checkout@v5
+      with:
+        repository: TrentBest/TheSingularityWorkshop.MicroBundleDomain
+        ref: architecture/runtime-contract-ownership
+        path: _dependencies/MicroBundleDomain
+
+    - name: Checkout FSM_COS dependency
+      uses: actions/checkout@v5
+      with:
+        repository: TrentBest/TheSingularityWorkshop.FSM_COS
+        ref: architecture/domain-owned-microbundle-contract
+        path: _dependencies/FSM_COS
+
     - name: Checkout MicroBundleRepository dependency
       uses: actions/checkout@v5
       with:
@@ -24,20 +40,36 @@ jobs:
         ref: architecture/decouple-rest-from-cos
         path: _dependencies/MicroBundleRepository
 
+    - name: Pack local composition dependencies
+      shell: pwsh
+      run: |
+        dotnet restore _dependencies/MicroBundleDomain/TheSingularityWorkshop.MicroBundleDomain.slnx
+        dotnet build _dependencies/MicroBundleDomain/TheSingularityWorkshop.MicroBundleDomain.slnx --configuration Release --no-restore
+
+        New-Item -ItemType Directory -Force -Path _dependencies/nuget | Out-Null
+        dotnet pack _dependencies/MicroBundleDomain/TheSingularityWorkshop.MicroBundleDomain.csproj --configuration Release --no-build --output _dependencies/nuget
+
+        dotnet restore _dependencies/FSM_COS/TheSingularityWorkshop.FSM_COS.sln
+        dotnet build _dependencies/FSM_COS/TheSingularityWorkshop.FSM_COS.sln --configuration Release --no-restore
+        dotnet pack _dependencies/FSM_COS/src/FSM_COS/FSM_COS.csproj --configuration Release --no-build --output _dependencies/nuget
+
+    - name: Add local dependency feed
+      shell: pwsh
+      run: dotnet nuget add source "$env:GITHUB_WORKSPACE/_dependencies/nuget" --name CompositionDependenciesLocal
+
     - name: Pack MicroBundleRepository dependency
+      shell: pwsh
       run: |
         dotnet restore _dependencies/MicroBundleRepository/TheSingularityWorkshop.MicroBundleRepository.slnx
         dotnet build _dependencies/MicroBundleRepository/TheSingularityWorkshop.MicroBundleRepository.slnx --configuration Release --no-restore
-        New-Item -ItemType Directory -Force -Path _dependencies/nuget | Out-Null
         dotnet pack _dependencies/MicroBundleRepository/src/Core/TheSingularityWorkshop.MicroBundleRepository.Core/TheSingularityWorkshop.MicroBundleRepository.Core.csproj --configuration Release --no-build --output _dependencies/nuget
         dotnet pack _dependencies/MicroBundleRepository/src/REST/TheSingularityWorkshop.MicroBundleRepository.Rest/TheSingularityWorkshop.MicroBundleRepository.Rest.csproj --configuration Release --no-build --output _dependencies/nuget
 
-    - name: Add local dependency feed
-      run: dotnet nuget add source "$env:GITHUB_WORKSPACE/_dependencies/nuget" --name MicroBundleRepositoryLocal
-
     - name: Restore
       run: dotnet restore tests/TheSingularityWorkshop.AnyApp.Tests/TheSingularityWorkshop.AnyApp.Tests.csproj
+
     - name: Build
       run: dotnet build AnyApp.csproj --configuration Release --no-restore
+
     - name: Test
       run: dotnet test tests/TheSingularityWorkshop.AnyApp.Tests/TheSingularityWorkshop.AnyApp.Tests.csproj --configuration Release --no-restore --verbosity normal
