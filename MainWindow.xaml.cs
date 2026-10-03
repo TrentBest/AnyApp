@@ -249,6 +249,12 @@ public partial class MainWindow : Window
     {
         ArgumentNullException.ThrowIfNull(manifest);
 
+        if (manifest.Intent is not null && !WorkshopSemanticExchange.IsAllowed(manifest.Intent))
+        {
+            throw new InvalidOperationException(
+                $"Experience intent '{manifest.Intent.Name}' is not admitted by the host semantic grammar.");
+        }
+
         var compositionTask = Task.Run(
             () => AnyAppRuntime.Compose(manifest.ToRuntimeManifest()));
 
