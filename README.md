@@ -93,6 +93,51 @@ native WPF
 
 The MicroBundle remains static and previewable. MonikerExperience.ExecutePresentation(...) adds the wave behavior only when the selected Experience executes.
 
+## Semantic intent exchange
+
+AnyApp is the first higher-level host demonstrating the three-layer semantic exchange without coupling the foundation packages together:
+
+~~~text
+ProtocolAI
+   WHAT
+    |
+    v
+GrammarAI
+    HOW
+    |
+    v
+FSM_UserIO
+SemanticIntent
+    |
+    v
+AnyApp / Experience host
+~~~ 
+
+The host owns its Experience vocabulary in `WorkshopSemanticExchange`. ProtocolAI supplies deterministic protocol/symbol identity, GrammarAI describes which identities are structurally admitted, and FSM_UserIO carries the application intent.
+
+For example, the Forge Experience manifest carries:
+
+~~~json
+"intent": {
+  "name": "open.forge",
+  "protocolId": 4200
+}
+~~~
+
+AnyApp resolves that intent through ProtocolAI, verifies that its protocol symbol is admitted by the GrammarAI definition, and only then proceeds to composition.
+
+This is deliberately a **host integration**, not a new dependency chain between the foundation packages:
+
+~~~text
+FSM_UserIO  ---> carries semantic intent
+ProtocolAI  ---> owns vocabulary identity
+GrammarAI   ---> owns structural relationships
+AnyApp      ---> owns Experience meaning and execution
+FSM_COS     ---> composes the runtime
+~~~
+
+The integration is documented more deeply in ProtocolAI's [Ecosystem Integration](https://github.com/TrentBest/TheSingularityWorkshop.ProtocolAi/blob/master/docs/ECOSYSTEM_INTEGRATION.md).
+
 ## Physical baseline
 
 AnyApp is currently a **functional-ish desktop proving ground**, not a finished application. That makes its current physical measurements useful as a baseline, but not as a promise of final product size.
