@@ -87,4 +87,40 @@ public sealed class AnyAppRuntimeTests
         Assert.Single(runtimeManifest.Bundles);
         Assert.Equal(3101UL, runtimeManifest.Bundles[0].BundleId);
     }
+
+    [Fact]
+    public void SemanticExchange_ResolvesIntentThroughProtocolAndGrammar()
+    {
+        var intent = WorkshopSemanticExchange.OpenForgeIntent;
+
+        var reference = WorkshopSemanticExchange.Resolve(intent);
+
+        Assert.Equal(WorkshopSemanticExchange.IntentProtocolId, reference.ProtocolId);
+        Assert.Equal(WorkshopSemanticExchange.OpenForgeSymbolId, reference.SymbolId);
+        Assert.True(WorkshopSemanticExchange.IsAllowed(intent));
+        Assert.Equal("open.forge", WorkshopSemanticExchange.IntentProtocol.Decode(reference));
+    }
+
+    [Fact]
+    public void ExperienceManifest_CarriesSemanticIntent()
+    {
+        var manifest = new ExperienceManifest(
+            ForgeMicroBundle.ExperienceId,
+            "1.0.0",
+            ForgeMicroBundle.RuntimeId,
+            [new ExperienceBundleRequest(ForgeMicroBundle.BundleId, "")],
+            WorkshopSemanticExchange.OpenForgeIntent);
+
+        var parsed = ExperienceManifest.Parse(
+            Encoding.UTF8.GetBytes(
+                "{\"experienceId\":3201,\"version\":\"1.0.0\",\"runtimeId\":3211," +
+                "\"intent\":{\"name\":\"open.forge\",\"protocolId\":4200}," +
+                "\"bundles\":[{\"bundleId\":3201,\"configurationBase64\":\"\"}]}"));
+
+        Assert.Equal(manifest.Intent, parsed.Intent);
+        Assert.Equal("open.forge", parsed.Intent!.Name);
+        Assert.Equal(WorkshopSemanticExchange.IntentProtocolId, parsed.Intent.ProtocolId);
+        Assert.True(WorkshopSemanticExchange.IsAllowed(parsed.Intent));
+    }
+
 }
