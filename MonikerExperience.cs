@@ -1,3 +1,4 @@
+using TheSingularityWorkshop.MicroBundleDomain;
 using System.Globalization;
 using TheSingularityWorkshop.FSM_API;
 using TheSingularityWorkshop.FSM_COS;
@@ -18,7 +19,7 @@ public static class MonikerExperience
     public static RuntimeManifest CreateManifest() =>
         new(
             RuntimeId,
-            [BundleRequest.Unconfigured(MonikerMicroBundle.BundleId)],
+            [MicroBundleDependencyRequest.Unconfigured(MonikerMicroBundle.BundleId)],
             new Context());
 
     public static IMicroBundleCatalog CreateCatalog() =>
