@@ -17,7 +17,6 @@ public sealed class AnyAppRuntimeTests
         Assert.NotNull(bundle);
     }
 
-    
     [Fact]
     public void Compose_ProducesForgeEntryExperienceThroughCos()
     {
@@ -76,7 +75,35 @@ public sealed class AnyAppRuntimeTests
     }
 
     [Fact]
-    public void SerializedManifest_RehydratesRuntimeManifest()
+    public void ArtifactIdentity_IsDetectedWithoutChangingLegacyManifests()
+    {
+        var legacy = new ExperienceBundleRequest(3101, "");
+        var published = new ExperienceBundleRequest(
+            3101,
+            "",
+            "1.0.0",
+            new string('a', 64));
+
+        Assert.False(new ExperienceManifest(3101, "1.0.0", 3111, [legacy]).UsesRepositoryArtifacts);
+        Assert.True(new ExperienceManifest(3101, "1.0.0", 3111, [published]).UsesRepositoryArtifacts);
+    }
+
+    [Fact]
+    public void SerializedManifest_RehydratesArtifactIdentity()
+    {
+        var hash = new string('a', 64);
+        var json =
+            $$"""{"experienceId":3101,"version":"1.0.0","runtimeId":3111,"bundles":[{"bundleId":3101,"configurationBase64":"","artifactVersion":"1.0.0","contentHash":"{{hash}}"}]}""";
+
+        var manifest = ExperienceManifest.Parse(Encoding.UTF8.GetBytes(json));
+
+        Assert.True(manifest.UsesRepositoryArtifacts);
+        Assert.Equal("1.0.0", manifest.Bundles[0].ArtifactVersion);
+        Assert.Equal(hash, manifest.Bundles[0].ContentHash);
+    }
+
+    [Fact]
+    public void SerializedLegacyManifest_RehydratesRuntimeManifest()
     {
         var json = "{\"experienceId\":3101,\"version\":\"1.0.0\",\"runtimeId\":3111,\"bundles\":[{\"bundleId\":3101,\"configurationBase64\":\"\"}]}";
         var manifest = ExperienceManifest.Parse(Encoding.UTF8.GetBytes(json));

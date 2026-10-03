@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="680" viewBox="0 0 1200 680" role="img" aria-labelledby="title desc">
+  <title id="title">AnyApp repository-backed composition</title>
+  <desc id="desc">A manifest identifies immutable MicroBundle artifacts. AnyApp retrieves and materializes them. FSM_COS composes them into a RuntimeAssembly.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#94a3b8"/>
+    </marker>
+  </defs>
+  <style>
+    .bg{fill:#0b1020}
+    .box{fill:#121a2d;stroke:#7dd3fc;stroke-width:2;rx:16}
+    .core{fill:#172554;stroke:#a5b4fc;stroke-width:2;rx:16}
+    .accent{fill:#132e2a;stroke:#5eead4;stroke-width:2;rx:16}
+    .t{fill:#f8fafc;font:600 24px system-ui,sans-serif}
+    .s{fill:#cbd5e1;font:400 18px system-ui,sans-serif}
+    .h{fill:#7dd3fc;font:700 30px system-ui,sans-serif}
+    .arrow{stroke:#94a3b8;stroke-width:3;fill:none;marker-end:url(#arrow)}
+  </style>
+
+  <rect class="bg" width="1200" height="680"/>
+
+  <text class="h" x="600" y="58" text-anchor="middle">Repository-backed MicroBundle composition</text>
+
+  <rect class="box" x="80" y="130" width="1040" height="100"/>
+  <text class="t" x="600" y="170" text-anchor="middle">Experience Manifest</text>
+  <text class="s" x="600" y="202" text-anchor="middle">Bundle ID + artifact version + content hash</text>
+
+  <path class="arrow" d="M600 230 V285"/>
+
+  <rect class="accent" x="80" y="285" width="300" height="130"/>
+  <text class="t" x="230" y="330" text-anchor="middle">MicroBundleRepository</text>
+  <text class="s" x="230" y="360" text-anchor="middle">delivery / storage</text>
+  <text class="s" x="230" y="388" text-anchor="middle">verified opaque bytes</text>
+
+  <rect class="box" x="450" y="285" width="300" height="130"/>
+  <text class="t" x="600" y="330" text-anchor="middle">AnyApp</text>
+  <text class="s" x="600" y="360" text-anchor="middle">materializes the artifact</text>
+  <text class="s" x="600" y="388" text-anchor="middle">into an IMicroBundle</text>
+
+  <rect class="core" x="820" y="285" width="300" height="130"/>
+  <text class="t" x="970" y="330" text-anchor="middle">FSM_COS</text>
+  <text class="s" x="970" y="360" text-anchor="middle">composition / arbitration</text>
+  <text class="s" x="970" y="388" text-anchor="middle">RuntimeAssembly</text>
+
+  <path class="arrow" d="M380 350 H440"/>
+  <path class="arrow" d="M750 350 H810"/>
+
+  <rect class="box" x="250" y="500" width="700" height="90"/>
+  <text class="t" x="600" y="540" text-anchor="middle">RuntimeAssembly</text>
+  <text class="s" x="600" y="570" text-anchor="middle">The composed capabilities handed to the host Experience</text>
+
+  <path class="arrow" d="M970 415 C970 460 900 480 820 500"/>
+</svg>
