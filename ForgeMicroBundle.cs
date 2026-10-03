@@ -22,13 +22,13 @@ public sealed class ForgeMicroBundle : IMicroBundle, IAnyAppSurface
 
     public ulong Id => Descriptor.Id;
 
-    public IReadOnlyList<BundleRequest> Dependencies => [];
+    public IReadOnlyList<MicroBundleDependencyRequest> Dependencies => [];
 
     public GuiNode Root =>
         _root ?? throw new InvalidOperationException(
             "The Forge GUI surface is not available until FSM_COS has loaded the bundle.");
 
-    public void Load(MicroBundleLoadContext context)
+    public void Load(IMicroBundleLoadContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
 
@@ -82,7 +82,7 @@ public sealed class ForgeMicroBundle : IMicroBundle, IAnyAppSurface
             .Build();
     }
 
-    public bool Arbitrate(ArbitrationContext context, int roundIndex)
+    public bool Arbitrate(IMicroBundleArbitrationContext context, int roundIndex)
     {
         ArgumentNullException.ThrowIfNull(context);
         return false;
