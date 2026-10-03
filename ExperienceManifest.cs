@@ -1,5 +1,6 @@
 using System.Text.Json;
 using TheSingularityWorkshop.FSM_COS;
+using TheSingularityWorkshop.FSM_UserIO;
 
 namespace TheSingularityWorkshop.AnyApp;
 
@@ -10,7 +11,8 @@ public sealed record ExperienceManifest(
     ulong ExperienceId,
     string Version,
     ulong RuntimeId,
-    IReadOnlyList<ExperienceBundleRequest> Bundles)
+    IReadOnlyList<ExperienceBundleRequest> Bundles,
+    SemanticIntent? Intent = null)
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
     {
