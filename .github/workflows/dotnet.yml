@@ -49,13 +49,16 @@ jobs:
         New-Item -ItemType Directory -Force -Path _dependencies/nuget | Out-Null
         dotnet pack _dependencies/MicroBundleDomain/TheSingularityWorkshop.MicroBundleDomain.csproj --configuration Release --no-build --output _dependencies/nuget
 
-        dotnet restore _dependencies/FSM_COS/TheSingularityWorkshop.FSM_COS.sln
-        dotnet build _dependencies/FSM_COS/TheSingularityWorkshop.FSM_COS.sln --configuration Release --no-restore
-        dotnet pack _dependencies/FSM_COS/src/FSM_COS/FSM_COS.csproj --configuration Release --no-build --output _dependencies/nuget
-
     - name: Add local dependency feed
       shell: pwsh
       run: dotnet nuget add source "$env:GITHUB_WORKSPACE/_dependencies/nuget" --name CompositionDependenciesLocal
+
+    - name: Pack corrected FSM_COS dependency
+      shell: pwsh
+      run: |
+        dotnet restore _dependencies/FSM_COS/TheSingularityWorkshop.FSM_COS.sln
+        dotnet build _dependencies/FSM_COS/TheSingularityWorkshop.FSM_COS.sln --configuration Release --no-restore
+        dotnet pack _dependencies/FSM_COS/src/FSM_COS/FSM_COS.csproj --configuration Release --no-build --output _dependencies/nuget
 
     - name: Pack MicroBundleRepository dependency
       shell: pwsh
