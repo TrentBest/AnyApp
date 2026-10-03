@@ -21,7 +21,7 @@ jobs:
       uses: actions/checkout@v5
       with:
         repository: TrentBest/TheSingularityWorkshop.MicroBundleRepository
-        ref: fix/repository-boundary
+        ref: architecture/decouple-rest-from-cos
         path: _dependencies/MicroBundleRepository
 
     - name: Pack MicroBundleRepository dependency
