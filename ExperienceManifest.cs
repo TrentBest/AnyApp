@@ -19,6 +19,11 @@ public sealed record ExperienceManifest(
         PropertyNameCaseInsensitive = true
     };
 
+    /// <summary>
+    /// Converts the publication manifest into the machine-oriented FSM_COS manifest.
+    /// The Workshop Moniker is a host bootstrap surface and is therefore always
+    /// present before the selected Experience bundles.
+    /// </summary>
     public RuntimeManifest ToRuntimeManifest()
     {
         var requests = Bundles
@@ -28,6 +33,15 @@ public sealed record ExperienceManifest(
                     ? ReadOnlyMemory<byte>.Empty
                     : Convert.FromBase64String(bundle.ConfigurationBase64)))
             .ToArray();
+
+        if (!requests.Any(request => request.BundleId == MonikerMicroBundle.BundleId))
+        {
+            requests =
+            [
+                new BundleRequest(MonikerMicroBundle.BundleId, ReadOnlyMemory<byte>.Empty),
+                .. requests
+            ];
+        }
 
         return new RuntimeManifest(RuntimeId, requests);
     }
