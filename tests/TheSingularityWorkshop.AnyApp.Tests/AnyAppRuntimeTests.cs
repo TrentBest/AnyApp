@@ -89,6 +89,22 @@ public sealed class AnyAppRuntimeTests
     }
 
     [Fact]
+    public void ExperienceManifest_AlwaysPrependsMonikerBootstrap()
+    {
+        var manifest = new ExperienceManifest(
+            ForgeMicroBundle.ExperienceId,
+            "1.0.0",
+            ForgeMicroBundle.RuntimeId,
+            [new ExperienceBundleRequest(ForgeMicroBundle.BundleId, "")]);
+
+        var runtimeManifest = manifest.ToRuntimeManifest();
+
+        Assert.Equal(2, runtimeManifest.Bundles.Count);
+        Assert.Equal(MonikerMicroBundle.BundleId, runtimeManifest.Bundles[0].BundleId);
+        Assert.Equal(ForgeMicroBundle.BundleId, runtimeManifest.Bundles[1].BundleId);
+    }
+
+    [Fact]
     public void SemanticExchange_ResolvesIntentThroughProtocolAndGrammar()
     {
         var intent = WorkshopSemanticExchange.OpenForgeIntent;
