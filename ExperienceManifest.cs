@@ -12,16 +12,31 @@ public sealed record ExperienceManifest(
     string Version,
     ulong RuntimeId,
     IReadOnlyList<ExperienceBundleRequest> Bundles,
-    SemanticIntent? Intent = null)
+    SemanticIntent? Intent = null,
+    IReadOnlyList<ExperienceBundleRequest>? StartupBundles = null)
 {
+    public const ulong WorkshopMonikerBundleId = 3101UL;
+
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
     {
         PropertyNameCaseInsensitive = true
     };
 
+    public bool HasWorkshopMonikerStartup =>
+        StartupBundles?.Any(bundle => bundle.BundleId == WorkshopMonikerBundleId) == true;
+
     public RuntimeManifest ToRuntimeManifest()
     {
-        var requests = Bundles
+        if (!HasWorkshopMonikerStartup)
+        {
+            throw new InvalidOperationException(
+                "Every AnyApp Experience manifest must declare the Workshop Moniker as a startup MicroBundle.");
+        }
+
+        var requests = (StartupBundles ?? [])
+            .Concat(Bundles)
+            .GroupBy(bundle => bundle.BundleId)
+            .Select(group => group.First())
             .Select(bundle => new BundleRequest(
                 bundle.BundleId,
                 string.IsNullOrWhiteSpace(bundle.ConfigurationBase64)
