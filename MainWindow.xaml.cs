@@ -323,13 +323,6 @@ public partial class MainWindow : Window
             return;
         }
 
-        if (runtime.TryGetBundle<MonikerMicroBundle>(
-                selectedBundleId,
-                out _))
-        {
-            return;
-        }
-
         ShowMessage(
             "The selected Experience could not be manifested.",
             $"MicroBundle {selectedBundleId} is not available in the native host catalog.");
