@@ -170,6 +170,26 @@ public partial class MainWindow : Window
             Foreground = Brushes.White
         });
 
+        var deepDive = new Button
+        {
+            Content = "DEEP DIVE  ↗",
+            Margin = new Thickness(0, 14, 0, 0),
+            Padding = new Thickness(10, 5, 10, 5),
+            HorizontalAlignment = HorizontalAlignment.Left,
+            Background = new SolidColorBrush(Color.FromRgb(2, 12, 22)),
+            Foreground = accent,
+            BorderBrush = new SolidColorBrush(Color.FromRgb(38, 68, 92)),
+            BorderThickness = new Thickness(1),
+            Cursor = Cursors.Hand,
+            ToolTip = "Open this Experience's browser-only Workshop Deep Dive"
+        };
+        deepDive.Click += (_, _) =>
+        {
+            if (!DeepDiveBrowserLauncher.TryOpen(experience.ExperienceId, out var error))
+                _status.Text = error ?? "The Workshop Deep Dive could not be opened.";
+        };
+        content.Children.Add(deepDive);
+
         border.Child = content;
         border.MouseEnter += (_, _) => AnimateDoor(border, 1.035, true);
         border.MouseLeave += (_, _) => AnimateDoor(border, 1, false);
