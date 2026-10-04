@@ -199,7 +199,7 @@ It should **not** initially:
 - require a network service for ordinary execution;
 - make GUI.WPF, GUI.Blazor, or other platform adapters aware of metaDev internals.
 
-The architecture should allow the same evidence to be consumed by AnyApp, WebForge, Unity, or another host without changing the composition kernel.
+The architecture should allow the same evidence to be consumed by AnyApp, WebForge, or another host without changing the composition kernel.
 
 ## Baseline measurements
 
