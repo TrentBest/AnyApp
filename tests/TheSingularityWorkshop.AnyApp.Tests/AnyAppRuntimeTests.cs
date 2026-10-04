@@ -84,9 +84,8 @@ public sealed class AnyAppRuntimeTests
         Assert.Equal("1.0.0", manifest.Version);
         var runtimeManifest = manifest.ToRuntimeManifest();
         Assert.Equal(3111UL, runtimeManifest.RuntimeId);
-        Assert.Equal(2, runtimeManifest.Bundles.Count);
+        Assert.Single(runtimeManifest.Bundles);
         Assert.Equal(3101UL, runtimeManifest.Bundles[0].BundleId);
-        Assert.Equal(3101UL, runtimeManifest.Bundles[1].BundleId);
     }
 
     [Fact]
