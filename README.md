@@ -169,3 +169,24 @@ dotnet test tests/TheSingularityWorkshop.AnyApp.Tests/TheSingularityWorkshop.Any
 ~~~
 
 The CI workflow uses a Windows runner because WPF is Windows-specific.
+
+## Browser-only Deep Dive handoff
+
+AnyApp does not embed the Workshop's educational Deep Dive implementation.
+
+When an Experience exposes a Deep Dive capability, AnyApp presents a browser handoff that opens:
+
+~~~text
+WebPage /deep-dive/{ExperienceId}
+~~~
+
+The WebPage URL is supplied through --webpage-url=... or the SINGULARITY_WORKSHOP_WEBPAGE_URL environment variable. The native host launches the user's default browser with shell execution.
+
+This is deliberate:
+
+- Experience and MicroBundle ontology remain native/runtime concerns.
+- Deep Dive presentation remains a WebPage concern.
+- AnyApp does not take a dependency on Blazor or the WebPage UI.
+- Browser-tab reuse is not assumed to be universally automatable; a native host may open the URL while the browser decides how it handles an already-open page.
+
+The result is a useful asymmetry: the ontology is portable; the Workshop's education surface is ours.
