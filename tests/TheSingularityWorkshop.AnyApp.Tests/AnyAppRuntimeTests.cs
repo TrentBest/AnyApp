@@ -84,8 +84,25 @@ public sealed class AnyAppRuntimeTests
         Assert.Equal("1.0.0", manifest.Version);
         var runtimeManifest = manifest.ToRuntimeManifest();
         Assert.Equal(3111UL, runtimeManifest.RuntimeId);
-        Assert.Single(runtimeManifest.Bundles);
+        Assert.Equal(2, runtimeManifest.Bundles.Count);
         Assert.Equal(3101UL, runtimeManifest.Bundles[0].BundleId);
+        Assert.Equal(3101UL, runtimeManifest.Bundles[1].BundleId);
+    }
+
+    [Fact]
+    public void ExperienceManifest_AlwaysPrependsMonikerBootstrap()
+    {
+        var manifest = new ExperienceManifest(
+            ForgeMicroBundle.ExperienceId,
+            "1.0.0",
+            ForgeMicroBundle.RuntimeId,
+            [new ExperienceBundleRequest(ForgeMicroBundle.BundleId, "")]);
+
+        var runtimeManifest = manifest.ToRuntimeManifest();
+
+        Assert.Equal(2, runtimeManifest.Bundles.Count);
+        Assert.Equal(MonikerMicroBundle.BundleId, runtimeManifest.Bundles[0].BundleId);
+        Assert.Equal(ForgeMicroBundle.BundleId, runtimeManifest.Bundles[1].BundleId);
     }
 
     [Fact]
