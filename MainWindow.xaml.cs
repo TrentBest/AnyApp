@@ -262,7 +262,7 @@ public partial class MainWindow : Window
             await StartupSplash.PresentAsync(RootHost, compositionTask);
         
         var runtime = await compositionTask;
-        RenderRuntime(manifest, runtime);
+        await RenderRuntimeAsync(manifest, runtime);
 
         if (persistLastManifest &&
             manifest.ExperienceId != ForgeMicroBundle.ExperienceId)
@@ -271,7 +271,9 @@ public partial class MainWindow : Window
         }
     }
 
-    private void RenderRuntime(ExperienceManifest manifest, RuntimeAssembly runtime)
+    private async Task RenderRuntimeAsync(
+        ExperienceManifest manifest,
+        RuntimeAssembly runtime)
     {
         if (manifest.Bundles.Count == 0)
         {
@@ -281,37 +283,56 @@ public partial class MainWindow : Window
             return;
         }
 
-        var bundleId = manifest.Bundles[0].BundleId;
-
-        if (bundleId == MonikerMicroBundle.BundleId &&
-            runtime.TryGetBundle<MonikerMicroBundle>(
+        if (runtime.TryGetBundle<MonikerMicroBundle>(
                 MonikerMicroBundle.BundleId,
                 out var monikerBundle) &&
-            monikerBundle is IAnyAppSurface monikerSurface)
+            monikerBundle.Root is not null)
         {
             RootHost.Children.Clear();
             RootHost.Children.Add(
                 WpfGuiRenderer.Render(
-                    MonikerExperience.ExecutePresentation(monikerSurface.Root)));
-            return;
+                    MonikerExperience.ExecutePresentation(monikerBundle.Root)));
+
+            var selectedBundleId = manifest.Bundles
+                .Select(bundle => bundle.BundleId)
+                .FirstOrDefault(bundleId => bundleId != MonikerMicroBundle.BundleId);
+
+            if (selectedBundleId == 0)
+                return;
+
+            await Task.Delay(TimeSpan.FromSeconds(3));
         }
 
-        if (bundleId == ForgeMicroBundle.BundleId &&
+        var selectedBundleId = manifest.Bundles
+            .Select(bundle => bundle.BundleId)
+            .FirstOrDefault(bundleId => bundleId != MonikerMicroBundle.BundleId);
+
+        if (selectedBundleId == 0)
+            return;
+
+        if (selectedBundleId == ForgeMicroBundle.BundleId &&
             runtime.TryGetBundle<ForgeMicroBundle>(
                 ForgeMicroBundle.BundleId,
                 out var forgeBundle) &&
-            forgeBundle is IAnyAppSurface forgeSurface)
+            forgeBundle.Root is not null)
         {
             RootHost.Children.Clear();
-            var rendered = WpfGuiRenderer.Render(forgeSurface.Root);
+            var rendered = WpfGuiRenderer.Render(forgeBundle.Root);
             RootHost.Children.Add(rendered);
             WireForgeNavigation(rendered);
             return;
         }
 
+        if (runtime.TryGetBundle<MonikerMicroBundle>(
+                selectedBundleId,
+                out _))
+        {
+            return;
+        }
+
         ShowMessage(
             "The selected Experience could not be manifested.",
-            $"MicroBundle {bundleId} is not available in the native host catalog.");
+            $"MicroBundle {selectedBundleId} is not available in the native host catalog.");
     }
 
     private void WireForgeNavigation(FrameworkElement root)
