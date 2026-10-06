@@ -356,9 +356,86 @@ public partial class MainWindow : Window
 
     private void HandleBridgeCommand(string command)
     {
-        if (string.Equals(command, "return-hub", StringComparison.OrdinalIgnoreCase))
-            Dispatcher.Invoke(ShowDesktopMoniker);
+        switch (command.ToLowerInvariant())
+        {
+            case "return-hub":
+                Dispatcher.Invoke(ShowDesktopMoniker);
+                break;
+            case "split-moniker":
+                Dispatcher.Invoke(ShowSplitMoniker);
+                break;
+            case "whole-moniker":
+                Dispatcher.Invoke(ShowDesktopMoniker);
+                break;
+            case "flip-moniker":
+                Dispatcher.Invoke(ShowSplitMoniker);
+                break;
+        }
     }
+
+    private void ShowSplitMoniker()
+    {
+        _livingDemo?.Dispose();
+        _livingDemo = null;
+        RootHost.Children.Clear();
+
+        var shell = new Grid
+        {
+            Background = new LinearGradientBrush(
+                Color.FromRgb(2, 7, 17),
+                Color.FromRgb(7, 2, 17),
+                90)
+        };
+
+        shell.Children.Add(CreateSplitMoniker(_webBridge.DesktopHalf));
+        RootHost.Children.Add(shell);
+        _webBridge.SetState("moniker-split", true);
+    }
+
+    private static FrameworkElement CreateSplitMoniker(string half)
+    {
+        const double halfWidth = 700;
+
+        var window = new Grid
+        {
+            Width = halfWidth,
+            Height = 300,
+            ClipToBounds = true,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+
+        var full = new StackPanel
+        {
+            Width = halfWidth * 2,
+            HorizontalAlignment = HorizontalAlignment.Left,
+            VerticalAlignment = VerticalAlignment.Center,
+            RenderTransform = new TranslateTransform(
+                string.Equals(half, "right", StringComparison.OrdinalIgnoreCase) ? -halfWidth : 0,
+                0)
+        };
+
+        full.Children.Add(CreateMonikerLine("THE", 62, Color.FromRgb(0, 168, 255)));
+        full.Children.Add(CreateMonikerLine("SINGULARITY", 74, Color.FromRgb(255, 44, 255)));
+        full.Children.Add(CreateMonikerLine("WORKSHOP", 74, Color.FromRgb(255, 122, 0)));
+
+        window.Children.Add(full);
+        return window;
+    }
+
+    private static TextBlock CreateMonikerLine(string text, double size, Color color)
+        => new()
+        {
+            Text = text,
+            Width = 1400,
+            TextAlignment = TextAlignment.Center,
+            FontFamily = new System.Windows.Media.FontFamily("Consolas"),
+            FontSize = size,
+            FontWeight = FontWeights.Black,
+            Foreground = new SolidColorBrush(color),
+            LineHeight = size * .86,
+            Margin = new Thickness(0, -4, 0, -4)
+        };
 
     private void ShowDesktopMoniker()
     {
@@ -406,9 +483,9 @@ public partial class MainWindow : Window
                 Margin = new Thickness(0, 0, 0, 18)
             });
 
-            stack.Children.Add(WpfGuiRenderer.Render(
-                MonikerExperience.ExecutePresentation(
-                    new MonikerMicroBundle().Root)));
+            stack.Children.Add(_webBridge.SplitMoniker
+                ? CreateSplitMoniker(_webBridge.DesktopHalf)
+                : WpfGuiRenderer.Render(MonikerExperience.ExecutePresentation(new MonikerMicroBundle().Root)));
 
             var enter = new Button
             {
