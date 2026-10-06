@@ -24,6 +24,25 @@ public sealed class AnyAppWebBridge : IDisposable
 
     public Uri Endpoint { get; private set; } = new("http://127.0.0.1:48156/");
 
+    public bool SplitMoniker
+    {
+        get { lock (_gate) return _splitMoniker; }
+    }
+
+    public string BrowserHalf
+    {
+        get { lock (_gate) return _browserHalf; }
+    }
+
+    public string DesktopHalf
+    {
+        get
+        {
+            lock (_gate)
+                return _browserHalf.Equals("left", StringComparison.OrdinalIgnoreCase) ? "right" : "left";
+        }
+    }
+
     public void Configure(ExperienceManifest manifest)
     {
         ArgumentNullException.ThrowIfNull(manifest);
