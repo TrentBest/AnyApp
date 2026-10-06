@@ -18,11 +18,13 @@ public partial class MainWindow : Window
     private static readonly Uri DefaultRepositoryEndpoint = new("http://localhost:5000/");
     private readonly WrapPanel _experienceDoors = new();
     private readonly TextBlock _status = new();
+    private readonly AnyAppWebBridge _webBridge = new();
 
     public MainWindow()
     {
         InitializeComponent();
         Loaded += OnLoaded;
+        Closed += (_, _) => _webBridge.Dispose();
     }
 
     private async void OnLoaded(object sender, RoutedEventArgs e)
@@ -249,6 +251,10 @@ public partial class MainWindow : Window
     {
         ArgumentNullException.ThrowIfNull(manifest);
 
+        _webBridge.Configure(manifest);
+        _webBridge.Start();
+        _webBridge.SetState("composing", false);
+
         if (manifest.Intent is not null && !WorkshopSemanticExchange.IsAllowed(manifest.Intent))
         {
             throw new InvalidOperationException(
@@ -293,6 +299,9 @@ public partial class MainWindow : Window
             RootHost.Children.Add(
                 WpfGuiRenderer.Render(
                     MonikerExperience.ExecutePresentation(monikerSurface.Root)));
+
+            _webBridge.SetState("moniker", false);
+            _ = PresentWorkshopGatewayAsync();
             return;
         }
 
@@ -340,6 +349,72 @@ public partial class MainWindow : Window
         }
 
         return null;
+    }
+
+
+    private async Task PresentWorkshopGatewayAsync()
+    {
+        await Task.Delay(TimeSpan.FromSeconds(3));
+
+        await Dispatcher.InvokeAsync(() =>
+        {
+            RootHost.Children.Clear();
+
+            var shell = new Grid
+            {
+                Background = new LinearGradientBrush(
+                    Color.FromRgb(2, 7, 17),
+                    Color.FromRgb(7, 2, 17),
+                    90)
+            };
+
+            var stack = new StackPanel
+            {
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+
+            stack.Children.Add(new TextBlock
+            {
+                Text = "THE SINGULARITY WORKSHOP",
+                HorizontalAlignment = HorizontalAlignment.Center,
+                FontSize = 15,
+                FontWeight = FontWeights.Bold,
+                Foreground = new SolidColorBrush(Color.FromRgb(0, 234, 255)),
+                Margin = new Thickness(0, 0, 0, 18)
+            });
+
+            stack.Children.Add(WpfGuiRenderer.Render(
+                MonikerExperience.ExecutePresentation(
+                    new MonikerMicroBundle().Root)));
+
+            var enter = new Button
+            {
+                Content = "ENTER THE WORKSHOP",
+                HorizontalAlignment = HorizontalAlignment.Center,
+                Padding = new Thickness(34, 16, 34, 16),
+                Margin = new Thickness(0, 28, 0, 0),
+                Background = new SolidColorBrush(Color.FromRgb(4, 18, 30)),
+                Foreground = Brushes.White,
+                BorderBrush = new SolidColorBrush(Color.FromRgb(0, 234, 255)),
+                BorderThickness = new Thickness(1),
+                FontFamily = new System.Windows.Media.FontFamily("Consolas"),
+                FontWeight = FontWeights.Bold,
+                Cursor = Cursors.Hand
+            };
+
+            enter.Click += (_, _) =>
+            {
+                RootHost.Children.Clear();
+                RootHost.Children.Add(AnyAppLivingDemo.Create());
+                _webBridge.SetState("living", true);
+            };
+
+            stack.Children.Add(enter);
+            shell.Children.Add(stack);
+            RootHost.Children.Add(shell);
+            _webBridge.SetState("hub", true);
+        });
     }
 
     private async Task LaunchForgeAsync(bool showStartupSplash = false)
