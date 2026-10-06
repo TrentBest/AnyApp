@@ -16,6 +16,8 @@ public sealed class AnyAppWebBridge : IDisposable
     private CancellationTokenSource? _shutdown;
     private string _state = "starting";
     private bool _hubVisible;
+    private bool _splitMoniker;
+    private string _browserHalf = "left";
     private int _generation;
 
     public event Action<string>? CommandReceived;
@@ -85,6 +87,26 @@ public sealed class AnyAppWebBridge : IDisposable
         }
     }
 
+    public void SetMonikerSplit(bool enabled)
+    {
+        lock (_gate)
+        {
+            _splitMoniker = enabled;
+            _generation++;
+        }
+    }
+
+    public void FlipMoniker()
+    {
+        lock (_gate)
+        {
+            _browserHalf = _browserHalf.Equals("left", StringComparison.OrdinalIgnoreCase)
+                ? "right"
+                : "left";
+            _generation++;
+        }
+    }
+
     private async Task ListenAsync(TcpListener listener, CancellationToken cancellationToken)
     {
         while (!cancellationToken.IsCancellationRequested)
@@ -141,17 +163,47 @@ public sealed class AnyAppWebBridge : IDisposable
             {
                 var command = JsonSerializer.Deserialize<BridgeCommand>(request.Body);
 
-                if (string.Equals(command?.Command, "return-hub", StringComparison.OrdinalIgnoreCase))
+                switch (command?.Command?.ToLowerInvariant())
                 {
-                    SetState("living", false);
-                    CommandReceived?.Invoke("return-hub");
+                    case "return-hub":
+                        SetState("living", false);
+                        CommandReceived?.Invoke("return-hub");
+                        await WriteResponseAsync(
+                            stream,
+                            200,
+                            JsonSerializer.Serialize(new { accepted = true, command = "return-hub" }),
+                            cancellationToken);
+                        return;
 
-                    await WriteResponseAsync(
-                        stream,
-                        200,
-                        JsonSerializer.Serialize(new { accepted = true, command = "return-hub" }),
-                        cancellationToken);
-                    return;
+                    case "split-moniker":
+                        SetMonikerSplit(true);
+                        CommandReceived?.Invoke("split-moniker");
+                        await WriteResponseAsync(
+                            stream,
+                            200,
+                            JsonSerializer.Serialize(new { accepted = true, command = "split-moniker" }),
+                            cancellationToken);
+                        return;
+
+                    case "whole-moniker":
+                        SetMonikerSplit(false);
+                        CommandReceived?.Invoke("whole-moniker");
+                        await WriteResponseAsync(
+                            stream,
+                            200,
+                            JsonSerializer.Serialize(new { accepted = true, command = "whole-moniker" }),
+                            cancellationToken);
+                        return;
+
+                    case "flip-moniker":
+                        FlipMoniker();
+                        CommandReceived?.Invoke("flip-moniker");
+                        await WriteResponseAsync(
+                            stream,
+                            200,
+                            JsonSerializer.Serialize(new { accepted = true, command = "flip-moniker" }),
+                            cancellationToken);
+                        return;
                 }
 
                 await WriteResponseAsync(
@@ -261,6 +313,8 @@ public sealed class AnyAppWebBridge : IDisposable
             {
                 state = _state,
                 hubVisible = _hubVisible,
+                splitMoniker = _splitMoniker,
+                browserHalf = _browserHalf,
                 generation = _generation,
                 endpoint = Endpoint.AbsoluteUri
             };
