@@ -158,6 +158,10 @@ It should not absorb:
 
 The repository is responsible for discovering and delivering published Experience artifacts. AnyApp is responsible for selecting one and handing its manifest to FSM_COS.
 
+## Trusted Windows distribution
+
+AnyApp's public distribution and code-signing strategy is documented in [docs/TRUSTED-DISTRIBUTION.md](docs/TRUSTED-DISTRIBUTION.md). The host must not require users to disable Windows security controls or install an untrusted root certificate.
+
 ## Development
 
 AnyApp is currently a direct `.csproj` host; the repository does not require a solution file.
