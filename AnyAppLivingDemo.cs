@@ -14,8 +14,9 @@ public sealed class AnyAppLivingDemo : FrameworkElement, IDisposable
 {
     public const int ActorCount = 2056;
 
-    private const string ProcessingGroup = "AnyAppLiving";
-    private const string DefinitionName = "AnyAppLivingActor";
+    private static int _sessionSequence;
+    private readonly string _processingGroup;
+    private readonly string _definitionName;
     private readonly ActorContext[] _actors = new ActorContext[ActorCount];
     private readonly FSMHandle[] _handles = new FSMHandle[ActorCount];
     private readonly DispatcherTimer _paintTimer;
@@ -23,12 +24,16 @@ public sealed class AnyAppLivingDemo : FrameworkElement, IDisposable
 
     private AnyAppLivingDemo()
     {
-        FsmApi.Create.CreateProcessingGroup(ProcessingGroup);
+        var session = Interlocked.Increment(ref _sessionSequence);
+        _processingGroup = $"AnyAppLiving:{session}";
+        _definitionName = $"AnyAppLivingActor:{session}";
+
+        FsmApi.Create.CreateProcessingGroup(_processingGroup);
 
         FsmApi.Create.CreateFiniteStateMachine(
-                DefinitionName,
+                _definitionName,
                 processRate: -1,
-                processingGroup: ProcessingGroup)
+                processingGroup: _processingGroup)
             .State(
                 "LIVE",
                 onEnter: null,
@@ -42,9 +47,9 @@ public sealed class AnyAppLivingDemo : FrameworkElement, IDisposable
             var context = new ActorContext(index);
             _actors[index] = context;
             _handles[index] = FsmApi.Create.CreateInstance(
-                DefinitionName,
+                _definitionName,
                 context,
-                ProcessingGroup);
+                _processingGroup);
         }
 
         _paintTimer = new DispatcherTimer(
@@ -52,7 +57,7 @@ public sealed class AnyAppLivingDemo : FrameworkElement, IDisposable
             DispatcherPriority.Render,
             (_, _) =>
             {
-                FsmApi.Interaction.Update(ProcessingGroup);
+                FsmApi.Interaction.Update(_processingGroup);
                 InvalidateVisual();
             },
             Dispatcher);
