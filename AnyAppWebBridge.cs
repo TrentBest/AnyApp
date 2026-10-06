@@ -10,6 +10,7 @@ namespace TheSingularityWorkshop.AnyApp;
 /// </summary>
 public sealed class AnyAppWebBridge : IDisposable
 {
+    public event Action<string>? CommandReceived;
     private readonly object _gate = new();
     private HttpListener? _listener;
     private CancellationTokenSource? _shutdown;
@@ -142,6 +143,7 @@ public sealed class AnyAppWebBridge : IDisposable
                 if (string.Equals(command?.Command, "return-hub", StringComparison.OrdinalIgnoreCase))
                 {
                     SetState("living", false);
+                    CommandReceived?.Invoke("return-hub");
                     await WriteJsonAsync(context, new { accepted = true, command = "return-hub" });
                     return;
                 }
