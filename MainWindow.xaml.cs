@@ -19,12 +19,14 @@ public partial class MainWindow : Window
     private readonly WrapPanel _experienceDoors = new();
     private readonly TextBlock _status = new();
     private readonly AnyAppWebBridge _webBridge = new();
+    private AnyAppLivingDemo? _livingDemo;
 
     public MainWindow()
     {
         InitializeComponent();
         Loaded += OnLoaded;
-        Closed += (_, _) => _webBridge.Dispose();
+        Closed += (_, _) => { _livingDemo?.Dispose(); _webBridge.Dispose(); };
+        _webBridge.CommandReceived += HandleBridgeCommand;
     }
 
     private async void OnLoaded(object sender, RoutedEventArgs e)
@@ -352,6 +354,26 @@ public partial class MainWindow : Window
     }
 
 
+    private void HandleBridgeCommand(string command)
+    {
+        if (string.Equals(command, "return-hub", StringComparison.OrdinalIgnoreCase))
+            Dispatcher.Invoke(ShowDesktopMoniker);
+    }
+
+    private void ShowDesktopMoniker()
+    {
+        _livingDemo?.Dispose();
+        _livingDemo = null;
+        RootHost.Children.Clear();
+
+        var surface = new MonikerMicroBundle().Root;
+        RootHost.Children.Add(
+            WpfGuiRenderer.Render(
+                MonikerExperience.ExecutePresentation(surface)));
+
+        _webBridge.SetState("moniker", false);
+    }
+
     private async Task PresentWorkshopGatewayAsync()
     {
         await Task.Delay(TimeSpan.FromSeconds(3));
@@ -405,8 +427,10 @@ public partial class MainWindow : Window
 
             enter.Click += (_, _) =>
             {
+                _livingDemo?.Dispose();
+                _livingDemo = AnyAppLivingDemo.Create();
                 RootHost.Children.Clear();
-                RootHost.Children.Add(AnyAppLivingDemo.Create());
+                RootHost.Children.Add(_livingDemo);
                 _webBridge.SetState("living", true);
             };
 
