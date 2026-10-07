@@ -60,7 +60,6 @@ internal static class AnyAppMonikerShell
                 FontFamily = new FontFamily("Consolas"),
                 FontSize = 17,
                 FontWeight = FontWeights.Bold,
-                CharacterSpacing = 260,
                 HorizontalAlignment = HorizontalAlignment.Center,
                 VerticalAlignment = VerticalAlignment.Center
             }
@@ -273,15 +272,23 @@ internal static class AnyAppMonikerShell
         }
     }
 
+    private static bool IsGlyphName(string name)
+    {
+        if (!name.StartsWith("moniker-", StringComparison.Ordinal))
+            return false;
+
+        var lastDash = name.LastIndexOf('-');
+        return lastDash > 8 &&
+               lastDash < name.Length - 1 &&
+               int.TryParse(name[(lastDash + 1)..], out _);
+    }
+
     private static void CollectGlyphs(
         DependencyObject root,
         ICollection<FrameworkElement> glyphs)
     {
         if (root is FrameworkElement element &&
-            element.Name.StartsWith("moniker-", StringComparison.Ordinal) &&
-            !element.Name.EndsWith("-the", StringComparison.Ordinal) &&
-            !element.Name.EndsWith("-singularity", StringComparison.Ordinal) &&
-            !element.Name.EndsWith("-workshop", StringComparison.Ordinal))
+            IsGlyphName(element.Name))
         {
             glyphs.Add(element);
         }
