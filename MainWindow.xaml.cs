@@ -41,24 +41,10 @@ public partial class MainWindow : Window
 
     private async Task StartDefaultExperienceAsync()
     {
-        ExperienceManifest? lastManifest = null;
-
-        try
-        {
-            lastManifest = await LastManifestStore.TryLoadAsync();
-        }
-        catch
-        {
-            // A damaged local last-run record must never prevent startup.
-        }
-
-        // The Workshop Moniker is the common first manifestation. It is not a
-        // host-local splash or an application-specific page: it is the first
-        // configured Experience surface, after which the user can enter other
-        // Experiences through the shell.
+        // The Moniker is the common first Experience manifestation for AnyApp.
+        // Other Experiences are entered from the Workshop shell rather than
+        // replacing the Workshop's common first surface.
         await LaunchMonikerAsync();
-
-        _ = lastManifest;
     }
 
     private async Task BrowseExperiencesAsync(Uri endpoint)
