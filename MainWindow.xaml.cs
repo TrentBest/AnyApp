@@ -52,24 +52,13 @@ public partial class MainWindow : Window
             // A damaged local last-run record must never prevent startup.
         }
 
-        if (lastManifest is not null)
-        {
-            try
-            {
-                await LaunchManifestAsync(
-                    lastManifest,
-                    persistLastManifest: true,
-                    showStartupSplash: true);
-                return;
-            }
-            catch
-            {
-                // The previous Experience is no longer launchable.
-                // Fall through to the user's Forge entry Experience.
-            }
-        }
+        // The Workshop Moniker is the common first manifestation. It is not a
+        // host-local splash or an application-specific page: it is the first
+        // configured Experience surface, after which the user can enter other
+        // Experiences through the shell.
+        await LaunchMonikerAsync();
 
-        await LaunchForgeAsync(showStartupSplash: true);
+        _ = lastManifest;
     }
 
     private async Task BrowseExperiencesAsync(Uri endpoint)
@@ -306,8 +295,15 @@ public partial class MainWindow : Window
         {
             RootHost.Children.Clear();
             RootHost.Children.Add(
-                WpfGuiRenderer.Render(
-                    MonikerExperience.ExecutePresentation(monikerSurface.Root)));
+                AnyAppMonikerShell.Create(
+                    MonikerExperience.ExecutePresentation(monikerSurface.Root),
+                    action =>
+                    {
+                        if (string.Equals(action, "CREATE", StringComparison.Ordinal))
+                            _ = LaunchForgeAsync();
+                        else if (string.Equals(action, "EXPERIENCES", StringComparison.Ordinal))
+                            _ = BrowseExperiencesAsync(GetRepositoryEndpoint());
+                    }));
             return;
         }
 
@@ -355,6 +351,31 @@ public partial class MainWindow : Window
         }
 
         return null;
+    }
+
+    private async Task LaunchMonikerAsync()
+    {
+        try
+        {
+            var path = System.IO.Path.Combine(
+                AppContext.BaseDirectory,
+                "experiences",
+                "moniker",
+                "1.0.0",
+                "manifest.json");
+
+            var content = await File.ReadAllBytesAsync(path);
+            await LaunchManifestAsync(
+                ExperienceManifest.Parse(content),
+                persistLastManifest: false,
+                showStartupSplash: false);
+        }
+        catch (Exception ex)
+        {
+            ShowMessage(
+                "The Workshop Moniker could not be opened.",
+                ex.Message);
+        }
     }
 
     private async Task LaunchForgeAsync(bool showStartupSplash = false)
