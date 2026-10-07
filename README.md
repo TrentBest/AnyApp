@@ -4,59 +4,50 @@ AnyApp is the desktop proof of the composition architecture.
 
 It is the Windows desktop counterpart to the browser-facing WebPage/WebForge host: the desktop of the Workshop, not another application-specific framework.
 
-## Startup is now manifest-driven
+## Startup is now the common Workshop Moniker
 
+AnyApp enters through the same Workshop Moniker Experience surface used to establish the Workshop identity before another Experience is entered.
 
-![AnyApp repository-backed composition](docs/assets/anyapp-composition.svg)
-
-The diagram above is the intended host boundary: the repository delivers verified opaque bytes, AnyApp materializes them, and FSM_COS remains responsible for composition.
-
-AnyApp is the host. It does not choose an Experience by embedding the Experience definition in the host.
-
-Normal startup now follows the Workshop entry sequence:
+The native manifestation follows this boundary:
 
 ~~~text
-AnyApp
-  |
-  | no explicit launch manifest
-  v
-Workshop-authored splash sequence
-  |
-  | currently one authored image: the Workshop avatar
-  v
-last successfully run Experience manifest
-  |
-  | if none exists or it can no longer compose
-  v
-Forge Experience manifest
-  |
-  v
+Experience manifest
+      |
+      v
 FSM_COS
-  |
-  v
-RuntimeAssembly
-  |
-  v
-host manifestation
+      |
+      v
+Moniker MicroBundle
+      |
+      v
+semantic GuiNode
+      |
+      v
+GUI.WPF
+      |
+      v
+Workshop shell + native presentation
 ~~~
 
-The splash is host-owned presentation around composition; **FSM_COS remains the composition boundary**. The initial splash sequence contains one Workshop-authored image and is intentionally structured so additional authored splash Experiences can be added later without changing the composition kernel.
+The shell is host presentation infrastructure. The Moniker content is still composed through the MicroBundle/FSM_COS path. The current development branch contains a temporary local Moniker compatibility artifact so the native manifestation can be proven before the canonical published Experience is available from the MicroBundle Repository.
 
-The Forge is the user's entry Experience when there is no usable last-run Experience. It is not a special launcher screen. Its semantic surface contains a diegetic EXPLORE EXPERIENCES portal; entering that portal opens the Experience repository flow.
-
-The Forge manifest lives beside the other source manifests:
+The intended final path is:
 
 ~~~text
-experiences/
-├── forge/
-│   └── 1.0.0/
-│       └── manifest.json
-└── moniker/
-    └── 1.0.0/
-        └── manifest.json
+TheSingularityWorkshop.Experiences.Moniker
+             |
+             v
+immutable Experience / MicroBundle artifacts
+             |
+             v
+Azure Blob-backed MicroBundle Repository
+             |
+             v
+AnyApp + WebPage
+             |
+             v
+same Experience identity
 ~~~
-
-A successfully entered non-Forge Experience is persisted as the next startup candidate outside the application binary. Forge itself is not persisted as the last-run Experience, so it remains the fallback entry point.
 
 For local development, an explicit manifest can still be supplied:
 
@@ -64,7 +55,7 @@ For local development, an explicit manifest can still be supplied:
 dotnet run --project AnyApp.csproj -- --experience-file=experiences/moniker/1.0.0/manifest.json
 ~~~
 
-The repository endpoint used by the Forge's Experience exploration portal can be overridden:
+The repository endpoint used by the Workshop Experience exploration portal can be overridden:
 
 ~~~powershell
 dotnet run --project AnyApp.csproj -- --repository-endpoint=http://localhost:5000/
