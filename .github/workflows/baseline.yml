@@ -3,7 +3,7 @@ name: AnyApp Baseline
 on:
   workflow_dispatch:
   push:
-    branches: [ "master" ]
+    branches: [ "master", "development" ]
 
 jobs:
   publish-baseline:
