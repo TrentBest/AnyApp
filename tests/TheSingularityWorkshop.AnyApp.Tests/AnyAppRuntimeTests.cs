@@ -1,5 +1,6 @@
 using System.Text;
 using TheSingularityWorkshop.FSM_COS;
+using TheSingularityWorkshop.MicroBundleDomain;
 using Xunit;
 
 namespace TheSingularityWorkshop.AnyApp.Tests;
@@ -100,6 +101,20 @@ public sealed class AnyAppRuntimeTests
         Assert.True(manifest.UsesRepositoryArtifacts);
         Assert.Equal("1.0.0", manifest.Bundles[0].ArtifactVersion);
         Assert.Equal(hash, manifest.Bundles[0].ContentHash);
+    }
+
+    [Fact]
+    public void CanonicalGuiSurface_IsConsumableWithoutAnyAppSpecificBundleType()
+    {
+        var runtime = AnyAppRuntime.Compose(MonikerExperience.CreateManifest());
+
+        Assert.True(runtime.TryGetBundle<IMicroBundle>(
+            MonikerMicroBundle.BundleId,
+            out var bundle));
+        Assert.NotNull(bundle);
+        Assert.True(MicroBundleGuiSurface.TryGetRoot(bundle!, out var root));
+        Assert.NotNull(root);
+        Assert.Equal("moniker-root", root!.Id);
     }
 
     [Fact]
