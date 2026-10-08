@@ -254,6 +254,12 @@ public partial class MainWindow : Window
         _webBridge.Start();
         _webBridge.SetState("composing", false);
 
+        if (manifest.Intent is not null && !WorkshopSemanticExchange.IsAllowed(manifest.Intent))
+        {
+            throw new InvalidOperationException(
+                $"Experience intent '{manifest.Intent.Name}' is not admitted by the host semantic grammar.");
+        }
+
         var compositionTask = AnyAppRuntime.ComposeAsync(
             manifest,
             GetRepositoryEndpoint());
