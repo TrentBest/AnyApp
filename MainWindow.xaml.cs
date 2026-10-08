@@ -19,11 +19,16 @@ public partial class MainWindow : Window
     private static readonly Uri DefaultRepositoryEndpoint = new("http://localhost:5000/");
     private readonly WrapPanel _experienceDoors = new();
     private readonly TextBlock _status = new();
+    private readonly AnyAppWebBridge _webBridge = new();
+    private AnyAppLivingDemo? _livingDemo;
+    private GuiNode? _currentMonikerRoot;
 
     public MainWindow()
     {
         InitializeComponent();
         Loaded += OnLoaded;
+        Closed += (_, _) => { _livingDemo?.Dispose(); _webBridge.Dispose(); };
+        _webBridge.CommandReceived += HandleBridgeCommand;
     }
 
     private async void OnLoaded(object sender, RoutedEventArgs e)
@@ -245,6 +250,10 @@ public partial class MainWindow : Window
     {
         ArgumentNullException.ThrowIfNull(manifest);
 
+        _webBridge.Configure(manifest);
+        _webBridge.Start();
+        _webBridge.SetState("composing", false);
+
         var compositionTask = AnyAppRuntime.ComposeAsync(
             manifest,
             GetRepositoryEndpoint());
@@ -320,6 +329,168 @@ public partial class MainWindow : Window
         ShowMessage(
             "The selected Experience could not be manifested.",
             $"MicroBundle {selectedBundleId} did not expose a semantic GUI surface for the native host.");
+    }
+
+    private void HandleBridgeCommand(string command)
+    {
+        switch (command.ToLowerInvariant())
+        {
+            case "return-hub":
+                Dispatcher.Invoke(ShowDesktopMoniker);
+                break;
+            case "split-moniker":
+                Dispatcher.Invoke(ShowSplitMoniker);
+                break;
+            case "whole-moniker":
+                Dispatcher.Invoke(ShowDesktopMoniker);
+                break;
+            case "flip-moniker":
+                Dispatcher.Invoke(ShowSplitMoniker);
+                break;
+        }
+    }
+
+    private void ShowSplitMoniker()
+    {
+        _livingDemo?.Dispose();
+        _livingDemo = null;
+        RootHost.Children.Clear();
+
+        var shell = new Grid
+        {
+            Background = new LinearGradientBrush(
+                Color.FromRgb(2, 7, 17),
+                Color.FromRgb(7, 2, 17),
+                90)
+        };
+
+        shell.Children.Add(CreateSplitMoniker(_webBridge.DesktopHalf));
+        RootHost.Children.Add(shell);
+        _webBridge.SetState("moniker-split", true);
+    }
+
+    private static FrameworkElement CreateSplitMoniker(string half)
+    {
+        const double halfWidth = 700;
+
+        var window = new Grid
+        {
+            Width = halfWidth,
+            Height = 300,
+            ClipToBounds = true,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+
+        var full = new StackPanel
+        {
+            Width = halfWidth * 2,
+            HorizontalAlignment = HorizontalAlignment.Left,
+            VerticalAlignment = VerticalAlignment.Center,
+            RenderTransform = new TranslateTransform(
+                string.Equals(half, "right", StringComparison.OrdinalIgnoreCase) ? -halfWidth : 0,
+                0)
+        };
+
+        full.Children.Add(CreateMonikerLine("THE", 62, Color.FromRgb(0, 168, 255)));
+        full.Children.Add(CreateMonikerLine("SINGULARITY", 74, Color.FromRgb(255, 44, 255)));
+        full.Children.Add(CreateMonikerLine("WORKSHOP", 74, Color.FromRgb(255, 122, 0)));
+
+        window.Children.Add(full);
+        return window;
+    }
+
+    private static TextBlock CreateMonikerLine(string text, double size, Color color)
+        => new()
+        {
+            Text = text,
+            Width = 1400,
+            TextAlignment = TextAlignment.Center,
+            FontFamily = new System.Windows.Media.FontFamily("Consolas"),
+            FontSize = size,
+            FontWeight = FontWeights.Black,
+            Foreground = new SolidColorBrush(color),
+            LineHeight = size * .86,
+            Margin = new Thickness(0, -4, 0, -4)
+        };
+
+    private void ShowDesktopMoniker()
+    {
+        _livingDemo?.Dispose();
+        _livingDemo = null;
+        RootHost.Children.Clear();
+
+        if (_currentMonikerRoot is null)
+        {
+            _ = LaunchMonikerAsync();
+            return;
+        }
+
+        RootHost.Children.Add(
+            WpfGuiRenderer.Render(
+                MonikerExperience.ExecutePresentation(_currentMonikerRoot)));
+
+        _webBridge.SetState("moniker", false);
+    }
+
+    private async Task PresentWorkshopGatewayAsync()
+    {
+        await Task.Delay(TimeSpan.FromSeconds(3));
+
+        await Dispatcher.InvokeAsync(() =>
+        {
+            RootHost.Children.Clear();
+
+            var shell = new Grid
+            {
+                Background = new LinearGradientBrush(
+                    Color.FromRgb(2, 7, 17),
+                    Color.FromRgb(7, 2, 17),
+                    90)
+            };
+
+            var stack = new StackPanel
+            {
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+
+            if (_currentMonikerRoot is not null)
+            {
+                stack.Children.Add(
+                    WpfGuiRenderer.Render(
+                        MonikerExperience.ExecutePresentation(_currentMonikerRoot)));
+            }
+
+            var enter = new Button
+            {
+                Content = "ENTER THE WORKSHOP",
+                HorizontalAlignment = HorizontalAlignment.Center,
+                Padding = new Thickness(34, 16, 34, 16),
+                Margin = new Thickness(0, 28, 0, 0),
+                Background = new SolidColorBrush(Color.FromRgb(4, 18, 30)),
+                Foreground = Brushes.White,
+                BorderBrush = new SolidColorBrush(Color.FromRgb(0, 234, 255)),
+                BorderThickness = new Thickness(1),
+                FontFamily = new System.Windows.Media.FontFamily("Consolas"),
+                FontWeight = FontWeights.Bold,
+                Cursor = Cursors.Hand
+            };
+
+            enter.Click += (_, _) =>
+            {
+                _livingDemo?.Dispose();
+                _livingDemo = AnyAppLivingDemo.Create();
+                RootHost.Children.Clear();
+                RootHost.Children.Add(_livingDemo);
+                _webBridge.SetState("living", true);
+            };
+
+            stack.Children.Add(enter);
+            shell.Children.Add(stack);
+            RootHost.Children.Add(shell);
+            _webBridge.SetState("hub", true);
+        });
     }
 
     private void WireForgeNavigation(FrameworkElement root)
