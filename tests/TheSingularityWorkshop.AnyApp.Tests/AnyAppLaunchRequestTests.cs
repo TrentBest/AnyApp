@@ -1,3 +1,5 @@
+using Xunit;
+
 namespace TheSingularityWorkshop.AnyApp.Tests;
 
 public sealed class AnyAppLaunchRequestTests
