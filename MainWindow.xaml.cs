@@ -8,6 +8,7 @@ using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using TheSingularityWorkshop.FSM_COS;
+using TheSingularityWorkshop.MicroBundleDomain;
 using TheSingularityWorkshop.GUI.WPF;
 using TheSingularityWorkshop.Workshop.Gui;
 
