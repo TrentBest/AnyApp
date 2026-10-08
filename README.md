@@ -29,7 +29,7 @@ GUI.WPF
 Workshop shell + native presentation
 ~~~
 
-The shell is host presentation infrastructure. The Moniker content is still composed through the MicroBundle/FSM_COS path. The current development branch contains a temporary local Moniker compatibility artifact so the native manifestation can be proven before the canonical published Experience is available from the MicroBundle Repository.
+The shell is host presentation infrastructure. The Moniker content is still composed through the MicroBundle/FSM_COS path. The native host still retains a local compatibility catalog for legacy development manifests, but the canonical Moniker manifest is now bound to its immutable repository artifact identity.
 
 The intended final path is:
 
@@ -148,6 +148,64 @@ It should not absorb:
 - Workshop Experience logic.
 
 The repository is responsible for discovering and delivering published Experience artifacts. AnyApp is responsible for selecting one and handing its manifest to FSM_COS.
+
+## Native host boundary
+
+AnyApp is the first native host for RuntimeAssemblies produced by FSM_COS.
+
+It is not an Experience, not a scheduler, and not a replacement for FSM_COS. Its job is to provide the native runtime and presentation substrate in which a composed RuntimeAssembly becomes observable.
+
+> **FSM_COS constructs the composition. The host makes the composition real.**
+
+The Workshop therefore keeps the boundary explicit:
+
+~~~text
+Ontology + MicroBundle selection
+            |
+            v
+     Runtime Manifest
+            |
+            v
+         FSM_COS
+            |
+            v
+     RuntimeAssembly
+        /       \
+       v         v
+    AnyApp    WebForge
+ native host  web/server host
+~~~
+
+AnyApp owns native concerns such as process lifetime, windowing, input, timing, resource management, rendering, and future presentation facilities. Experience-specific behavior remains reusable MicroBundle capability.
+
+The native rendering path is deliberately incremental:
+
+~~~text
+RuntimeAssembly
+    -> native host
+    -> presentation surface
+    -> primitive rendering
+    -> spatial composition
+    -> GUI
+    -> complete Experiences
+~~~
+
+A future server host can consume the same RuntimeAssembly model without becoming part of AnyApp or FSM_COS. Provider-specific deployment remains outside the composition boundary.
+
+## What does not belong in AnyApp
+
+AnyApp should not become:
+
+- a second scheduler;
+- an Experience-specific state-machine system;
+- a duplicate MicroBundle composition system;
+- an ontology interpreter;
+- a publication/catalog authority;
+- a cloud-provider-specific runtime;
+- a WebForge implementation;
+- a collection of one-off visual effects that should be reusable capabilities.
+
+AnyApp consumes the architecture rather than silently replacing it.
 
 ## Trusted Windows distribution
 
