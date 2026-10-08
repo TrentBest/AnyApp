@@ -1,19 +1,28 @@
+using System.Collections.Concurrent;
 using System.Net;
-using System.Net.Sockets;
+using System.Net.WebSockets;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 
 namespace TheSingularityWorkshop.AnyApp;
 
 /// <summary>
-/// Small localhost control plane between a running AnyApp instance and the Workshop web page.
-/// The endpoint is configured by the Experience manifest rather than hard-coded into the Experience.
+/// Local presentation bridge between WebApp and AnyApp.
+///
+/// HTTP state/command requests remain compatible with the Workshop browser
+/// manifestation, while privileged requests require a per-launch token and
+/// an allowed browser Origin. WebSocket sessions use the same boundary.
 /// </summary>
 public sealed class AnyAppWebBridge : IDisposable
 {
+    public const int ProtocolVersion = 1;
+
     private readonly object _gate = new();
-    private TcpListener? _listener;
+    private readonly ConcurrentDictionary<Guid, WebSocket> _clients = new();
+    private HttpListener? _listener;
     private CancellationTokenSource? _shutdown;
+    private string? _launchToken;
     private string _state = "starting";
     private bool _hubVisible;
     private bool _splitMoniker;
@@ -39,8 +48,21 @@ public sealed class AnyAppWebBridge : IDisposable
         get
         {
             lock (_gate)
-                return _browserHalf.Equals("left", StringComparison.OrdinalIgnoreCase) ? "right" : "left";
+                return _browserHalf.Equals("left", StringComparison.OrdinalIgnoreCase)
+                    ? "right"
+                    : "left";
         }
+    }
+
+    public void SetLaunchToken(string? launchToken)
+    {
+        if (string.IsNullOrWhiteSpace(launchToken))
+        {
+            _launchToken = null;
+            return;
+        }
+
+        _launchToken = launchToken;
     }
 
     public void Configure(ExperienceManifest manifest)
@@ -56,10 +78,12 @@ public sealed class AnyAppWebBridge : IDisposable
             {
                 var bytes = Convert.FromBase64String(request.ConfigurationBase64);
                 var configuration = JsonSerializer.Deserialize<BridgeConfiguration>(bytes);
+
                 if (configuration?.WebBridgeEndpoint is not null &&
                     Uri.TryCreate(configuration.WebBridgeEndpoint, UriKind.Absolute, out var endpoint) &&
                     endpoint.Scheme == Uri.UriSchemeHttp &&
-                    IPAddress.TryParse(endpoint.Host, out _))
+                    IPAddress.TryParse(endpoint.Host, out var address) &&
+                    IPAddress.IsLoopback(address))
                 {
                     Endpoint = endpoint;
                     return;
@@ -76,10 +100,12 @@ public sealed class AnyAppWebBridge : IDisposable
 
     public void Start()
     {
-        if (_listener is not null)
+        if (_listener is not null || string.IsNullOrWhiteSpace(_launchToken))
             return;
 
-        var listener = new TcpListener(IPAddress.Loopback, Endpoint.Port);
+        var listener = new HttpListener();
+        listener.Prefixes.Add(
+            $"http://{Endpoint.Host}:{Endpoint.Port}/");
 
         try
         {
@@ -87,7 +113,7 @@ public sealed class AnyAppWebBridge : IDisposable
         }
         catch
         {
-            listener.Stop();
+            listener.Close();
             return;
         }
 
@@ -126,202 +152,388 @@ public sealed class AnyAppWebBridge : IDisposable
         }
     }
 
-    private async Task ListenAsync(TcpListener listener, CancellationToken cancellationToken)
+    private async Task ListenAsync(
+        HttpListener listener,
+        CancellationToken cancellationToken)
     {
         while (!cancellationToken.IsCancellationRequested)
         {
-            TcpClient client;
+            HttpListenerContext context;
 
             try
             {
-                client = await listener.AcceptTcpClientAsync(cancellationToken);
+                context = await listener.GetContextAsync();
             }
-            catch (OperationCanceledException)
+            catch when (cancellationToken.IsCancellationRequested)
             {
-                break;
+                return;
             }
-            catch (ObjectDisposedException)
+            catch
             {
-                break;
+                continue;
             }
 
-            _ = Task.Run(() => HandleAsync(client, cancellationToken), cancellationToken);
+            _ = HandleAsync(context, cancellationToken);
         }
     }
 
-    private async Task HandleAsync(TcpClient client, CancellationToken cancellationToken)
+    private async Task HandleAsync(
+        HttpListenerContext context,
+        CancellationToken cancellationToken)
     {
-        using (client)
-        await using var stream = client.GetStream();
-
         try
         {
-            var request = await ReadRequestAsync(stream, cancellationToken);
-            if (request is null)
-                return;
-
-            if (request.Method.Equals("OPTIONS", StringComparison.OrdinalIgnoreCase))
+            if (!IsAllowedOrigin(context.Request.Headers["Origin"]) ||
+                !IsValidToken(context.Request.QueryString["token"]))
             {
-                await WriteResponseAsync(stream, 204, string.Empty, cancellationToken);
+                context.Response.StatusCode = (int)HttpStatusCode.Forbidden;
+                context.Response.Close();
                 return;
             }
 
-            if (request.Method.Equals("GET", StringComparison.OrdinalIgnoreCase) &&
-                request.Path.Equals("/state", StringComparison.OrdinalIgnoreCase))
+            if (context.Request.IsWebSocketRequest)
             {
-                await WriteResponseAsync(
-                    stream,
-                    200,
-                    JsonSerializer.Serialize(Snapshot()),
-                    cancellationToken);
+                await HandleWebSocketAsync(context, cancellationToken);
                 return;
             }
 
-            if (request.Method.Equals("POST", StringComparison.OrdinalIgnoreCase) &&
-                request.Path.Equals("/command", StringComparison.OrdinalIgnoreCase))
+            if (context.Request.HttpMethod.Equals("OPTIONS", StringComparison.OrdinalIgnoreCase))
             {
-                var command = JsonSerializer.Deserialize<BridgeCommand>(request.Body);
+                WriteHeaders(context.Response);
+                context.Response.StatusCode = (int)HttpStatusCode.NoContent;
+                context.Response.Close();
+                return;
+            }
 
-                switch (command?.Command?.ToLowerInvariant())
+            if (context.Request.HttpMethod.Equals("GET", StringComparison.OrdinalIgnoreCase) &&
+                context.Request.Url?.AbsolutePath.Equals("/state", StringComparison.OrdinalIgnoreCase) == true)
+            {
+                await WriteJsonAsync(context, HttpStatusCode.OK, Snapshot(), cancellationToken);
+                return;
+            }
+
+            if (context.Request.HttpMethod.Equals("POST", StringComparison.OrdinalIgnoreCase) &&
+                context.Request.Url?.AbsolutePath.Equals("/command", StringComparison.OrdinalIgnoreCase) == true)
+            {
+                using var reader = new StreamReader(
+                    context.Request.InputStream,
+                    context.Request.ContentEncoding ?? Encoding.UTF8);
+
+                var body = await reader.ReadToEndAsync(cancellationToken);
+                var command = JsonSerializer.Deserialize<BridgeCommand>(body);
+
+                if (!TryExecuteCommand(command?.Command))
                 {
-                    case "return-hub":
-                        SetState("living", false);
-                        CommandReceived?.Invoke("return-hub");
-                        await WriteResponseAsync(
-                            stream,
-                            200,
-                            JsonSerializer.Serialize(new { accepted = true, command = "return-hub" }),
-                            cancellationToken);
-                        return;
-
-                    case "split-moniker":
-                        SetMonikerSplit(true);
-                        CommandReceived?.Invoke("split-moniker");
-                        await WriteResponseAsync(
-                            stream,
-                            200,
-                            JsonSerializer.Serialize(new { accepted = true, command = "split-moniker" }),
-                            cancellationToken);
-                        return;
-
-                    case "whole-moniker":
-                        SetMonikerSplit(false);
-                        CommandReceived?.Invoke("whole-moniker");
-                        await WriteResponseAsync(
-                            stream,
-                            200,
-                            JsonSerializer.Serialize(new { accepted = true, command = "whole-moniker" }),
-                            cancellationToken);
-                        return;
-
-                    case "flip-moniker":
-                        FlipMoniker();
-                        CommandReceived?.Invoke("flip-moniker");
-                        await WriteResponseAsync(
-                            stream,
-                            200,
-                            JsonSerializer.Serialize(new { accepted = true, command = "flip-moniker" }),
-                            cancellationToken);
-                        return;
+                    await WriteJsonAsync(
+                        context,
+                        HttpStatusCode.BadRequest,
+                        new { accepted = false, error = "Unknown command." },
+                        cancellationToken);
+                    return;
                 }
 
-                await WriteResponseAsync(
-                    stream,
-                    400,
-                    JsonSerializer.Serialize(new { accepted = false, error = "Unknown command." }),
+                await WriteJsonAsync(
+                    context,
+                    HttpStatusCode.OK,
+                    new { accepted = true, command = command!.Command },
                     cancellationToken);
                 return;
             }
 
-            await WriteResponseAsync(
-                stream,
-                404,
-                JsonSerializer.Serialize(new { error = "Not found." }),
+            await WriteJsonAsync(
+                context,
+                HttpStatusCode.NotFound,
+                new { error = "Not found." },
                 cancellationToken);
         }
         catch
         {
-            // The bridge is optional presentation infrastructure; a malformed request
-            // must never terminate the desktop Experience.
+            try
+            {
+                context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
+                context.Response.Close();
+            }
+            catch
+            {
+                // The bridge is optional presentation infrastructure.
+            }
         }
     }
 
-    private static async Task<HttpRequest?> ReadRequestAsync(
-        NetworkStream stream,
+    private async Task HandleWebSocketAsync(
+        HttpListenerContext context,
         CancellationToken cancellationToken)
     {
-        var buffer = new byte[16 * 1024];
-        var count = await stream.ReadAsync(buffer, cancellationToken);
-        if (count == 0)
-            return null;
+        HttpListenerWebSocketContext socketContext;
 
-        var requestText = Encoding.UTF8.GetString(buffer, 0, count);
-        var separator = requestText.IndexOf("\r\n\r\n", StringComparison.Ordinal);
-        var headerText = separator >= 0 ? requestText[..separator] : requestText;
-        var body = separator >= 0 ? requestText[(separator + 4)..] : string.Empty;
-
-        var lines = headerText.Split("\r\n");
-        if (lines.Length == 0)
-            return null;
-
-        var requestLine = lines[0].Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        if (requestLine.Length < 2)
-            return null;
-
-        var contentLength = 0;
-        foreach (var line in lines.Skip(1))
+        try
         {
-            var colon = line.IndexOf(':');
-            if (colon < 0)
+            socketContext = await context.AcceptWebSocketAsync(
+                subProtocol: null,
+                receiveBufferSize: 16 * 1024,
+                keepAliveInterval: TimeSpan.FromSeconds(30));
+        }
+        catch
+        {
+            context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+            context.Response.Close();
+            return;
+        }
+
+        var id = Guid.NewGuid();
+        var socket = socketContext.WebSocket;
+        _clients[id] = socket;
+
+        try
+        {
+            await SendAsync(
+                socket,
+                CreateEnvelope(
+                    "welcome",
+                    new
+                    {
+                        sessionId = id,
+                        host = "AnyApp"
+                    }),
+                cancellationToken);
+
+            await ReceiveLoopAsync(id, socket, cancellationToken);
+        }
+        finally
+        {
+            _clients.TryRemove(id, out _);
+
+            try
+            {
+                if (socket.State is WebSocketState.Open or WebSocketState.CloseReceived)
+                    await socket.CloseAsync(
+                        WebSocketCloseStatus.NormalClosure,
+                        "Session ended",
+                        CancellationToken.None);
+            }
+            catch
+            {
+            }
+
+            socket.Dispose();
+        }
+    }
+
+    private async Task ReceiveLoopAsync(
+        Guid sessionId,
+        WebSocket socket,
+        CancellationToken cancellationToken)
+    {
+        var buffer = new byte[64 * 1024];
+
+        while (socket.State == WebSocketState.Open &&
+               !cancellationToken.IsCancellationRequested)
+        {
+            using var message = new MemoryStream();
+            WebSocketReceiveResult result;
+
+            do
+            {
+                result = await socket.ReceiveAsync(
+                    new ArraySegment<byte>(buffer),
+                    cancellationToken);
+
+                if (result.MessageType == WebSocketMessageType.Close)
+                    return;
+
+                if (result.MessageType != WebSocketMessageType.Text)
+                    throw new InvalidOperationException(
+                        "The AnyApp bridge accepts JSON text messages only.");
+
+                if (message.Length + result.Count > buffer.Length)
+                    throw new InvalidOperationException(
+                        "The AnyApp bridge message exceeds the 64 KiB limit.");
+
+                message.Write(buffer, 0, result.Count);
+            }
+            while (!result.EndOfMessage);
+
+            using var document = JsonDocument.Parse(message.ToArray());
+            var root = document.RootElement;
+
+            if (!root.TryGetProperty("protocol", out var protocol) ||
+                protocol.GetInt32() != ProtocolVersion)
+            {
+                await SendAsync(
+                    socket,
+                    CreateEnvelope(
+                        "error",
+                        new
+                        {
+                            code = "protocol-version",
+                            message = $"Unsupported bridge protocol. Expected {ProtocolVersion}."
+                        }),
+                    cancellationToken);
                 continue;
+            }
 
-            if (line[..colon].Trim().Equals("Content-Length", StringComparison.OrdinalIgnoreCase))
-                int.TryParse(line[(colon + 1)..].Trim(), out contentLength);
+            var type = root.TryGetProperty("type", out var typeElement)
+                ? typeElement.GetString()
+                : null;
+
+            if (string.Equals(type, "hello", StringComparison.Ordinal))
+            {
+                await SendAsync(
+                    socket,
+                    CreateEnvelope(
+                        "hello.ack",
+                        new { sessionId, protocol = ProtocolVersion }),
+                    cancellationToken);
+            }
+            else if (string.Equals(type, "heartbeat", StringComparison.Ordinal))
+            {
+                await SendAsync(
+                    socket,
+                    CreateEnvelope(
+                        "heartbeat.ack",
+                        new { sessionId, utc = DateTimeOffset.UtcNow }),
+                    cancellationToken);
+            }
+            else if (string.Equals(type, "command", StringComparison.Ordinal) &&
+                     root.TryGetProperty("payload", out var payload) &&
+                     payload.TryGetProperty("command", out var commandElement) &&
+                     TryExecuteCommand(commandElement.GetString()))
+            {
+                await SendAsync(
+                    socket,
+                    CreateEnvelope(
+                        "command.ack",
+                        new { sessionId }),
+                    cancellationToken);
+            }
+            else if (string.Equals(type, "event", StringComparison.Ordinal))
+            {
+                await SendAsync(
+                    socket,
+                    CreateEnvelope(
+                        "event.ack",
+                        new { sessionId }),
+                    cancellationToken);
+            }
         }
-
-        var bodyBytes = Encoding.UTF8.GetBytes(body);
-        while (bodyBytes.Length < contentLength)
-        {
-            var read = await stream.ReadAsync(buffer, cancellationToken);
-            if (read == 0)
-                break;
-
-            body += Encoding.UTF8.GetString(buffer, 0, read);
-            bodyBytes = Encoding.UTF8.GetBytes(body);
-        }
-
-        return new HttpRequest(requestLine[0], requestLine[1], body);
     }
 
-    private async Task WriteResponseAsync(
-        NetworkStream stream,
-        int statusCode,
-        string body,
+    private bool TryExecuteCommand(string? command)
+    {
+        switch (command?.ToLowerInvariant())
+        {
+            case "return-hub":
+                SetState("living", false);
+                CommandReceived?.Invoke("return-hub");
+                return true;
+
+            case "split-moniker":
+                SetMonikerSplit(true);
+                CommandReceived?.Invoke("split-moniker");
+                return true;
+
+            case "whole-moniker":
+                SetMonikerSplit(false);
+                CommandReceived?.Invoke("whole-moniker");
+                return true;
+
+            case "flip-moniker":
+                FlipMoniker();
+                CommandReceived?.Invoke("flip-moniker");
+                return true;
+
+            default:
+                return false;
+        }
+    }
+
+    private async Task WriteJsonAsync(
+        HttpListenerContext context,
+        HttpStatusCode status,
+        object payload,
         CancellationToken cancellationToken)
     {
-        var reason = statusCode switch
+        var bytes = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(payload));
+
+        WriteHeaders(context.Response);
+        context.Response.StatusCode = (int)status;
+        context.Response.ContentType = "application/json; charset=utf-8";
+        context.Response.ContentLength64 = bytes.Length;
+        await context.Response.OutputStream.WriteAsync(bytes, cancellationToken);
+        context.Response.Close();
+    }
+
+    private static void WriteHeaders(HttpListenerResponse response)
+    {
+        response.Headers["Access-Control-Allow-Methods"] = "GET,POST,OPTIONS";
+        response.Headers["Access-Control-Allow-Headers"] = "Content-Type";
+    }
+
+    private static async Task SendAsync(
+        WebSocket socket,
+        string message,
+        CancellationToken cancellationToken)
+    {
+        var bytes = Encoding.UTF8.GetBytes(message);
+
+        await socket.SendAsync(
+            new ArraySegment<byte>(bytes),
+            WebSocketMessageType.Text,
+            endOfMessage: true,
+            cancellationToken);
+    }
+
+    private static string CreateEnvelope(string type, object payload) =>
+        JsonSerializer.Serialize(
+            new
+            {
+                protocol = ProtocolVersion,
+                type,
+                sequence = 0,
+                timestampUtc = DateTimeOffset.UtcNow,
+                payload
+            });
+
+    private bool IsValidToken(string? token)
+    {
+        var expected = _launchToken;
+        return expected is not null &&
+               token is not null &&
+               FixedEquals(token, expected);
+    }
+
+    private static bool FixedEquals(string left, string right)
+    {
+        var leftBytes = Encoding.UTF8.GetBytes(left);
+        var rightBytes = Encoding.UTF8.GetBytes(right);
+
+        return CryptographicOperations.FixedTimeEquals(leftBytes, rightBytes);
+    }
+
+    private static bool IsAllowedOrigin(string? origin)
+    {
+        if (!Uri.TryCreate(origin, UriKind.Absolute, out var uri))
+            return false;
+
+        if (uri.IsLoopback)
+            return true;
+
+        var configured = Environment.GetEnvironmentVariable("ANYAPP_ALLOWED_ORIGINS");
+
+        if (string.IsNullOrWhiteSpace(configured))
         {
-            200 => "OK",
-            204 => "No Content",
-            400 => "Bad Request",
-            404 => "Not Found",
-            _ => "Internal Server Error"
-        };
+            return string.Equals(
+                uri.AbsoluteUri.TrimEnd('/'),
+                "https://lemon-ground-09f542010.1.azurestaticapps.net",
+                StringComparison.OrdinalIgnoreCase);
+        }
 
-        var payload = Encoding.UTF8.GetBytes(body);
-        var headers =
-            $"HTTP/1.1 {statusCode} {reason}\r\n" +
-            "Access-Control-Allow-Origin: *\r\n" +
-            "Access-Control-Allow-Methods: GET,POST,OPTIONS\r\n" +
-            "Access-Control-Allow-Headers: Content-Type\r\n" +
-            "Content-Type: application/json; charset=utf-8\r\n" +
-            $"Content-Length: {payload.Length}\r\n" +
-            "Connection: close\r\n\r\n";
-
-        var headerBytes = Encoding.UTF8.GetBytes(headers);
-        await stream.WriteAsync(headerBytes, cancellationToken);
-        if (payload.Length != 0)
-            await stream.WriteAsync(payload, cancellationToken);
+        return configured
+            .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Any(value => string.Equals(
+                value.TrimEnd('/'),
+                uri.AbsoluteUri.TrimEnd('/'),
+                StringComparison.OrdinalIgnoreCase));
     }
 
     private object Snapshot()
@@ -330,6 +542,7 @@ public sealed class AnyAppWebBridge : IDisposable
         {
             return new
             {
+                protocol = ProtocolVersion,
                 state = _state,
                 hubVisible = _hubVisible,
                 splitMoniker = _splitMoniker,
@@ -347,6 +560,13 @@ public sealed class AnyAppWebBridge : IDisposable
         try { _listener?.Stop(); }
         catch { }
 
+        foreach (var client in _clients.Values)
+        {
+            try { client.Dispose(); }
+            catch { }
+        }
+
+        _clients.Clear();
         _shutdown?.Dispose();
         _shutdown = null;
         _listener = null;
@@ -354,5 +574,4 @@ public sealed class AnyAppWebBridge : IDisposable
 
     private sealed record BridgeConfiguration(string? WebBridgeEndpoint);
     private sealed record BridgeCommand(string? Command);
-    private sealed record HttpRequest(string Method, string Path, string Body);
 }
