@@ -287,6 +287,8 @@ public partial class MainWindow : Window
             .Select(bundle => bundle.BundleId)
             .FirstOrDefault(bundleId => bundleId != MonikerMicroBundle.BundleId);
 
+        _currentMonikerRoot = null;
+
         if (runtime.TryGetBundle<IMicroBundle>(
                 MonikerMicroBundle.BundleId,
                 out var monikerBundle) &&
@@ -294,13 +296,18 @@ public partial class MainWindow : Window
             MicroBundleGuiSurface.TryGetRoot(monikerBundle, out var monikerRoot) &&
             monikerRoot is not null)
         {
+            _currentMonikerRoot = monikerRoot;
             RootHost.Children.Clear();
             RootHost.Children.Add(
                 WpfGuiRenderer.Render(
                     MonikerExperience.ExecutePresentation(monikerRoot)));
+            _webBridge.SetState("moniker", false);
 
             if (selectedBundleId == 0)
+            {
+                _ = PresentWorkshopGatewayAsync();
                 return;
+            }
 
             await Task.Delay(TimeSpan.FromSeconds(3));
         }
