@@ -14,7 +14,6 @@ public sealed class RepositoryMicroBundleCatalog : IMicroBundleCatalog
 {
     private readonly RestMicroBundleRepository _repository;
     private readonly IReadOnlyDictionary<ulong, MicroBundleArtifactAddress> _addresses;
-    private readonly IMicroBundleArtifactMaterializer _materializer;
     private readonly Dictionary<ulong, IMicroBundle> _loaded = new();
 
     public RepositoryMicroBundleCatalog(
@@ -40,8 +39,6 @@ public sealed class RepositoryMicroBundleCatalog : IMicroBundleCatalog
         }
 
         _addresses = addresses;
-        _materializer = new AssemblyMicroBundleArtifactMaterializer();
-
         var client = httpClient ?? new HttpClient();
         _repository = new RestMicroBundleRepository(
             repositoryEndpoint,
@@ -74,7 +71,7 @@ public sealed class RepositoryMicroBundleCatalog : IMicroBundleCatalog
                 throw new InvalidOperationException(
                     $"MicroBundle artifact {address} was not found in the repository.");
 
-            var bundle = _materializer.Materialize(artifact);
+            var bundle = RepositoryAssemblyMicroBundleMaterializer.Materialize(artifact);
             ArgumentNullException.ThrowIfNull(bundle);
 
             if (bundle.Id != bundleId)

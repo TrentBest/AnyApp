@@ -8,6 +8,7 @@ using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using TheSingularityWorkshop.FSM_COS;
+using TheSingularityWorkshop.MicroBundleDomain;
 using TheSingularityWorkshop.GUI.WPF;
 using TheSingularityWorkshop.Workshop.Gui;
 
@@ -252,7 +253,7 @@ public partial class MainWindow : Window
             await StartupSplash.PresentAsync(RootHost, compositionTask);
 
         var runtime = await compositionTask;
-        RenderRuntime(manifest, runtime);
+        await RenderRuntimeAsync(manifest, runtime);
 
         if (persistLastManifest &&
             manifest.ExperienceId != ForgeMicroBundle.ExperienceId)
@@ -261,7 +262,9 @@ public partial class MainWindow : Window
         }
     }
 
-    private void RenderRuntime(ExperienceManifest manifest, RuntimeAssembly runtime)
+    private async Task RenderRuntimeAsync(
+        ExperienceManifest manifest,
+        RuntimeAssembly runtime)
     {
         if (manifest.Bundles.Count == 0)
         {
@@ -271,44 +274,52 @@ public partial class MainWindow : Window
             return;
         }
 
-        var bundleId = manifest.Bundles[0].BundleId;
+        var selectedBundleId = manifest.Bundles
+            .Select(bundle => bundle.BundleId)
+            .FirstOrDefault(bundleId => bundleId != MonikerMicroBundle.BundleId);
 
-        if (bundleId == MonikerMicroBundle.BundleId &&
-            runtime.TryGetBundle<MonikerMicroBundle>(
+        if (runtime.TryGetBundle<IMicroBundle>(
                 MonikerMicroBundle.BundleId,
                 out var monikerBundle) &&
-            monikerBundle is IAnyAppSurface monikerSurface)
+            monikerBundle is not null &&
+            MicroBundleGuiSurface.TryGetRoot(monikerBundle, out var monikerRoot) &&
+            monikerRoot is not null)
         {
             RootHost.Children.Clear();
             RootHost.Children.Add(
-                AnyAppMonikerShell.Create(
-                    MonikerExperience.ExecutePresentation(monikerSurface.Root),
-                    action =>
-                    {
-                        if (string.Equals(action, "CREATE", StringComparison.Ordinal))
-                            _ = LaunchForgeAsync();
-                        else if (string.Equals(action, "EXPERIENCES", StringComparison.Ordinal))
-                            _ = BrowseExperiencesAsync(GetRepositoryEndpoint());
-                    }));
+                WpfGuiRenderer.Render(
+                    MonikerExperience.ExecutePresentation(monikerRoot)));
+
+            if (selectedBundleId == 0)
+                return;
+
+            await Task.Delay(TimeSpan.FromSeconds(3));
+        }
+
+        if (selectedBundleId != 0 &&
+            runtime.TryGetBundle<IMicroBundle>(
+                selectedBundleId,
+                out var selectedBundle) &&
+            selectedBundle is not null &&
+            MicroBundleGuiSurface.TryGetRoot(selectedBundle, out var selectedRoot) &&
+            selectedRoot is not null)
+        {
+            RootHost.Children.Clear();
+            var rendered = WpfGuiRenderer.Render(selectedRoot);
+            RootHost.Children.Add(rendered);
+
+            if (selectedBundleId == ForgeMicroBundle.BundleId)
+                WireForgeNavigation(rendered);
+
             return;
         }
 
-        if (bundleId == ForgeMicroBundle.BundleId &&
-            runtime.TryGetBundle<ForgeMicroBundle>(
-                ForgeMicroBundle.BundleId,
-                out var forgeBundle) &&
-            forgeBundle is IAnyAppSurface forgeSurface)
-        {
-            RootHost.Children.Clear();
-            var rendered = WpfGuiRenderer.Render(forgeSurface.Root);
-            RootHost.Children.Add(rendered);
-            WireForgeNavigation(rendered);
+        if (selectedBundleId == 0)
             return;
-        }
 
         ShowMessage(
             "The selected Experience could not be manifested.",
-            $"MicroBundle {bundleId} is not available in the native host catalog.");
+            $"MicroBundle {selectedBundleId} did not expose a semantic GUI surface for the native host.");
     }
 
     private void WireForgeNavigation(FrameworkElement root)
