@@ -12,7 +12,7 @@ namespace TheSingularityWorkshop.AnyApp;
 /// GUI capability is exposed by the public <c>Root</c> property on bundles
 /// that provide a semantic GUI surface.
 /// </remarks>
-internal static class MicroBundleGuiSurface
+public static class MicroBundleGuiSurface
 {
     public static bool TryGetRoot(IMicroBundle bundle, out GuiNode? root)
     {
