@@ -22,6 +22,7 @@
     <Compile Remove="_dependencies\**\*.cs" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="TheSingularityWorkshop.FSM_API" Version="1.0.13" />
     <PackageReference Include="TheSingularityWorkshop.FSM_COS" Version="0.1.0-alpha.5" />
     <PackageReference Include="TheSingularityWorkshop.GUI.WPF" Version="0.1.0-alpha.6" />
     <PackageReference Include="TheSingularityWorkshop.MicroBundleRepository.Rest" Version="0.1.0-alpha.5" />
