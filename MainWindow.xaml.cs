@@ -26,6 +26,7 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        AnyAppProtocolRegistration.Register();
         Loaded += OnLoaded;
         Closed += (_, _) => { _livingDemo?.Dispose(); _webBridge.Dispose(); };
         _webBridge.CommandReceived += HandleBridgeCommand;
@@ -34,6 +35,14 @@ public partial class MainWindow : Window
     private async void OnLoaded(object sender, RoutedEventArgs e)
     {
         Loaded -= OnLoaded;
+
+        var launchRequest = GetLaunchRequest();
+        if (launchRequest is not null)
+        {
+            _webBridge.SetLaunchToken(launchRequest.LaunchToken);
+            await LaunchPublishedExperienceAsync(launchRequest);
+            return;
+        }
 
         var launchFile = GetLaunchFile();
         if (launchFile is not null)
@@ -51,6 +60,36 @@ public partial class MainWindow : Window
         // Other Experiences are entered from the Workshop shell rather than
         // replacing the Workshop's common first surface.
         await LaunchMonikerAsync();
+    }
+
+    private async Task LaunchPublishedExperienceAsync(AnyAppLaunchRequest request)
+    {
+        try
+        {
+            using var client = new ExperienceCatalogClient(GetRepositoryEndpoint());
+            var manifest = await client.GetManifestAsync(
+                new PublishedExperience(
+                    request.ExperienceId,
+                    request.Version,
+                    request.ContentHash));
+
+            if (manifest.ExperienceId != request.ExperienceId ||
+                !string.Equals(manifest.Version, request.Version, StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException(
+                    "The published Experience manifest identity does not match the requested deep link.");
+            }
+
+            await LaunchManifestAsync(
+                manifest,
+                persistLastManifest: manifest.ExperienceId != ForgeMicroBundle.ExperienceId);
+        }
+        catch (Exception ex)
+        {
+            ShowMessage(
+                "The requested Experience could not be opened.",
+                ex.Message);
+        }
     }
 
     private async Task BrowseExperiencesAsync(Uri endpoint)
@@ -732,6 +771,15 @@ public partial class MainWindow : Window
                 GuiBuilders.Warning("experience-launch", $"{title} {detail}")
                     .Property("margin", "32")
                     .Build()));
+    }
+
+    private static AnyAppLaunchRequest? GetLaunchRequest()
+    {
+        var argument = Environment.GetCommandLineArgs()
+            .FirstOrDefault(value =>
+                value.StartsWith("anyapp://", StringComparison.OrdinalIgnoreCase));
+
+        return AnyAppLaunchRequest.TryParse(argument);
     }
 
     private static string? GetLaunchFile()

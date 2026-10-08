@@ -12,7 +12,7 @@ public sealed class AnyAppRuntimeTests
     {
         var runtime = AnyAppRuntime.Compose(MonikerExperience.CreateManifest());
         Assert.Equal(MonikerExperience.RuntimeId, runtime.RuntimeId);
-        Assert.Equal(1, runtime.Bundles.Count);
+        Assert.Single(runtime.Bundles);
         Assert.Equal(0, runtime.ArbitrationRounds);
         Assert.True(runtime.TryGetBundle<MonikerMicroBundle>(MonikerMicroBundle.BundleId, out var bundle));
         Assert.NotNull(bundle);
