@@ -149,6 +149,54 @@ It should not absorb:
 
 The repository is responsible for discovering and delivering published Experience artifacts. AnyApp is responsible for selecting one and handing its manifest to FSM_COS.
 
+## Semantic intent exchange
+
+AnyApp demonstrates the three-layer semantic exchange without coupling the foundation packages together:
+
+~~~text
+ProtocolAi
+   WHAT
+    |
+    v
+GrammarAi
+    HOW
+    |
+    v
+FSM_UserIO
+SemanticIntent
+    |
+    v
+AnyApp / Experience host
+~~~
+
+The host owns its Experience vocabulary in `WorkshopSemanticExchange`. ProtocolAi supplies deterministic protocol/symbol identity, GrammarAi describes which identities are structurally admitted, and FSM_UserIO carries the application intent.
+
+The Forge manifest declares:
+
+~~~json
+"intent": {
+  "name": "open.forge",
+  "protocolId": 4200
+}
+~~~
+
+AnyApp validates that intent against its host grammar before composition. This is a host integration; it does not create an upward dependency chain between the foundation packages.
+
+## Physical baseline
+
+AnyApp remains a proving ground rather than a finished product. Its current physical measurements are therefore baselines, not promises of final distribution size:
+
+| Publish form | Directory | EXE |
+|---|---:|---:|
+| Framework-dependent | 0.33 MB | 0.15 MB |
+| Self-contained | 160.10 MB | 0.15 MB |
+| Single-file self-contained | 154.33 MB | 146.48 MB |
+| Blank WPF Release milestone | — | ~149 KB |
+
+The deployment-mode distinction matters: self-contained and single-file deployments carry the .NET runtime, while the small application executable is a different measurement.
+
+The reproducible CI measurement path lives in `.github/workflows/baseline.yml`. The deeper runtime/performance discussion belongs with FSM_COS rather than the native host.
+
 ## Native host boundary
 
 AnyApp is the first native host for RuntimeAssemblies produced by FSM_COS.
