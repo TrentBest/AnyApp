@@ -24,7 +24,7 @@
   <ItemGroup>
     <PackageReference Include="TheSingularityWorkshop.FSM_COS" Version="0.1.0-alpha.5" />
     <PackageReference Include="TheSingularityWorkshop.GUI.WPF" Version="0.1.0-alpha.6" />
-    <PackageReference Include="TheSingularityWorkshop.MicroBundleRepository.Rest" Version="0.1.0-alpha.4" />
+    <PackageReference Include="TheSingularityWorkshop.MicroBundleRepository.Rest" Version="0.1.0-alpha.5" />
   </ItemGroup>
   <ItemGroup>
     <None Update="experiences/**/manifest.json">
