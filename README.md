@@ -291,3 +291,24 @@ This is deliberate:
 - Browser-tab reuse is not assumed to be universally automatable; a native host may open the URL while the browser decides how it handles an already-open page.
 
 The result is a useful asymmetry: the ontology is portable; the Workshop's education surface is ours.
+
+
+## ProtocolAI in a real application
+
+AnyApp is a concrete consumer of [ProtocolAI](https://github.com/TrentBest/TheSingularityWorkshop.ProtocolAi), not merely an AI demonstration.
+
+The host-owned WorkshopSemanticExchange defines the Workshop's Experience-intent vocabulary with ProtocolAI, carries those identities through FSM_UserIO.SemanticIntent, and uses GrammarAI to determine which protocol symbols are structurally admitted.
+
+The important point is that this works **without an AI model**. An intent such as `open.forge` is deterministic application semantics. An AI model can be one source of that intent, but so can a human, GUI, deep link, another application, or ordinary code.
+
+The ownership is:
+
+```text
+ProtocolAI  -> WHAT identity means
+GrammarAI   -> HOW identities may be structured
+FSM_UserIO  -> carries semantic intent
+AnyApp      -> decides what the intent does
+FSM_COS     -> composes the runtime
+```
+
+The ProtocolAI documentation maintains the API contract; this file and WorkshopSemanticExchange provide the concrete host example. If either side changes its semantic contract, both should be reviewed together.
