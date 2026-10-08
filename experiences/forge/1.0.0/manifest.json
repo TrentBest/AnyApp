@@ -2,6 +2,10 @@
   "experienceId": 3201,
   "version": "1.0.0",
   "runtimeId": 3211,
+  "intent": {
+    "name": "open.forge",
+    "protocolId": 4200
+  },
   "bundles": [
     {
       "bundleId": 3201,
