@@ -14,12 +14,6 @@ namespace TheSingularityWorkshop.AnyApp;
 /// </remarks>
 internal static class MicroBundleGuiSurface
 {
-    private static readonly PropertyInfo? RootProperty =
-        typeof(IMicroBundle).Assembly
-            .GetType("TheSingularityWorkshop.Workshop.Gui.GuiNode") is not null
-            ? null
-            : null;
-
     public static bool TryGetRoot(IMicroBundle bundle, out GuiNode? root)
     {
         ArgumentNullException.ThrowIfNull(bundle);
