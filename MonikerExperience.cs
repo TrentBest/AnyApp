@@ -1,4 +1,6 @@
 using TheSingularityWorkshop.MicroBundleDomain;
+using TheSingularityWorkshop.Experiences.Moniker;
+using TheSingularityWorkshop.Experiences.Moniker.Motion.Wave;
 using TheSingularityWorkshop.FSM_API;
 using TheSingularityWorkshop.FSM_COS;
 using TheSingularityWorkshop.Workshop.Gui;
