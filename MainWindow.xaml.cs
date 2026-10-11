@@ -343,7 +343,7 @@ public partial class MainWindow : Window
                 HasGuiSurface(runtime, bundleId));
 
         _currentMonikerRoot = null;
-        _currentMonikerMotion = runtime.TryGetBundle<IMonikerMotion>(
+        _currentMonikerMotion = runtime.TryGetBundle<MonikerWaveMotionMicroBundle>(
             MonikerWaveMotionMicroBundle.BundleId,
             out var motion)
             ? motion
