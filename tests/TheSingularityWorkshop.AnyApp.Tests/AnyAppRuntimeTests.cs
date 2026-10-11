@@ -89,7 +89,7 @@ public sealed class AnyAppRuntimeTests
         Assert.True(runtime.TryGetBundle<MonikerMicroBundle>(MonikerMicroBundle.BundleId, out var bundle));
         Assert.True(MicroBundleGuiSurface.TryGetRoot(bundle!, out var root));
         Assert.NotNull(root);
-        Assert.True(runtime.TryGetBundle<IMonikerMotion>(
+        Assert.True(runtime.TryGetBundle<MonikerWaveMotionMicroBundle>(
             MonikerWaveMotionMicroBundle.BundleId,
             out var motion));
         Assert.NotNull(motion);
@@ -139,7 +139,7 @@ public sealed class AnyAppRuntimeTests
             out var bundle));
         Assert.True(MicroBundleGuiSurface.TryGetRoot(bundle!, out var root));
         Assert.NotNull(root);
-        Assert.True(runtime.TryGetBundle<IMonikerMotion>(
+        Assert.True(runtime.TryGetBundle<MonikerWaveMotionMicroBundle>(
             MonikerWaveMotionMicroBundle.BundleId,
             out var motion));
 
