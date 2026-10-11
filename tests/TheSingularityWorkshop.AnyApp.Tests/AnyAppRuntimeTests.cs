@@ -10,6 +10,23 @@ namespace TheSingularityWorkshop.AnyApp.Tests;
 public sealed class AnyAppRuntimeTests
 {
     [Fact]
+    public void Catalog_ResolvesBundlesByRequestedVersion()
+    {
+        var catalog = new AnyAppMicroBundleCatalog();
+
+        Assert.True(catalog.TryResolve(
+            MonikerWaveMotionMicroBundle.BundleId,
+            "1.0.0",
+            out var motion));
+        Assert.NotNull(motion);
+
+        Assert.False(catalog.TryResolve(
+            MonikerWaveMotionMicroBundle.BundleId,
+            "9.9.9",
+            out _));
+    }
+
+    [Fact]
     public void Compose_ProducesMonikerExperienceThroughCos()
     {
         var runtime = AnyAppRuntime.Compose(MonikerExperience.CreateManifest());
