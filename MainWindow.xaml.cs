@@ -9,6 +9,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using TheSingularityWorkshop.FSM_COS;
 using TheSingularityWorkshop.Experiences.Moniker;
+using TheSingularityWorkshop.Experiences.Moniker.Motion.Wave;
 using TheSingularityWorkshop.MicroBundleDomain;
 using TheSingularityWorkshop.GUI.WPF;
 using TheSingularityWorkshop.Workshop.Gui;
