@@ -102,6 +102,35 @@ public sealed class AnyAppRuntimeTests
     }
 
     [Fact]
+    public void RendererInteractiveRepresentation_EnablesTheComposedMonikerMotion()
+    {
+        var runtime = AnyAppRuntime.Compose(MonikerExperience.CreateManifest());
+        Assert.True(runtime.TryGetBundle<MonikerMicroBundle>(
+            MonikerMicroBundle.BundleId,
+            out var bundle));
+        Assert.True(MicroBundleGuiSurface.TryGetRoot(bundle!, out var root));
+        Assert.True(runtime.TryGetBundle<MonikerWaveMotionMicroBundle>(
+            MonikerWaveMotionMicroBundle.BundleId,
+            out var motion));
+        Assert.True(runtime.TryGetBundle<RendererMicroBundle>(
+            RendererMicroBundle.BundleId,
+            out var renderer));
+        Assert.True(renderer!.IsLoaded);
+
+        using var machine = new RendererComputationMachine(
+            new RendererComputationContext("Test-Moniker", RepresentationTarget.Interactive));
+        var representation = machine.Advance();
+
+        var presented = MonikerExperience.ExecutePresentation(
+            root!,
+            motion,
+            allowMotion: representation is RepresentationTarget.Near or RepresentationTarget.Interactive);
+
+        Assert.True(presented.TryFind("moniker-singularity-0", out var glyph));
+        Assert.Equal("3.8", glyph!.Properties["wavePeriod"]);
+    }
+
+    [Fact]
     public void ExperienceExecution_CanSuppressMotionOutsideNearAndInteractiveRepresentations()
     {
         var runtime = AnyAppRuntime.Compose(MonikerExperience.CreateManifest());
