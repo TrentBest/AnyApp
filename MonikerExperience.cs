@@ -1,4 +1,3 @@
-using TheSingularityWorkshop.MicroBundleDomain;
 using TheSingularityWorkshop.Experiences.Moniker;
 using TheSingularityWorkshop.Experiences.Moniker.Motion.Wave;
 using TheSingularityWorkshop.FSM_API;
@@ -20,8 +19,8 @@ public static class MonikerExperience
         new(
             RuntimeId,
             [
-                MicroBundleDependencyRequest.Unconfigured(MonikerMicroBundle.BundleId),
-                MicroBundleDependencyRequest.Unconfigured(MonikerWaveMotionMicroBundle.BundleId)
+                new MicroBundleManifestEntry(MonikerMicroBundle.BundleId, "1.0.0"),
+                new MicroBundleManifestEntry(MonikerWaveMotionMicroBundle.BundleId, "1.0.0")
             ],
             new Context());
 
