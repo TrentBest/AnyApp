@@ -29,7 +29,7 @@ GUI.WPF
 Workshop shell + native presentation
 ~~~
 
-The shell is host presentation infrastructure. The Moniker content is still composed through the MicroBundle/FSM_COS path. The native host still retains a local compatibility catalog for legacy development manifests, but the canonical Moniker manifest is now bound to its immutable repository artifact identity.
+The shell is host presentation infrastructure. The Moniker content and its wave motion are separate MicroBundles composed through FSM_COS. The motion can be replaced without rewriting the content bundle. Older repository-backed Moniker manifests remain compatible: until they declare a motion artifact, AnyApp uses the same motion bundle implementation as a local compatibility fallback. The canonical Moniker content manifest remains bound to its immutable repository artifact identity.
 
 The intended final path is:
 
@@ -75,10 +75,10 @@ RuntimeManifest
 RuntimeAssembly
       |
       v
-MonikerMicroBundle
+MonikerMicroBundle + MonikerWaveMotionMicroBundle
       |
       v
-semantic GuiNode
+static semantic GuiNode + selected motion
       |
       v
 GUI.WPF
@@ -87,7 +87,7 @@ GUI.WPF
 native WPF
 ~~~
 
-The MicroBundle remains static and previewable. MonikerExperience.ExecutePresentation(...) adds the wave behavior only when the selected Experience executes.
+The Moniker content MicroBundle remains static and previewable. `MonikerWaveMotionMicroBundle` independently contributes wave behavior when the Moniker Experience executes. The Experience composes both bundles; it does not own the motion algorithm.
 
 ## Repository-backed composition
 
