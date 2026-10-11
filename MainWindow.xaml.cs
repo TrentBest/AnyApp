@@ -359,8 +359,9 @@ public partial class MainWindow : Window
                 new RendererComputationContext(
                     $"Experience-{manifest.ExperienceId}-Moniker",
                     RepresentationTarget.Interactive));
-            _monikerMotionEnabled =
-                rendererMachine.Advance() >= RepresentationTarget.Near;
+            var representation = rendererMachine.Advance();
+            _monikerMotionEnabled = representation is
+                RepresentationTarget.Near or RepresentationTarget.Interactive;
         }
 
         if (runtime.TryGetBundle<IMicroBundle>(
