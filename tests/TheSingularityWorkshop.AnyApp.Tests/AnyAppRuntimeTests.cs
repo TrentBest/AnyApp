@@ -102,6 +102,26 @@ public sealed class AnyAppRuntimeTests
     }
 
     [Fact]
+    public void ExperienceExecution_CanSuppressMotionOutsideNearAndInteractiveRepresentations()
+    {
+        var runtime = AnyAppRuntime.Compose(MonikerExperience.CreateManifest());
+        Assert.True(runtime.TryGetBundle<MonikerMicroBundle>(
+            MonikerMicroBundle.BundleId,
+            out var bundle));
+        Assert.True(MicroBundleGuiSurface.TryGetRoot(bundle!, out var root));
+        Assert.NotNull(root);
+        Assert.True(runtime.TryGetBundle<IMonikerMotion>(
+            MonikerWaveMotionMicroBundle.BundleId,
+            out var motion));
+
+        var presented = MonikerExperience.ExecutePresentation(root!, motion, allowMotion: false);
+
+        Assert.Same(root, presented);
+        Assert.True(presented.TryFind("moniker-singularity-0", out var glyph));
+        Assert.False(glyph!.Properties.ContainsKey("wavePeriod"));
+    }
+
+    [Fact]
     public void EmptyManifest_ComposesWithoutThrowing()
     {
         var runtime = AnyAppRuntime.Compose(RuntimeManifest.Empty(999));
