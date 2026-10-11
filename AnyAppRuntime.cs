@@ -6,12 +6,14 @@ public static class AnyAppRuntime
 {
     public const ulong RuntimeId = MonikerExperience.RuntimeId;
 
-    public static RuntimeAssembly Compose(RuntimeManifest manifest)
+    public static RuntimeAssembly Compose(
+        RuntimeManifest manifest,
+        IMicroBundleConfigurationSource? configurationSource = null)
     {
         ArgumentNullException.ThrowIfNull(manifest);
 
         var cos = new FsmCos(new AnyAppMicroBundleCatalog());
-        return cos.Execute(manifest);
+        return cos.Execute(manifest, configurationSource);
     }
 
     public static async Task<RuntimeAssembly> ComposeAsync(
@@ -23,7 +25,7 @@ public static class AnyAppRuntime
         ArgumentNullException.ThrowIfNull(repositoryEndpoint);
 
         if (!experience.UsesRepositoryArtifacts)
-            return Compose(experience.ToRuntimeManifest());
+            return Compose(experience.ToRuntimeManifest(), experience.CreateConfigurationSource());
 
         var catalog = new RepositoryMicroBundleCatalog(
             repositoryEndpoint,
@@ -34,6 +36,6 @@ public static class AnyAppRuntime
             runtimeManifest.Bundles.Select(bundle => bundle.BundleId),
             cancellationToken);
 
-        return new FsmCos(catalog).Execute(runtimeManifest);
+        return new FsmCos(catalog).Execute(runtimeManifest, experience.CreateConfigurationSource());
     }
 }
