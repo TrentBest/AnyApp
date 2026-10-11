@@ -330,9 +330,13 @@ public partial class MainWindow : Window
             return;
         }
 
+        // A MicroBundle can contribute behavior without exposing a GUI surface.
+        // Choose the next presentable bundle, not merely the next bundle in the manifest.
         var selectedBundleId = manifest.Bundles
             .Select(bundle => bundle.BundleId)
-            .FirstOrDefault(bundleId => bundleId != MonikerMicroBundle.BundleId);
+            .FirstOrDefault(bundleId =>
+                bundleId != MonikerMicroBundle.BundleId &&
+                HasGuiSurface(runtime, bundleId));
 
         _currentMonikerRoot = null;
         _currentMonikerMotion = runtime.TryGetBundle<IMonikerMotion>(
@@ -389,6 +393,12 @@ public partial class MainWindow : Window
             "The selected Experience could not be manifested.",
             $"MicroBundle {selectedBundleId} did not expose a semantic GUI surface for the native host.");
     }
+
+    private static bool HasGuiSurface(RuntimeAssembly runtime, ulong bundleId) =>
+        runtime.TryGetBundle<IMicroBundle>(bundleId, out var bundle) &&
+        bundle is not null &&
+        MicroBundleGuiSurface.TryGetRoot(bundle, out var root) &&
+        root is not null;
 
     private void HandleBridgeCommand(string command)
     {
