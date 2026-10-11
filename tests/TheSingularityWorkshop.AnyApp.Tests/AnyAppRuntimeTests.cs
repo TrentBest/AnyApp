@@ -119,6 +119,28 @@ public sealed class AnyAppRuntimeTests
     }
 
     [Fact]
+    public void ManifestConfiguration_IsScopedToRuntimeBundleAndVersion()
+    {
+        var manifest = new ExperienceManifest(
+            3101,
+            "1.0.0",
+            3111,
+            [
+                new ExperienceBundleRequest(
+                    3101,
+                    Convert.ToBase64String([1, 2, 3]),
+                    BundleVersion: "1.0.0")
+            ]);
+
+        var source = manifest.CreateConfigurationSource();
+
+        Assert.True(source.TryGetConfiguration(3111, 3101, "1.0.0", out var configuration));
+        Assert.Equal(new byte[] { 1, 2, 3 }, configuration.ToArray());
+        Assert.False(source.TryGetConfiguration(3112, 3101, "1.0.0", out _));
+        Assert.False(source.TryGetConfiguration(3111, 3101, "2.0.0", out _));
+    }
+
+    [Fact]
     public void SerializedManifest_RehydratesArtifactIdentity()
     {
         var hash = new string('a', 64);
