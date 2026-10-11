@@ -75,19 +75,25 @@ RuntimeManifest
 RuntimeAssembly
       |
       v
-MonikerMicroBundle + MonikerWaveMotionMicroBundle
+MonikerMicroBundle (3101) + Wave Motion (3102) + Renderer
       |
       v
-static semantic GuiNode + selected motion
+FSM_COS composition
       |
       v
-GUI.WPF
+Renderer FSM selects representation
+      |
+      v
+static semantic GuiNode + allowed motion
+      |
+      v
+GUI.WPF visualizer
       |
       v
 native WPF
 ~~~
 
-The Moniker content MicroBundle remains static and previewable. `TheSingularityWorkshop.Experiences.Moniker.Motion.Wave` independently contributes wave behavior. The development manifest composes both through FSM_COS; the host applies the selected `IMonikerMotion` contract before passing the result to GUI.WPF.
+The Moniker content MicroBundle remains static and previewable. `TheSingularityWorkshop.Experiences.Moniker.Motion.Wave` independently contributes wave behavior. The development manifest composes content, motion, and the Renderer MicroBundle through FSM_COS. AnyApp advances the Renderer representation FSM and only enables the wave when the Moniker is in the near/interactive representation; GUI.WPF remains the visible presentation adapter.
 
 ## Repository-backed composition
 
