@@ -1,6 +1,7 @@
 using System.Text;
 using TheSingularityWorkshop.FSM_COS;
 using TheSingularityWorkshop.Experiences.Moniker;
+using TheSingularityWorkshop.Experiences.Moniker.Motion.Wave;
 using TheSingularityWorkshop.MicroBundleDomain;
 using Xunit;
 
