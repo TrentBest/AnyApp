@@ -31,6 +31,7 @@
     <PackageReference Include="TheSingularityWorkshop.MicroBundleRepository.Rest" Version="0.1.0-alpha.5" />
     <ProjectReference Include="_dependencies/Experiences/src/Moniker/TheSingularityWorkshop.Experiences.Moniker.csproj" />
     <ProjectReference Include="_dependencies/Experiences/src/Moniker.Motion.Wave/TheSingularityWorkshop.Experiences.Moniker.Motion.Wave.csproj" />
+    <ProjectReference Include="_dependencies/Renderer/TheSingularityWorkshop.Renderer.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Update="experiences/**/manifest.json">
