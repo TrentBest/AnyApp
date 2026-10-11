@@ -18,6 +18,13 @@ jobs:
       with:
         dotnet-version: 8.0.x
 
+    - name: Checkout Experiences dependency
+      uses: actions/checkout@v5
+      with:
+        repository: TrentBest/TheSingularityWorkshop.Experiences
+        ref: development
+        path: _dependencies/Experiences
+
     - name: Checkout MicroBundleDomain dependency
       uses: actions/checkout@v5
       with:
