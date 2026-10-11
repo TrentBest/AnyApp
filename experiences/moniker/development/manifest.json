@@ -5,10 +5,12 @@
   "bundles": [
     {
       "bundleId": 3101,
+      "bundleVersion": "1.0.0",
       "configurationBase64": "eyJ3ZWJCcmlkZ2VFbmRwb2ludCI6Imh0dHA6Ly8xMjcuMC4wLjE6NDgxNTYvIn0="
     },
     {
       "bundleId": 3102,
+      "bundleVersion": "1.0.0",
       "configurationBase64": ""
     }
   ]
