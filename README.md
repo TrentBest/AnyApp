@@ -29,7 +29,7 @@ GUI.WPF
 Workshop shell + native presentation
 ~~~
 
-The shell is host presentation infrastructure. The Moniker content and its wave motion are separate MicroBundles composed through FSM_COS. The motion can be replaced without rewriting the content bundle. Older repository-backed Moniker manifests remain compatible: until they declare a motion artifact, AnyApp uses the same motion bundle implementation as a local compatibility fallback. The canonical Moniker content manifest remains bound to its immutable repository artifact identity.
+The shell is host presentation infrastructure. The Moniker content and wave motion are independent MicroBundles composed through FSM_COS. The default development launch uses `experiences/moniker/development/manifest.json`, so both source projects are composed locally without publishing artifacts. The immutable repository-backed manifest remains at `experiences/moniker/1.0.0/manifest.json`; until its motion artifact is published and added to that manifest, it remains the separate compatibility path.
 
 The intended final path is:
 
@@ -52,7 +52,7 @@ same Experience identity
 For local development, an explicit manifest can still be supplied:
 
 ~~~powershell
-dotnet run --project AnyApp.csproj -- --experience-file=experiences/moniker/1.0.0/manifest.json
+dotnet run --project AnyApp.csproj -- --experience-file=experiences/moniker/development/manifest.json
 ~~~
 
 The repository endpoint used by the Workshop Experience exploration portal can be overridden:
@@ -87,7 +87,7 @@ GUI.WPF
 native WPF
 ~~~
 
-The Moniker content MicroBundle remains static and previewable. `MonikerWaveMotionMicroBundle` independently contributes wave behavior when the Moniker Experience executes. The Experience composes both bundles; it does not own the motion algorithm.
+The Moniker content MicroBundle remains static and previewable. `TheSingularityWorkshop.Experiences.Moniker.Motion.Wave` independently contributes wave behavior. The development manifest composes both through FSM_COS; the host applies the selected `IMonikerMotion` contract before passing the result to GUI.WPF.
 
 ## Repository-backed composition
 
