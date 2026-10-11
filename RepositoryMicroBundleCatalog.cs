@@ -87,4 +87,17 @@ public sealed class RepositoryMicroBundleCatalog : IMicroBundleCatalog
 
     public bool TryResolve(ulong bundleId, out IMicroBundle? bundle) =>
         _loaded.TryGetValue(bundleId, out bundle);
+
+    public bool TryResolve(ulong bundleId, string version, out IMicroBundle? bundle)
+    {
+        if (!_loaded.TryGetValue(bundleId, out bundle) || bundle is null)
+            return false;
+
+        if (string.IsNullOrWhiteSpace(version) ||
+            string.Equals(bundle.Descriptor.Version, version, StringComparison.Ordinal))
+            return true;
+
+        bundle = null;
+        return false;
+    }
 }
