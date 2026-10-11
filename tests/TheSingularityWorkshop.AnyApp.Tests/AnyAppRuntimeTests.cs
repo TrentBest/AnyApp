@@ -1,5 +1,6 @@
 using System.Text;
 using TheSingularityWorkshop.FSM_COS;
+using TheSingularityWorkshop.Experiences.Moniker;
 using TheSingularityWorkshop.MicroBundleDomain;
 using Xunit;
 
@@ -48,10 +49,11 @@ public sealed class AnyAppRuntimeTests
     {
         var runtime = AnyAppRuntime.Compose(MonikerExperience.CreateManifest());
         Assert.True(runtime.TryGetBundle<MonikerMicroBundle>(MonikerMicroBundle.BundleId, out var bundle));
-        var surface = Assert.IsAssignableFrom<IAnyAppSurface>(bundle);
-        Assert.Equal("moniker-root", surface.Root.Id);
-        Assert.Equal("Panel", surface.Root.Kind);
-        Assert.True(surface.Root.TryFind("moniker-singularity", out var word));
+        Assert.True(MicroBundleGuiSurface.TryGetRoot(bundle!, out var root));
+        Assert.NotNull(root);
+        Assert.Equal("moniker-root", root!.Id);
+        Assert.Equal("Panel", root.Kind);
+        Assert.True(root.TryFind("moniker-singularity", out var word));
         Assert.Equal("Row", word!.Kind);
         Assert.Contains(word.Children, child => child.Text == "S" && !child.Properties.ContainsKey("wavePeriod"));
     }
@@ -61,17 +63,18 @@ public sealed class AnyAppRuntimeTests
     {
         var runtime = AnyAppRuntime.Compose(MonikerExperience.CreateManifest());
         Assert.True(runtime.TryGetBundle<MonikerMicroBundle>(MonikerMicroBundle.BundleId, out var bundle));
-        var surface = Assert.IsAssignableFrom<IAnyAppSurface>(bundle);
+        Assert.True(MicroBundleGuiSurface.TryGetRoot(bundle!, out var root));
+        Assert.NotNull(root);
         Assert.True(runtime.TryGetBundle<IMonikerMotion>(
             MonikerWaveMotionMicroBundle.BundleId,
             out var motion));
         Assert.NotNull(motion);
-        var presented = MonikerExperience.ExecutePresentation(surface.Root, motion);
+        var presented = MonikerExperience.ExecutePresentation(root!, motion);
         Assert.True(presented.TryFind("moniker-singularity-0", out var glyph));
         Assert.Equal("S", glyph!.Text);
         Assert.Equal("3.8", glyph.Properties["wavePeriod"]);
         Assert.Equal("7", glyph.Properties["waveAmplitude"]);
-        Assert.False(surface.Root.Find("moniker-singularity-0").Properties.ContainsKey("wavePeriod"));
+        Assert.False(root!.Find("moniker-singularity-0").Properties.ContainsKey("wavePeriod"));
     }
 
     [Fact]
