@@ -22,6 +22,7 @@ public partial class MainWindow : Window
     private readonly AnyAppWebBridge _webBridge = new();
     private AnyAppLivingDemo? _livingDemo;
     private GuiNode? _currentMonikerRoot;
+    private IMonikerMotion? _currentMonikerMotion;
 
     public MainWindow()
     {
@@ -333,6 +334,11 @@ public partial class MainWindow : Window
             .FirstOrDefault(bundleId => bundleId != MonikerMicroBundle.BundleId);
 
         _currentMonikerRoot = null;
+        _currentMonikerMotion = runtime.TryGetBundle<IMonikerMotion>(
+            MonikerWaveMotionMicroBundle.BundleId,
+            out var motion)
+            ? motion
+            : null;
 
         if (runtime.TryGetBundle<IMicroBundle>(
                 MonikerMicroBundle.BundleId,
@@ -345,7 +351,7 @@ public partial class MainWindow : Window
             RootHost.Children.Clear();
             RootHost.Children.Add(
                 WpfGuiRenderer.Render(
-                    MonikerExperience.ExecutePresentation(monikerRoot)));
+                    MonikerExperience.ExecutePresentation(monikerRoot, _currentMonikerMotion)));
             _webBridge.SetState("moniker", false);
 
             if (selectedBundleId == 0)
@@ -480,7 +486,7 @@ public partial class MainWindow : Window
 
         RootHost.Children.Add(
             WpfGuiRenderer.Render(
-                MonikerExperience.ExecutePresentation(_currentMonikerRoot)));
+                MonikerExperience.ExecutePresentation(_currentMonikerRoot, _currentMonikerMotion)));
 
         _webBridge.SetState("moniker", false);
     }
@@ -511,7 +517,7 @@ public partial class MainWindow : Window
             {
                 stack.Children.Add(
                     WpfGuiRenderer.Render(
-                        MonikerExperience.ExecutePresentation(_currentMonikerRoot)));
+                        MonikerExperience.ExecutePresentation(_currentMonikerRoot, _currentMonikerMotion)));
             }
 
             var enter = new Button
