@@ -2,6 +2,7 @@ using System.Text;
 using TheSingularityWorkshop.FSM_COS;
 using TheSingularityWorkshop.Experiences.Moniker;
 using TheSingularityWorkshop.Experiences.Moniker.Motion.Wave;
+using TheSingularityWorkshop.Renderer;
 using TheSingularityWorkshop.MicroBundleDomain;
 using Xunit;
 
@@ -31,7 +32,7 @@ public sealed class AnyAppRuntimeTests
     {
         var runtime = AnyAppRuntime.Compose(MonikerExperience.CreateManifest());
         Assert.Equal(MonikerExperience.RuntimeId, runtime.RuntimeId);
-        Assert.Equal(2, runtime.Bundles.Count);
+        Assert.Equal(3, runtime.Bundles.Count);
         Assert.Equal(0, runtime.ArbitrationRounds);
         Assert.True(runtime.TryGetBundle<MonikerMicroBundle>(MonikerMicroBundle.BundleId, out var bundle));
         Assert.NotNull(bundle);
@@ -39,6 +40,11 @@ public sealed class AnyAppRuntimeTests
             MonikerWaveMotionMicroBundle.BundleId,
             out var motion));
         Assert.NotNull(motion);
+        Assert.True(runtime.TryGetBundle<RendererMicroBundle>(
+            RendererMicroBundle.BundleId,
+            out var renderer));
+        Assert.NotNull(renderer);
+        Assert.True(renderer.IsLoaded);
     }
 
     [Fact]
