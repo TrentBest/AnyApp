@@ -588,7 +588,7 @@ public partial class MainWindow : Window
                 AppContext.BaseDirectory,
                 "experiences",
                 "moniker",
-                "1.0.0",
+                "development",
                 "manifest.json");
 
             var content = await File.ReadAllBytesAsync(path);
