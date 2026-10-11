@@ -12,10 +12,14 @@ public sealed class AnyAppRuntimeTests
     {
         var runtime = AnyAppRuntime.Compose(MonikerExperience.CreateManifest());
         Assert.Equal(MonikerExperience.RuntimeId, runtime.RuntimeId);
-        Assert.Single(runtime.Bundles);
+        Assert.Equal(2, runtime.Bundles.Count);
         Assert.Equal(0, runtime.ArbitrationRounds);
         Assert.True(runtime.TryGetBundle<MonikerMicroBundle>(MonikerMicroBundle.BundleId, out var bundle));
         Assert.NotNull(bundle);
+        Assert.True(runtime.TryGetBundle<MonikerWaveMotionMicroBundle>(
+            MonikerWaveMotionMicroBundle.BundleId,
+            out var motion));
+        Assert.NotNull(motion);
     }
 
     [Fact]
@@ -58,7 +62,11 @@ public sealed class AnyAppRuntimeTests
         var runtime = AnyAppRuntime.Compose(MonikerExperience.CreateManifest());
         Assert.True(runtime.TryGetBundle<MonikerMicroBundle>(MonikerMicroBundle.BundleId, out var bundle));
         var surface = Assert.IsAssignableFrom<IAnyAppSurface>(bundle);
-        var presented = MonikerExperience.ExecutePresentation(surface.Root);
+        Assert.True(runtime.TryGetBundle<IMonikerMotion>(
+            MonikerWaveMotionMicroBundle.BundleId,
+            out var motion));
+        Assert.NotNull(motion);
+        var presented = MonikerExperience.ExecutePresentation(surface.Root, motion);
         Assert.True(presented.TryFind("moniker-singularity-0", out var glyph));
         Assert.Equal("S", glyph!.Text);
         Assert.Equal("3.8", glyph.Properties["wavePeriod"]);
