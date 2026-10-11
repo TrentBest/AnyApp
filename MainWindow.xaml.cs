@@ -10,6 +10,8 @@ using System.Windows.Shapes;
 using TheSingularityWorkshop.FSM_COS;
 using TheSingularityWorkshop.Experiences.Moniker;
 using TheSingularityWorkshop.Experiences.Moniker.Motion.Wave;
+using TheSingularityWorkshop.Renderer;
+using TheSingularityWorkshop.Experiences.Moniker.Motion.Wave;
 using TheSingularityWorkshop.MicroBundleDomain;
 using TheSingularityWorkshop.GUI.WPF;
 using TheSingularityWorkshop.Workshop.Gui;
@@ -25,6 +27,7 @@ public partial class MainWindow : Window
     private AnyAppLivingDemo? _livingDemo;
     private GuiNode? _currentMonikerRoot;
     private IMonikerMotion? _currentMonikerMotion;
+    private bool _monikerMotionEnabled;
 
     public MainWindow()
     {
@@ -346,6 +349,20 @@ public partial class MainWindow : Window
             ? motion
             : null;
 
+        // The Renderer FSM determines how much presentation work is justified for
+        // this observer. The opening Moniker is in the interactive horizon.
+        _monikerMotionEnabled = false;
+        if (runtime.TryGetBundle<RendererMicroBundle>(RendererMicroBundle.BundleId, out var renderer) &&
+            renderer is { IsLoaded: true })
+        {
+            using var rendererMachine = new RendererComputationMachine(
+                new RendererComputationContext(
+                    $"Experience-{manifest.ExperienceId}-Moniker",
+                    RepresentationTarget.Interactive));
+            _monikerMotionEnabled =
+                rendererMachine.Advance() >= RepresentationTarget.Near;
+        }
+
         if (runtime.TryGetBundle<IMicroBundle>(
                 MonikerMicroBundle.BundleId,
                 out var monikerBundle) &&
@@ -357,7 +374,7 @@ public partial class MainWindow : Window
             RootHost.Children.Clear();
             RootHost.Children.Add(
                 WpfGuiRenderer.Render(
-                    MonikerExperience.ExecutePresentation(monikerRoot, _currentMonikerMotion)));
+                    MonikerExperience.ExecutePresentation(monikerRoot, _currentMonikerMotion, _monikerMotionEnabled)));
             _webBridge.SetState("moniker", false);
 
             if (selectedBundleId == 0)
@@ -498,7 +515,7 @@ public partial class MainWindow : Window
 
         RootHost.Children.Add(
             WpfGuiRenderer.Render(
-                MonikerExperience.ExecutePresentation(_currentMonikerRoot, _currentMonikerMotion)));
+                MonikerExperience.ExecutePresentation(_currentMonikerRoot, _currentMonikerMotion, _monikerMotionEnabled)));
 
         _webBridge.SetState("moniker", false);
     }
@@ -529,7 +546,7 @@ public partial class MainWindow : Window
             {
                 stack.Children.Add(
                     WpfGuiRenderer.Render(
-                        MonikerExperience.ExecutePresentation(_currentMonikerRoot, _currentMonikerMotion)));
+                        MonikerExperience.ExecutePresentation(_currentMonikerRoot, _currentMonikerMotion, _monikerMotionEnabled)));
             }
 
             var enter = new Button
