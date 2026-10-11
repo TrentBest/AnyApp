@@ -12,6 +12,11 @@
       "bundleId": 3102,
       "bundleVersion": "1.0.0",
       "configurationBase64": ""
+    },
+    {
+      "bundleId": 5928230539630870529,
+      "bundleVersion": "0.1.0-alpha.2",
+      "configurationBase64": ""
     }
   ]
 }
