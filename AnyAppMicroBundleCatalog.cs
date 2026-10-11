@@ -13,6 +13,7 @@ public sealed class AnyAppMicroBundleCatalog : IMicroBundleCatalog
         new Dictionary<ulong, IMicroBundle>
         {
             [MonikerMicroBundle.BundleId] = new MonikerMicroBundle(),
+            [MonikerWaveMotionMicroBundle.BundleId] = new MonikerWaveMotionMicroBundle(),
             [ForgeMicroBundle.BundleId] = new ForgeMicroBundle()
         };
 
