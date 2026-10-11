@@ -1,5 +1,6 @@
 using TheSingularityWorkshop.MicroBundleDomain;
 using TheSingularityWorkshop.FSM_COS;
+using TheSingularityWorkshop.Experiences.Moniker;
 using TheSingularityWorkshop.Experiences.Moniker.Motion.Wave;
 
 namespace TheSingularityWorkshop.AnyApp;
