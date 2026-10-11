@@ -2,6 +2,7 @@ using TheSingularityWorkshop.MicroBundleDomain;
 using TheSingularityWorkshop.FSM_COS;
 using TheSingularityWorkshop.Experiences.Moniker;
 using TheSingularityWorkshop.Experiences.Moniker.Motion.Wave;
+using TheSingularityWorkshop.Renderer;
 
 namespace TheSingularityWorkshop.AnyApp;
 
@@ -16,7 +17,8 @@ public sealed class AnyAppMicroBundleCatalog : IMicroBundleCatalog
         {
             [MonikerMicroBundle.BundleId] = new MonikerMicroBundle(),
             [MonikerWaveMotionMicroBundle.BundleId] = new MonikerWaveMotionMicroBundle(),
-            [ForgeMicroBundle.BundleId] = new ForgeMicroBundle()
+            [ForgeMicroBundle.BundleId] = new ForgeMicroBundle(),
+            [RendererMicroBundle.BundleId] = new RendererMicroBundle()
         };
 
     public bool TryResolve(ulong bundleId, out IMicroBundle? bundle) =>
