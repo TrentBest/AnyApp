@@ -18,8 +18,8 @@
     <Description>Desktop AnyApp host proving FSM_COS composition through GUI.WPF.</Description>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Remove="tests\**\*.cs" />
-    <Compile Remove="_dependencies\**\*.cs" />
+    <Compile Remove="tests/**/*.cs" />
+    <Compile Remove="_dependencies/**/*.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="TheSingularityWorkshop.FSM_API" Version="1.0.13" />
