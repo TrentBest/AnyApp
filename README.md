@@ -93,7 +93,7 @@ GUI.WPF visualizer
 native WPF
 ~~~
 
-The Moniker content MicroBundle remains static and previewable. `TheSingularityWorkshop.Experiences.Moniker.Motion.Wave` independently contributes wave behavior. The development manifest composes content, motion, and the Renderer MicroBundle through FSM_COS. AnyApp advances the Renderer representation FSM and only enables the wave when the Moniker is in the near/interactive representation; GUI.WPF remains the visible presentation adapter.
+The Moniker content MicroBundle remains static and previewable. `TheSingularityWorkshop.Experiences.Moniker.Motion.Wave` independently contributes wave behavior. The development manifest composes content, motion, and the Renderer MicroBundle through FSM_COS. AnyApp advances the Renderer representation FSM and only enables the wave when the Moniker is in the near/interactive representation; GUI.WPF remains the visible presentation adapter. This is the first end-to-end composition slice: Renderer representation now gates visible motion, while the Renderer `RenderFrame` command stream and GPU backend remain a separate next milestone.
 
 ## Repository-backed composition
 
