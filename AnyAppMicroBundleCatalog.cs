@@ -21,4 +21,17 @@ public sealed class AnyAppMicroBundleCatalog : IMicroBundleCatalog
 
     public bool TryResolve(ulong bundleId, out IMicroBundle? bundle) =>
         _bundles.TryGetValue(bundleId, out bundle);
+
+    public bool TryResolve(ulong bundleId, string version, out IMicroBundle? bundle)
+    {
+        if (!_bundles.TryGetValue(bundleId, out bundle) || bundle is null)
+            return false;
+
+        if (string.IsNullOrWhiteSpace(version) ||
+            string.Equals(bundle.Descriptor.Version, version, StringComparison.Ordinal))
+            return true;
+
+        bundle = null;
+        return false;
+    }
 }
