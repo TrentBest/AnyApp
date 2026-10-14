@@ -197,6 +197,9 @@ The CI workflow uses a Windows runner because WPF is Windows-specific.
 
 ## ProtocolAi source and contract
 
+
+![ProtocolAi's three outcomes: known values become references, unknown values remain literals, and invalid references fail validation.](https://raw.githubusercontent.com/TrentBest/TheSingularityWorkshop.ProtocolAi/development/docs/images/protocol-ai-three-outcomes.svg)
+
 This repository's concrete vocabulary is defined in [WorkshopSemanticExchange.cs](https://github.com/TrentBest/AnyApp/blob/master/WorkshopSemanticExchange.cs). The ProtocolAi package owns protocol/symbol identity; GrammarAi describes admitted structure; FSM_UserIO carries SemanticIntent; AnyApp owns domain meaning and execution.
 
 ~~~csharp
