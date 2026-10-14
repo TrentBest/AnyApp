@@ -136,7 +136,7 @@ AnyApp      ---> owns Experience meaning and execution
 FSM_COS     ---> composes the runtime
 ~~~
 
-The integration is documented more deeply in ProtocolAI's [Ecosystem Integration](https://github.com/TrentBest/TheSingularityWorkshop.ProtocolAi/blob/master/docs/ECOSYSTEM_INTEGRATION.md).
+The integration is documented more deeply in ProtocolAI's [Ecosystem Integration](https://github.com/TrentBest/TheSingularityWorkshop.ProtocolAi/blob/development/docs/ECOSYSTEM_INTEGRATION.md).
 
 ## Physical baseline
 
