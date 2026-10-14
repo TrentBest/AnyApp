@@ -324,7 +324,7 @@ The ProtocolAI documentation maintains the API contract; this file and WorkshopS
 
 <p align="center">
   <a href="https://github.com/TrentBest/WebPage" aria-label="Visit The Singularity Workshop">
-    <img src="https://raw.githubusercontent.com/TrentBest/WebPage/master/TheSingularityWorkshop/wwwroot/Images/TheSingularityWorkshopLivingAvatar.svg" alt="The Singularity Workshop living avatar — a digital vortex of information converging on its central eye" width="112" />
+    <img src="https://raw.githubusercontent.com/TrentBest/WebPage/development/TheSingularityWorkshop/wwwroot/Images/TheSingularityWorkshopLivingAvatar.svg" alt="The Singularity Workshop living avatar — a digital vortex of information converging on its central eye" width="112" />
   </a><br />
   <strong>The Singularity Workshop</strong><br />
   <em>Forging Software for the Singularity.</em><br />
