@@ -193,3 +193,18 @@ dotnet test tests/TheSingularityWorkshop.AnyApp.Tests/TheSingularityWorkshop.Any
 ~~~
 
 The CI workflow uses a Windows runner because WPF is Windows-specific.
+
+
+## ProtocolAi source and contract
+
+This repository's concrete vocabulary is defined in [WorkshopSemanticExchange.cs](https://github.com/TrentBest/AnyApp/blob/master/WorkshopSemanticExchange.cs). The ProtocolAi package owns protocol/symbol identity; GrammarAi describes admitted structure; FSM_UserIO carries SemanticIntent; AnyApp owns domain meaning and execution.
+
+~~~csharp
+public static ProtocolDefinition IntentProtocol { get; } =
+    new ProtocolBuilder(IntentProtocolId, "WorkshopExperienceIntents")
+        .Define(OpenForgeSymbolId, "openForge", "open.forge")
+        .Define(ExploreExperiencesSymbolId, "exploreExperiences", "explore.experiences")
+        .Build();
+~~~
+
+Read the [ProtocolAi API and theory](https://github.com/TrentBest/TheSingularityWorkshop.ProtocolAi/blob/development/README.md) and its [ecosystem usage map](https://github.com/TrentBest/TheSingularityWorkshop.ProtocolAi/blob/development/docs/ECOSYSTEM_USAGE_MAP.md). A grammar-admitted intent is not automatically authorized; host policy still owns permission and execution.
