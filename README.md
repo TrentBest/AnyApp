@@ -5,11 +5,14 @@
   </a>
 </p>
 
-# AnyApp
+# ✳️ 00 AnyApp
 
 AnyApp is the desktop proof of the composition architecture.
 
 It is the Windows desktop counterpart to the browser-facing WebPage/WebForge host: the desktop of the Workshop, not another application-specific framework.
+
+
+This README follows the Workshop's shared [Documentation Standard](https://github.com/TrentBest/TheSingularityWorkshop.FSM_COS/blob/master/DOCUMENTATION_STANDARD.md), while keeping this repository's own purpose and implementation authoritative.
 
 ## Startup is now manifest-driven
 
