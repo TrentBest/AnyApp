@@ -277,6 +277,19 @@ dotnet test tests/TheSingularityWorkshop.AnyApp.Tests/TheSingularityWorkshop.Any
 
 The CI workflow uses a Windows runner because WPF is Windows-specific.
 
+## Renderer desktop proof
+
+Launch the native desktop diagnostic surface with:
+
+```powershell
+dotnet run --project AnyApp.csproj -- --renderer-proof
+```
+
+This mode consumes the shared deterministic diagnostic command workload from the Renderer development source. Each of 1,000 stable diagnostic entities supplies five representation candidates; the toolbar selects a maximum detail, and the actual Renderer command reducer selects one permitted variant per entity. The live counters expose candidate, selected, omitted, and represented-entity counts.
+
+The visible marks are a small WPF diagnostic projection of the selected commands. They verify that AnyApp can host and inspect the shared Renderer decision path; they are **not** the Visualize backend, a geometry-quality benchmark, or proof of GPU rendering. The normal Moniker startup remains unchanged when the flag is absent.
+
+
 ## Browser-only Deep Dive handoff
 
 AnyApp does not embed the Workshop's educational Deep Dive implementation.
