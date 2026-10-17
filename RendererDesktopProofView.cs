@@ -5,6 +5,8 @@ using System.Windows.Media;
 using System.Windows.Shapes;
 using TheSingularityWorkshop.Renderer;
 using TheSingularityWorkshop.Renderer.Diagnostics;
+using TheSingularityWorkshop.Renderer.VisualizeAdapter;
+using TheSingularityWorkshop.Visualize;
 
 namespace TheSingularityWorkshop.AnyApp;
 
@@ -94,10 +96,8 @@ public sealed class RendererDesktopProofView : Grid
         private readonly IReadOnlyList<RenderDrawCommand> _candidates =
             RendererDiagnosticScene.CreateCommands(1_000);
 
-        private RenderCommandReductionResult _result =
-            RenderCommandReducer.Reduce(
-                RendererDiagnosticScene.CreateCommands(1_000),
-                RendererRepresentation.Interactive);
+        private RenderCommandReductionResult _result = null!;
+        private VisualizerFrame _frame = null!;
 
         public event Action<RenderCommandReductionMetrics>? MetricsChanged;
 
@@ -110,6 +110,13 @@ public sealed class RendererDesktopProofView : Grid
         public void SetDetail(RendererRepresentation detail)
         {
             _result = RenderCommandReducer.Reduce(_candidates, detail);
+            var sourceFrame = new RenderFrame(
+                new RenderView(
+                    System.Numerics.Vector3.Zero,
+                    System.Numerics.Matrix4x4.Identity,
+                    System.Numerics.Matrix4x4.Identity),
+                _result.Commands);
+            _frame = new RendererFrameAdapter().Adapt(sourceFrame);
             MetricsChanged?.Invoke(_result.Metrics);
             InvalidateVisual();
         }
@@ -127,34 +134,34 @@ public sealed class RendererDesktopProofView : Grid
                 null,
                 new Rect(0, 0, width, height));
 
-            var step = Math.Max(1, (int)Math.Ceiling(_result.Commands.Count / 2_500d));
-            for (var index = 0; index < _result.Commands.Count; index += step)
+            var step = Math.Max(1, (int)Math.Ceiling(_frame.Commands.Count / 2_500d));
+            for (var index = 0; index < _frame.Commands.Count; index += step)
             {
-                var command = _result.Commands[index];
+                var command = _frame.Commands[index];
                 var x = (command.WorldTransform.M41 + 1f) * 0.5f * width;
                 var y = (command.WorldTransform.M42 + 1f) * 0.5f * height;
                 var radius = command.Representation switch
                 {
-                    RendererRepresentation.Semantic => 1.4,
-                    RendererRepresentation.Aggregate => 2.0,
-                    RendererRepresentation.Distant => 2.6,
-                    RendererRepresentation.Near => 3.4,
-                    RendererRepresentation.Interactive => 4.4,
+                    VisualizerRepresentation.Semantic => 1.4,
+                    VisualizerRepresentation.Aggregate => 2.0,
+                    VisualizerRepresentation.Distant => 2.6,
+                    VisualizerRepresentation.Near => 3.4,
+                    VisualizerRepresentation.Interactive => 4.4,
                     _ => 2.0
                 };
                 var color = command.Representation switch
                 {
-                    RendererRepresentation.Semantic => Color.FromRgb(95, 120, 140),
-                    RendererRepresentation.Aggregate => Color.FromRgb(0, 168, 255),
-                    RendererRepresentation.Distant => Color.FromRgb(0, 234, 255),
-                    RendererRepresentation.Near => Color.FromRgb(255, 47, 255),
-                    RendererRepresentation.Interactive => Color.FromRgb(255, 211, 77),
+                    VisualizerRepresentation.Semantic => Color.FromRgb(95, 120, 140),
+                    VisualizerRepresentation.Aggregate => Color.FromRgb(0, 168, 255),
+                    VisualizerRepresentation.Distant => Color.FromRgb(0, 234, 255),
+                    VisualizerRepresentation.Near => Color.FromRgb(255, 47, 255),
+                    VisualizerRepresentation.Interactive => Color.FromRgb(255, 211, 77),
                     _ => Colors.White
                 };
                 var brush = new SolidColorBrush(color);
                 drawingContext.DrawEllipse(brush, null, new Point(x, y), radius, radius);
 
-                if (command.Representation == RendererRepresentation.Interactive)
+                if (command.Representation == VisualizerRepresentation.Interactive)
                 {
                     var pen = new Pen(brush, 0.8);
                     drawingContext.DrawLine(pen, new Point(x - radius - 1, y), new Point(x + radius + 1, y));
@@ -163,7 +170,7 @@ public sealed class RendererDesktopProofView : Grid
             }
 
             var note = new FormattedText(
-                $"DETAIL CEILING: {_result.Commands.FirstOrDefault().Representation.ToString().ToUpperInvariant()}",
+                $"DETAIL CEILING: {_frame.Commands.FirstOrDefault().Representation.ToString().ToUpperInvariant()}",
                 CultureInfo.InvariantCulture,
                 FlowDirection.LeftToRight,
                 new Typeface("Consolas"),
