@@ -285,9 +285,9 @@ Launch the native desktop diagnostic surface with:
 dotnet run --project AnyApp.csproj -- --renderer-proof
 ```
 
-This mode consumes the shared deterministic diagnostic command workload from the Renderer development source. Each of 1,000 stable diagnostic entities supplies five representation candidates; the toolbar selects a maximum detail, and the actual Renderer command reducer selects one permitted variant per entity. The live counters expose candidate, selected, omitted, and represented-entity counts.
+This mode consumes the shared deterministic diagnostic command workload from the Renderer development source. Each of 1,000 stable diagnostic entities supplies five representation candidates; the toolbar selects a maximum detail, and the actual Renderer command reducer selects one permitted variant per entity. The reduced commands are assembled into a platform-neutral Renderer frame and passed through Visualize's real Renderer-to-Visualizer frame adapter. The live counters expose candidate, selected, omitted, and represented-entity counts.
 
-The visible marks are a small WPF diagnostic projection of the selected commands. They verify that AnyApp can host and inspect the shared Renderer decision path; they are **not** the Visualize backend, a geometry-quality benchmark, or proof of GPU rendering. The normal Moniker startup remains unchanged when the flag is absent.
+The visible marks are a small WPF diagnostic projection of the adapted VisualizerFrame. This verifies that AnyApp can host the shared Renderer decision path and the Renderer-to-Visualize frame contract; it is **not** the production Visualize backend, a geometry-quality benchmark, or proof of GPU rendering. The normal Moniker startup remains unchanged when the flag is absent.
 
 
 ## Browser-only Deep Dive handoff
