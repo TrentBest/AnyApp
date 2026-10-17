@@ -57,6 +57,14 @@ public partial class MainWindow : Window
             return;
         }
 
+        if (Environment.GetCommandLineArgs().Any(argument =>
+                string.Equals(argument, "--renderer-proof", StringComparison.OrdinalIgnoreCase)))
+        {
+            RootHost.Children.Clear();
+            RootHost.Children.Add(new RendererDesktopProofView());
+            return;
+        }
+
         await StartDefaultExperienceAsync();
     }
 
