@@ -34,7 +34,7 @@
     <ProjectReference Include="_dependencies/TheSingularityWorkshop.Renderer/TheSingularityWorkshop.Renderer.csproj" />
     <ProjectReference Include="_dependencies/TheSingularityWorkshop.Visualize/TheSingularityWorkshop.Visualize.csproj" />
     <ProjectReference Include="_dependencies/TheSingularityWorkshop.Visualize/integrations/RendererAdapter/TheSingularityWorkshop.Renderer.VisualizeAdapter.csproj"
-                      AdditionalProperties="WorkshopUseRepositorySources=true;WorkshopSourceRoot=$(MSBuildThisFileDirectory)_dependencies\" />
+                      AdditionalProperties="WorkshopUseRepositorySources=true;WorkshopSourceRoot=$(MSBuildThisFileDirectory)_dependencies" />
   </ItemGroup>
   <ItemGroup>
     <None Update="experiences/**/manifest.json">
