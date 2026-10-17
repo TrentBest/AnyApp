@@ -333,6 +333,13 @@ FSM_COS     -> composes the runtime
 The ProtocolAI documentation maintains the API contract; this file and WorkshopSemanticExchange provide the concrete host example. If either side changes its semantic contract, both should be reviewed together.
 
 
+## Singularity Studios desktop proving ground
+
+Singularity Studios is the proposed reusable data-driven filming studio shared with the browser host. AnyApp's role is to consume the same versioned stage/take fixture and production semantics, not to implement a second studio model. The desktop integration direction, first repeatable take, deterministic replay, physical/audio boundaries, and acceptance gates are documented in the [Singularity Studios AnyApp handoff](docs/integrations/SINGULARITY_STUDIOS_ANYAPP_HANDOFF.md). The browser workbench plan is in the [WebPageLLM integration handoff](https://github.com/TrentBest/WebPage/blob/development/docs/integrations/SINGULARITY_STUDIOS_WEBPAGELLM_HANDOFF.md).
+
+This is a design handoff only; no studio simulator or physics/audio integration is claimed to be implemented.
+
+
 ---
 
 <p align="center">
