@@ -89,6 +89,7 @@ public sealed class RendererDesktopProofView : Grid
                 CultureInfo.InvariantCulture,
                 $"Entities represented: {metrics.EntitiesRepresented:N0}  |  Candidate commands: {metrics.InputCommands:N0}  |  Selected: {metrics.OutputCommands:N0}  |  Omitted: {metrics.OmittedCommands:N0}");
         };
+        _surface.SetDetail(RendererRepresentation.Interactive);
     }
 
     private sealed class RendererDesktopProofSurface : FrameworkElement
