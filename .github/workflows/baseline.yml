@@ -81,6 +81,10 @@ jobs:
         ref: development
         path: _dependencies/MicroBundleRepository
 
+    - name: Restore Renderer source dependency graph
+      shell: pwsh
+      run: dotnet restore _dependencies/TheSingularityWorkshop.Renderer/TheSingularityWorkshop.Renderer.csproj -p:WorkshopUseRepositorySources=true -p:WorkshopSourceRoot="$env:GITHUB_WORKSPACE/_dependencies"
+
     - name: Pack local composition dependencies
       shell: pwsh
       run: |
