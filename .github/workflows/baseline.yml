@@ -30,7 +30,14 @@ jobs:
       with:
         repository: TrentBest/TheSingularityWorkshop.Renderer
         ref: development
-        path: _dependencies/Renderer
+        path: _dependencies/TheSingularityWorkshop.Renderer
+
+    - name: Checkout Visualize dependency
+      uses: actions/checkout@v5
+      with:
+        repository: TrentBest/TheSingularityWorkshop.Visualize
+        ref: development
+        path: _dependencies/TheSingularityWorkshop.Visualize
 
     - name: Checkout MicroBundleDomain dependency
       uses: actions/checkout@v5
