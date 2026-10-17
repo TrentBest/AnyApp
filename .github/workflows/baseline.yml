@@ -25,6 +25,27 @@ jobs:
         ref: development
         path: _dependencies/Experiences
 
+    - name: Checkout FSM_API source dependency for Renderer
+      uses: actions/checkout@v5
+      with:
+        repository: TrentBest/FSM_API
+        ref: development
+        path: _dependencies/FSM_API
+
+    - name: Checkout ProtocolAi source dependency for Renderer
+      uses: actions/checkout@v5
+      with:
+        repository: TrentBest/TheSingularityWorkshop.ProtocolAi
+        ref: development
+        path: _dependencies/TheSingularityWorkshop.ProtocolAi
+
+    - name: Checkout MicroBundleDomain source dependency for Renderer
+      uses: actions/checkout@v5
+      with:
+        repository: TrentBest/TheSingularityWorkshop.MicroBundleDomain
+        ref: development
+        path: _dependencies/TheSingularityWorkshop.MicroBundleDomain
+
     - name: Checkout Renderer dependency
       uses: actions/checkout@v5
       with:
