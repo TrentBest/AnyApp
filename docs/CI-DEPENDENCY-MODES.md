@@ -25,6 +25,8 @@ dotnet restore tests/TheSingularityWorkshop.AnyApp.Tests/TheSingularityWorkshop.
 
 It does not create or register a local package feed. In normal/package mode, AnyApp's project file selects published packages for FSM_API, FSM_COS, FSM_UserIO, ProtocolAi, GrammarAi, GUI.WPF, MicroBundleRepository.Rest, Renderer, and the Moniker Experience packages. The workflow then tests and measures the publish forms using that restored graph.
 
+**Current release-readiness blocker:** public-feed restore has confirmed that `TheSingularityWorkshop.MicroBundleRepository.Rest`, `TheSingularityWorkshop.Experiences.Moniker`, and `TheSingularityWorkshop.Experiences.Moniker.Motion.Wave` are not currently available on NuGet.org. The package-mode baseline is expected to fail until those dependency packages are published (or the host's package-mode dependency plan changes deliberately). This baseline is restricted to `master` pushes/pull requests and manual dispatch so the ordinary `development` source-integration workflow is not confused with release readiness. Do not paper over this with a local package feed, and do not publish dependencies without explicit authorization.
+
 ## Current integration exception
 
 The Visualize Renderer adapter is currently consumed as a source project because it is an integration project in the Visualize repository rather than a separately published adapter package. The adapter itself must be source-built, and its current project file directly references the Visualize project. Therefore the public-feed baseline validates the published NuGet dependency graph for the package-backed dependencies, but it is not yet a fully source-free Visualize/adapter graph.
