@@ -14,7 +14,7 @@ The failing test fixture had hard-coded `BundleVersion: "1.0.0"` for the Rendere
 
 ## Why this handoff exists
 
-AnyApp's Windows CI restores/builds the Renderer source graph successfully as a standalone project, but the combined AnyApp test dependency graph fails while compiling the Visualize Renderer adapter. The reported unresolved names include:
+At the time this investigation began, AnyApp's Windows CI restored/built the Renderer source graph successfully as a standalone project, while the combined test dependency graph reported unresolved names in the Visualize Renderer adapter, including:
 
 - `RenderFrame`
 - `RendererRepresentation`
@@ -33,7 +33,7 @@ Relevant AnyApp evidence/configuration:
 - [Windows .NET workflow](https://github.com/TrentBest/AnyApp/blob/development/.github/workflows/dotnet.yml) checks out Renderer, Visualize, FSM_API, ProtocolAi, and MicroBundleDomain into `_dependencies`; it separately restores and diagnoses the adapter in source mode, then builds AnyApp and tests.
 - [GPU host integration contract](GPU_HOST_INTEGRATION.md) defines the boundary: Renderer decides representation and produces a frame; Visualize maps and executes presentation work; AnyApp owns the WPF host/surface.
 
-The observed failure is a project-graph/reference-resolution failure symptom, not evidence that these types should be copied into Visualize or duplicated by AnyApp. Please verify the exact evaluated project references and compiler references in the failing combined graph before choosing a fix.
+That compiler symptom was later cleared in the successful AnyApp source-mode run documented above. It was not evidence that these types should be copied into Visualize or duplicated by AnyApp. If a future regression reproduces it, inspect evaluated project and compiler references before choosing a fix.
 
 ## Remaining VisualizeLLM work — adapter distribution
 
