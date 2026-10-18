@@ -116,6 +116,9 @@ jobs:
     - name: Restore
       run: dotnet restore AnyApp.csproj
 
+    - name: Test AnyApp composition contracts
+      run: dotnet test tests/TheSingularityWorkshop.AnyApp.Tests/TheSingularityWorkshop.AnyApp.Tests.csproj --configuration Release
+
     - name: Publish framework-dependent
       run: dotnet publish AnyApp.csproj --configuration Release --runtime win-x64 --self-contained false --output artifacts/framework-dependent --no-restore
 
