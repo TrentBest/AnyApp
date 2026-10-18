@@ -1,8 +1,16 @@
 # VisualizeLLM handoff — AnyApp renderer-adapter build
 
-**Status:** request for VisualizeLLM investigation; no Visualize source changes made by AnyApp.  
+**Status:** historical integration investigation; the immediate AnyApp source-mode failure is resolved. The separately packaged adapter/distribution boundary remains open.  
 **Branch context:** AnyApp `development`, consuming Visualize and Renderer `development` checkouts in CI.  
 **Owner boundary:** AnyApp owns its host and integration orchestration. VisualizeLLM owns the Visualize repository and its Renderer-to-Visualize adapter project.
+
+## Resolution update — 2026-10-18
+
+The original unresolved Renderer-type failure is no longer the current blocker. AnyApp source-mode workflow [#39100390680](https://github.com/TrentBest/AnyApp/actions/runs/39100390680) completed successfully on commit [`bc53092`](https://github.com/TrentBest/AnyApp/commit/bc530929d2cb2e24044bf766c2e292b27e0a083f). The workflow successfully built the Renderer source graph, restored the adapter and AnyApp test graph in repository-source mode, built AnyApp, and ran its tests.
+
+The failing test fixture had hard-coded `BundleVersion: "1.0.0"` for the Renderer MicroBundle, whose descriptor declares `0.1.0-alpha.2`. The fixture now obtains the version from `new RendererMicroBundle().Descriptor.Version`. FSM_COS exact version resolution was behaving as designed; the fixture was stale. No Visualize source change was needed to resolve this incident.
+
+**Do not treat the historical compiler symptom below as an active failure.** The remaining Visualize-side question is packaging the Renderer adapter so the public-feed compatibility graph can consume a released adapter rather than a source project. That is a separate distribution task and does not authorize publishing.
 
 ## Why this handoff exists
 
@@ -27,19 +35,18 @@ Relevant AnyApp evidence/configuration:
 
 The observed failure is a project-graph/reference-resolution failure symptom, not evidence that these types should be copied into Visualize or duplicated by AnyApp. Please verify the exact evaluated project references and compiler references in the failing combined graph before choosing a fix.
 
-## Requested VisualizeLLM work
+## Remaining VisualizeLLM work — adapter distribution
 
-1. **Reproduce the adapter build in source mode** using the same checkout layout and properties as AnyApp CI:
+The source-mode build now passes. Keep the following original reproduction notes as historical context only; they are not a request to re-investigate the resolved fixture mismatch.
+
+1. **Preserve source-mode compatibility** while designing a packable adapter project:
    - `WorkshopUseRepositorySources=true`
    - `WorkshopSourceRoot=<workspace>/_dependencies`
    - Target `integrations/RendererAdapter/TheSingularityWorkshop.Renderer.VisualizeAdapter.csproj`.
-2. **Inspect evaluated MSBuild state**, not just the XML: `WorkshopRendererProjectPath`, `ProjectReference`, `PackageReference`, `ResolvedProjectReferencePaths`, and `ReferencePath`. Confirm whether the adapter resolves the intended Renderer source project or silently falls back to a package.
-3. **Make the smallest fix within Visualize** if the adapter's own project configuration, source path calculation, or compile items cause the unresolved Renderer types. Keep the adapter at the integration boundary; do not add a Visualize dependency to Renderer core or duplicate Renderer frame/representation contracts.
-4. **Prove both supported modes**:
-   - source mode against the sibling Renderer checkout;
-   - package mode against the declared Renderer package version.
-5. **Report the commit and CI evidence**, including the exact command(s) and whether the adapter compiles with warnings treated as errors. Do not publish a package as part of this repair.
-6. **Resolve the distribution boundary for the adapter.** AnyApp's CI now deliberately separates source integration from public-NuGet compatibility. The adapter is currently a Visualize source project and directly project-references Visualize, so the public-feed AnyApp baseline cannot be fully source-free for this slice. Please recommend and, if appropriate, implement a packable adapter package/project whose released form references the published Renderer and Visualize packages while development source mode references the sibling projects. Keep publication disabled until separately authorized.
+2. **Define both supported dependency modes** for the packable adapter: sibling project references in development source mode, and published Renderer/Visualize packages in package mode.
+3. **Keep the adapter at the integration boundary.** Do not add a Visualize dependency to Renderer core or duplicate Renderer frame/representation contracts.
+4. **Prove both modes in CI**, including warning-free adapter compilation and public-feed restore, without creating a local feed.
+5. **Keep publication disabled** until separately authorized. A green source build is not permission to publish.
 
 ## Acceptance criteria for AnyApp
 
