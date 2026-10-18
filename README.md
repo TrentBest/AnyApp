@@ -267,6 +267,8 @@ AnyApp's public distribution and code-signing strategy is documented in [docs/TR
 
 ## Development
 
+The two CI dependency modes are documented in [CI Dependency Modes](docs/CI-DEPENDENCY-MODES.md): development integration uses checked-out dependency sources, while public-package compatibility restores from NuGet without a local development feed.
+
 AnyApp is currently a direct `.csproj` host; the repository does not require a solution file.
 
 ~~~powershell
