@@ -63,9 +63,31 @@ This is diagnostic instrumentation, not a claimed fix. The next action is to ins
 - The existing `--renderer-proof` is CPU/WPF diagnostic output, not GPU-produced pixels.
 - No peer-repository source edits, package publication, deployment, or merge to `master` are implied.
 
+## DIAGNOSTIC RESULT AND RESTORE GRAPH FIX — 2026-10-18
+
+The diagnostic run [39087080094](https://github.com/TrentBest/AnyApp/actions/runs/39087080094) completed and confirms a restore/build graph mismatch:
+
+- Evaluated properties were `WorkshopUseRepositorySources=true`, `WorkshopSourceRoot=D:\a\AnyApp\AnyApp/_dependencies`, and `WorkshopRendererProjectPath=D:\a\AnyApp\AnyApp/_dependencies/TheSingularityWorkshop.Renderer/TheSingularityWorkshop.Renderer.csproj`.
+- Evaluated `ProjectReference` items correctly included both `TheSingularityWorkshop.Visualize.csproj` and the checked-out `TheSingularityWorkshop.Renderer.csproj`.
+- Evaluated `PackageReference` items were empty for the adapter project.
+- However, `ResolveReferences` reported `TheSingularityWorkshop.Renderer.dll` from the global NuGet cache at `thesingularityworkshop.renderer/0.1.0-alpha.2/lib/net8.0`.
+- The actual adapter compilation then failed with CS0246 for `RenderFrame`.
+
+This proves the evaluated source-selection property alone was not enough: the adapter's resolved dependency state still contained the fallback package assembly. The likely failure point is restore not receiving the same global source-graph properties as the later build. This is a bounded diagnosis from the evidence; the fix must be verified by the next CI run.
+
+### Minimal AnyApp-side change
+
+Committed [`be70fed`](https://github.com/TrentBest/AnyApp/commit/be70fed6789f060ab92d1feccdbec13bac06c440) on `development`: the workflow's root test-project restore now passes the same properties used for source integration:
+
+```powershell
+dotnet restore tests/TheSingularityWorkshop.AnyApp.Tests/TheSingularityWorkshop.AnyApp.Tests.csproj -p:WorkshopUseRepositorySources=true -p:WorkshopSourceRoot="$env:GITHUB_WORKSPACE/_dependencies"
+```
+
+This is a CI restore-graph correction only. It does not change Visualize/Renderer public contracts or edit peer repositories. The existing diagnostic step remains temporarily to verify whether the resolved Renderer reference switches away from the stale NuGet package. The build and tests are **not yet confirmed passing**; check the run triggered by this commit before declaring the issue fixed.
+
 ## Current result
 
-**Root cause:** not yet established.  
-**Fix committed:** no code fix; diagnostic CI instrumentation committed.  
-**Build/CI after diagnostics:** pending.  
-**Next evidence needed:** evaluated MSBuild properties/items and resolved Renderer assembly/type metadata from the failing graph.
+**Root cause:** resolved-reference evidence points to stale/package-based restore state despite source-project selection at evaluation time; the restore-property propagation hypothesis awaits verification.  
+**Fix committed:** root test-project restore now receives the source-graph properties (`be70fed6789f060ab92d1feccdbec13bac06c440`).  
+**Build/CI after fix:** pending.  
+**Next evidence needed:** diagnostic output must show the correct source-built Renderer assembly/reference, followed by successful AnyApp build and tests.
