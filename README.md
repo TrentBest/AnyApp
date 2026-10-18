@@ -279,6 +279,8 @@ The CI workflow uses a Windows runner because WPF is Windows-specific.
 
 ## Renderer desktop proof
 
+The host boundary and acceptance gates for the next native GPU milestone are recorded in [GPU Host Integration](docs/GPU_HOST_INTEGRATION.md). This plan preserves the manifest → FSM_COS → RuntimeAssembly path and keeps WPF surface ownership in AnyApp; it does not claim that the current diagnostic projection is GPU-rendered.
+
 Launch the native desktop diagnostic surface with:
 
 ```powershell
