@@ -86,6 +86,14 @@ jobs:
       shell: pwsh
       run: dotnet restore _dependencies/TheSingularityWorkshop.Renderer/TheSingularityWorkshop.Renderer.csproj -p:WorkshopUseRepositorySources=true -p:WorkshopSourceRoot="$env:GITHUB_WORKSPACE/_dependencies"
 
+    - name: Diagnose Renderer source references
+      shell: pwsh
+      run: |
+        $renderer = "_dependencies/TheSingularityWorkshop.Renderer/TheSingularityWorkshop.Renderer.csproj"
+        $sourceRoot = "$env:GITHUB_WORKSPACE/_dependencies"
+        dotnet msbuild $renderer -getProperty:Configuration,WorkshopUseRepositorySources,WorkshopSourceRoot -getItem:ProjectReference,PackageReference -p:Configuration=Release -p:WorkshopUseRepositorySources=true -p:WorkshopSourceRoot="$sourceRoot"
+        dotnet msbuild $renderer -t:ResolveReferences -getItem:ResolvedProjectReferencePaths,ReferencePath -p:Configuration=Release -p:WorkshopUseRepositorySources=true -p:WorkshopSourceRoot="$sourceRoot"
+
     - name: Build Renderer source graph in Release
       shell: pwsh
       run: dotnet build _dependencies/TheSingularityWorkshop.Renderer/TheSingularityWorkshop.Renderer.csproj --configuration Release --no-restore -p:WorkshopUseRepositorySources=true -p:WorkshopSourceRoot="$env:GITHUB_WORKSPACE/_dependencies"
