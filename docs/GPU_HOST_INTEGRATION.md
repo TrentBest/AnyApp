@@ -59,6 +59,21 @@ Windows/WPF is the first implementation target because AnyApp currently targets 
 
 These facts are the baseline for the next integration; they are not claims that a GPU backend has been implemented.
 
+## Backend audit checkpoint (candidate, not selected)
+
+The current leading prototype candidate is native WebGPU through the Silk.NET 2.23.0 binding/runtime pair:
+
+- [Silk.NET.WebGPU 2.23.0](https://www.nuget.org/packages/Silk.NET.WebGPU/2.23.0) provides the C# API binding.
+- [Silk.NET.WebGPU.Native.WGPU 2.23.0](https://www.nuget.org/packages/Silk.NET.WebGPU.Native.WGPU/2.23.0) provides the native wgpu runtime package.
+- The [native package MSBuild target](https://github.com/dotnet/Silk.NET/blob/main/src/Native/Silk.NET.WebGPU.Native.WGPU/build/net461/Silk.NET.WebGPU.Native.WGPU.targets) selects `wgpu_native.dll` for `win-x64` and copies it to build output when the Windows runtime is selected.
+- Silk.NET's [surface helper](https://github.com/dotnet/Silk.NET/blob/main/src/WebGPU/Silk.NET.WebGPU/WebGPUSurface.cs) supports a Win32 HWND surface, and the [WebGPU native surface contract](https://webgpu-native.github.io/webgpu-headers/Surfaces.html) documents Windows HWND presentation.
+
+This is evidence that a native WPF-hosted proof is technically plausible, not yet proof that the exact package pair works in AnyApp's publish modes. Before adoption, pin and restore the pair in an isolated spike, inspect the resolved `win-x64` assets and license notices, and verify the native library loads from the packaged output.
+
+**Host integration constraint:** Silk.NET's helper accepts an `INativeWindowSource`; AnyApp's current WPF window is not itself that abstraction. Do not add Silk.NET.Windowing just to obtain a window if that creates a second window/event loop. The prototype should acquire the existing WPF host's native handle only after its lifetime is established, then pass that handle through a narrow host-owned bridge to WebGPU surface creation. Surface recreation, zero-size suspension, and orderly release remain mandatory.
+
+The API is deliberately **not selected yet**. Keep the Visualize.GPU contracts independent, and compare this path against the existing shortlist before adding a native dependency to AnyApp.
+
 ## First native GPU slice
 
 Keep the current `--renderer-proof` path as the CPU/WPF comparison. Add a separate, explicit GPU proof mode only after the backend candidate passes the package/runtime/surface audit.
