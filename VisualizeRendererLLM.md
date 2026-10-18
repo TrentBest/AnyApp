@@ -91,3 +91,15 @@ This is a CI restore-graph correction only. It does not change Visualize/Rendere
 **Fix committed:** root test-project restore now receives the source-graph properties (`be70fed6789f060ab92d1feccdbec13bac06c440`).  
 **Build/CI after fix:** pending.  
 **Next evidence needed:** diagnostic output must show the correct source-built Renderer assembly/reference, followed by successful AnyApp build and tests.
+
+
+## FOLLOW-THROUGH — isolated adapter restore — 2026-10-18
+
+The run triggered by `be70fed` disproved the global-restore fix as written:
+
+- [.NET run 39087615138](https://github.com/TrentBest/AnyApp/actions/runs/39087615138) fails during root restore with NU1605: AnyApp directly pins ProtocolAi `0.1.0-alpha.2`, while the source Renderer graph requests `0.1.0-alpha.3`. The diagnostic/build steps are skipped.
+- [Baseline run 39087615143](https://github.com/TrentBest/AnyApp/actions/runs/39087615143) still fails in the adapter with CS0246 for `RenderFrame`, even though the local Renderer project builds immediately beforehand.
+
+I am replacing the global-property root restore with a targeted adapter restore. The normal AnyApp/test graph will restore without source-graph properties; then the adapter project alone will restore with `WorkshopUseRepositorySources=true` and the checked-out source root. This aims to align the adapter's NuGet assets with its build-time source selection without globally changing AnyApp's direct ProtocolAi package resolution. The diagnostic step remains to verify the resolved assembly path.
+
+**Status:** this is a new hypothesis-driven workflow change, not yet verified. Do not claim the adapter is fixed until the next run reports the resolved references and passes build/tests.
