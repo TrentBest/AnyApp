@@ -25,21 +25,29 @@
     <ApplicationDefinition Remove="_dependencies/**/*.xaml" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="TheSingularityWorkshop.FSM_API" Version="1.0.13" />
-    <PackageReference Include="TheSingularityWorkshop.FSM_COS" Version="0.1.0-alpha.6" />
-    <PackageReference Include="TheSingularityWorkshop.FSM_UserIO" Version="0.1.0-alpha.1" />
+    <!-- Development integration resolves our sibling development checkouts; normal/package builds consume released NuGet packages. -->
+    <PackageReference Include="TheSingularityWorkshop.FSM_API" Version="1.0.13" Condition="'$(WorkshopUseRepositorySources)' != 'true'" />
+    <PackageReference Include="TheSingularityWorkshop.FSM_COS" Version="0.1.0-alpha.6" Condition="'$(WorkshopUseRepositorySources)' != 'true'" />
+    <PackageReference Include="TheSingularityWorkshop.FSM_UserIO" Version="0.1.0-alpha.1" Condition="'$(WorkshopUseRepositorySources)' != 'true'" />
     <PackageReference Include="TheSingularityWorkshop.ProtocolAi" Version="0.1.0-alpha.2" Condition="'$(WorkshopUseRepositorySources)' != 'true'" />
-    <PackageReference Include="TheSingularityWorkshop.GrammarAi" Version="0.1.0-alpha.2" />
-    <PackageReference Include="TheSingularityWorkshop.GUI.WPF" Version="0.1.0-alpha.6" />
-    <PackageReference Include="TheSingularityWorkshop.MicroBundleRepository.Rest" Version="0.1.0-alpha.2" />
+    <PackageReference Include="TheSingularityWorkshop.GrammarAi" Version="0.1.0-alpha.2" Condition="'$(WorkshopUseRepositorySources)' != 'true'" />
+    <PackageReference Include="TheSingularityWorkshop.GUI.WPF" Version="0.1.0-alpha.6" Condition="'$(WorkshopUseRepositorySources)' != 'true'" />
+    <PackageReference Include="TheSingularityWorkshop.MicroBundleRepository.Rest" Version="0.1.0-alpha.2" Condition="'$(WorkshopUseRepositorySources)' != 'true'" />
+    <PackageReference Include="TheSingularityWorkshop.Renderer" Version="0.1.0-alpha.2" Condition="'$(WorkshopUseRepositorySources)' != 'true'" />
+
+    <ProjectReference Include="_dependencies/FSM_API/FSM_API/FSM_API.csproj" Condition="'$(WorkshopUseRepositorySources)' == 'true'" />
+    <ProjectReference Include="_dependencies/FSM_COS/src/FSM_COS/FSM_COS.csproj" Condition="'$(WorkshopUseRepositorySources)' == 'true'" />
+    <ProjectReference Include="_dependencies/FSM_UserIO/TheSingularityWorkshop.FSM_UserIO.csproj" Condition="'$(WorkshopUseRepositorySources)' == 'true'" />
     <ProjectReference Include="_dependencies/TheSingularityWorkshop.ProtocolAi/TheSingularityWorkshop.ProtocolAi.csproj" Condition="'$(WorkshopUseRepositorySources)' == 'true'" />
+    <ProjectReference Include="_dependencies/TheSingularityWorkshop.GrammarAi/TheSingularityWorkshop.GrammarAi.csproj" Condition="'$(WorkshopUseRepositorySources)' == 'true'" />
+    <ProjectReference Include="_dependencies/TheSingularityWorkshop.GUI/src/WPF/TheSingularityWorkshop.GUI.WPF.csproj" Condition="'$(WorkshopUseRepositorySources)' == 'true'" />
+    <ProjectReference Include="_dependencies/MicroBundleRepository/src/REST/TheSingularityWorkshop.MicroBundleRepository.Rest/TheSingularityWorkshop.MicroBundleRepository.Rest.csproj" Condition="'$(WorkshopUseRepositorySources)' == 'true'" />
+    <ProjectReference Include="_dependencies/TheSingularityWorkshop.Renderer/TheSingularityWorkshop.Renderer.csproj" Condition="'$(WorkshopUseRepositorySources)' == 'true'" />
+
     <ProjectReference Include="_dependencies/Experiences/src/Moniker/TheSingularityWorkshop.Experiences.Moniker.csproj" />
     <ProjectReference Include="_dependencies/Experiences/src/Moniker.Motion.Wave/TheSingularityWorkshop.Experiences.Moniker.Motion.Wave.csproj" />
-    <ProjectReference Include="_dependencies/TheSingularityWorkshop.Renderer/TheSingularityWorkshop.Renderer.csproj"
-                      AdditionalProperties="WorkshopUseRepositorySources=true;WorkshopSourceRoot=$(MSBuildThisFileDirectory)_dependencies" />
     <ProjectReference Include="_dependencies/TheSingularityWorkshop.Visualize/TheSingularityWorkshop.Visualize.csproj" />
-    <ProjectReference Include="_dependencies/TheSingularityWorkshop.Visualize/integrations/RendererAdapter/TheSingularityWorkshop.Renderer.VisualizeAdapter.csproj"
-                      AdditionalProperties="WorkshopUseRepositorySources=true;WorkshopSourceRoot=$(MSBuildThisFileDirectory)_dependencies" />
+    <ProjectReference Include="_dependencies/TheSingularityWorkshop.Visualize/integrations/RendererAdapter/TheSingularityWorkshop.Renderer.VisualizeAdapter.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Update="experiences/**/manifest.json">
