@@ -185,6 +185,51 @@ public sealed class AnyAppRuntimeTests
     }
 
     [Fact]
+    public void Manifest_ComposesStartupMonikerSeparatelyFromDestination()
+    {
+        var manifest = new ExperienceManifest(
+            ForgeMicroBundle.ExperienceId,
+            "1.0.0",
+            ForgeMicroBundle.RuntimeId,
+            [
+                new ExperienceBundleRequest(MonikerExperience.MonikerBundleId, "", BundleVersion: "1.0.0"),
+                new ExperienceBundleRequest(MonikerExperience.MotionBundleId, "", BundleVersion: "1.0.0"),
+                new ExperienceBundleRequest(MonikerExperience.RendererBundleId, "", BundleVersion: "0.1.0-alpha.2"),
+                new ExperienceBundleRequest(ForgeMicroBundle.BundleId, "", BundleVersion: "1.0.0")
+            ],
+            WorkshopSemanticExchange.OpenForgeIntent,
+            [MonikerExperience.MonikerBundleId]);
+
+        var startup = manifest.CreateStartupMonikerManifest();
+
+        Assert.NotNull(startup);
+        Assert.Equal([MonikerExperience.MonikerBundleId], startup!.GetStartupMonikerBundleIds());
+        Assert.Contains(startup.Bundles, bundle => bundle.BundleId == MonikerExperience.MonikerBundleId);
+        Assert.Contains(startup.Bundles, bundle => bundle.BundleId == MonikerExperience.MotionBundleId);
+        Assert.Contains(startup.Bundles, bundle => bundle.BundleId == MonikerExperience.RendererBundleId);
+        Assert.DoesNotContain(startup.Bundles, bundle => bundle.BundleId == ForgeMicroBundle.BundleId);
+        Assert.Null(startup.Intent);
+    }
+
+    [Fact]
+    public void LegacyManifest_InfersWorkshopMonikerOnlyWhenIncluded()
+    {
+        var withMoniker = new ExperienceManifest(
+            3201,
+            "1.0.0",
+            3211,
+            [new ExperienceBundleRequest(MonikerExperience.MonikerBundleId, "")]);
+        var withoutMoniker = new ExperienceManifest(
+            3201,
+            "1.0.0",
+            3211,
+            [new ExperienceBundleRequest(ForgeMicroBundle.BundleId, "")]);
+
+        Assert.Equal([MonikerExperience.MonikerBundleId], withMoniker.GetStartupMonikerBundleIds());
+        Assert.Empty(withoutMoniker.GetStartupMonikerBundleIds());
+    }
+
+    [Fact]
     public void EmptyManifest_ComposesWithoutThrowing()
     {
         var runtime = AnyAppRuntime.Compose(RuntimeManifest.Empty(999));
