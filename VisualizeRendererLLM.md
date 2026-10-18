@@ -103,3 +103,15 @@ The run triggered by `be70fed` disproved the global-restore fix as written:
 I am replacing the global-property root restore with a targeted adapter restore. The normal AnyApp/test graph will restore without source-graph properties; then the adapter project alone will restore with `WorkshopUseRepositorySources=true` and the checked-out source root. This aims to align the adapter's NuGet assets with its build-time source selection without globally changing AnyApp's direct ProtocolAi package resolution. The diagnostic step remains to verify the resolved assembly path.
 
 **Status:** this is a new hypothesis-driven workflow change, not yet verified. Do not claim the adapter is fixed until the next run reports the resolved references and passes build/tests.
+
+
+## FOLLOW-THROUGH — Release source-graph isolation — 2026-10-18
+
+The latest workflow run at commit `7207863a` confirms that the diagnostic itself was evaluating the adapter in the default `Debug` configuration while the actual host build uses `Release`. More importantly, the Release build fails inside Renderer with unresolved namespaces/types from FSM_API, MicroBundleDomain, and ProtocolAi. The log shows Renderer errors while dependency projects are also being built, so the available evidence points to a configuration/build-graph ordering or reference propagation issue, not a proven API contract defect.
+
+I made an AnyApp-only CI change in commit [`3d191ba`](https://github.com/TrentBest/AnyApp/commit/3d191ba1421e4ce46556378b33f98bde808a148a):
+
+- Explicitly build the checked-out Renderer source project in Release after its source-mode restore, before packaging the local composition dependencies and before AnyApp's host build.
+- Evaluate the adapter reference graph with `Configuration=Release` so its diagnostic paths match the failing build configuration.
+
+This is an experiment to separate source dependency build failures from AnyApp's composed build, not a confirmed fix. The next CI run must show whether Renderer builds cleanly as a standalone Release project; if it does, we can inspect the adapter's Release reference paths next. If it fails independently, the errors will be isolated at the Renderer source graph. Build/test status remains unverified until that run completes.
