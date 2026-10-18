@@ -32,10 +32,6 @@ jobs:
         ref: development
         path: _dependencies/TheSingularityWorkshop.Visualize
 
-    - name: Restore Renderer source dependency graph
-      shell: pwsh
-      run: dotnet restore _dependencies/TheSingularityWorkshop.Renderer/TheSingularityWorkshop.Renderer.csproj -p:WorkshopUseRepositorySources=true -p:WorkshopSourceRoot="$env:GITHUB_WORKSPACE/_dependencies"
-
     - name: Restore public NuGet dependency graph
       run: dotnet restore tests/TheSingularityWorkshop.AnyApp.Tests/TheSingularityWorkshop.AnyApp.Tests.csproj --source https://api.nuget.org/v3/index.json
 
