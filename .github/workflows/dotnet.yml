@@ -117,6 +117,14 @@ jobs:
     - name: Restore
       run: dotnet restore tests/TheSingularityWorkshop.AnyApp.Tests/TheSingularityWorkshop.AnyApp.Tests.csproj
 
+    - name: Diagnose Renderer adapter reference graph
+      shell: pwsh
+      run: |
+        $adapter = "_dependencies/TheSingularityWorkshop.Visualize/integrations/RendererAdapter/TheSingularityWorkshop.Renderer.VisualizeAdapter.csproj"
+        $sourceRoot = "$env:GITHUB_WORKSPACE/_dependencies"
+        dotnet msbuild $adapter -getProperty:WorkshopUseRepositorySources,WorkshopSourceRoot,WorkshopRendererProjectPath -getItem:ProjectReference,PackageReference -p:WorkshopUseRepositorySources=true -p:WorkshopSourceRoot="$sourceRoot"
+        dotnet msbuild $adapter -t:ResolveReferences -getItem:ReferencePath -p:WorkshopUseRepositorySources=true -p:WorkshopSourceRoot="$sourceRoot"
+
     - name: Build
       run: dotnet build AnyApp.csproj --configuration Release --no-restore
 
