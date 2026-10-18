@@ -15,6 +15,9 @@ public static class MonikerExperience
 {
     public const ulong ExperienceId = 3101;
     public const ulong RuntimeId = 3111;
+    public const ulong MonikerBundleId = 3101;
+    public const ulong MotionBundleId = 3102;
+    public const ulong RendererBundleId = 5928230539630870529UL;
 
     public static RuntimeManifest CreateManifest() =>
         new(
