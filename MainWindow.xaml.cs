@@ -341,7 +341,7 @@ public partial class MainWindow : Window
         // loads; the hand-off waits for both the authored presentation window and the
         // destination runtime to be ready.
         var endpoint = GetRepositoryEndpoint();
-        var compositionTask = AnyAppRuntime.ComposeAsync(manifest, endpoint);
+        var compositionTask = Task.Run(() => AnyAppRuntime.ComposeAsync(manifest, endpoint));
 
         ExperienceManifest? fallbackMoniker = null;
         if (manifest.GetStartupMonikerBundleIds().Count == 0)
@@ -366,7 +366,7 @@ public partial class MainWindow : Window
         var startupManifest = manifest.CreateStartupMonikerManifest(fallbackMoniker);
         if (startupManifest is not null)
         {
-            var startupTask = AnyAppRuntime.ComposeAsync(startupManifest, endpoint);
+            var startupTask = Task.Run(() => AnyAppRuntime.ComposeAsync(startupManifest, endpoint));
             var startupRuntime = await startupTask;
             await PresentStartupMonikersAsync(startupManifest, startupRuntime);
         }
