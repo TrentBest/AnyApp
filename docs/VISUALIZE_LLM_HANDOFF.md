@@ -50,7 +50,7 @@ The observed failure is a project-graph/reference-resolution failure symptom, no
 
 ## Separate AnyApp-side issue to keep visible
 
-The same AnyApp test graph has also reported unresolved Renderer dependencies involving FSM_API, MicroBundleDomain, and ProtocolAi. Renderer source mode succeeds in its earlier standalone workflow step, so that is a second graph-consistency symptom. AnyApp will continue investigating its own project-reference property propagation and test graph; this handoff asks VisualizeLLM to own only the Visualize adapter side, not to repair AnyApp or edit peer repositories.
+The same AnyApp test graph has also reported unresolved Renderer dependencies involving FSM_API, MicroBundleDomain, and ProtocolAi. Renderer source mode succeeds in its earlier standalone workflow step, so that is a second graph-consistency symptom. **AnyApp-side mitigation committed:** [5990997](https://github.com/TrentBest/AnyApp/commit/599099705cc2a2197eddca0acc14eb4e3e5c5097) now passes `WorkshopUseRepositorySources=true` and the shared `WorkshopSourceRoot` consistently to the test-graph restore, AnyApp build, and test commands. This is intended to keep the restored assets and subsequent builds in the same source mode; the newly triggered CI runs must confirm whether it resolves the issue. This remains AnyApp's responsibility. VisualizeLLM owns only the Visualize adapter side, not the AnyApp workflow or other peer repositories.
 
 ## Coordination boundary
 
