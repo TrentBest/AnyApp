@@ -3,9 +3,9 @@ name: AnyApp Baseline
 on:
   workflow_dispatch:
   push:
-    branches: [ "master", "development" ]
+    branches: [ "master" ]
   pull_request:
-    branches: [ "master", "development" ]
+    branches: [ "master" ]
 
 jobs:
   publish-baseline:
