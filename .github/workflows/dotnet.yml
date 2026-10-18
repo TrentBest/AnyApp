@@ -102,7 +102,7 @@ jobs:
       with:
         repository: TrentBest/TheSingularityWorkshop.FSM_COS
         ref: development
-        path: _dependencies/FSM_COS
+        path: _dependencies/TheSingularityWorkshop.FSM_COS
 
     - name: Checkout MicroBundleRepository dependency
       uses: actions/checkout@v5
