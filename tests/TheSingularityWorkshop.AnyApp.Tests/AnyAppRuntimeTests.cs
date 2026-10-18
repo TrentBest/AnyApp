@@ -160,7 +160,7 @@ public sealed class AnyAppRuntimeTests
             [
                 new ExperienceBundleRequest(MonikerMicroBundle.BundleId, "", BundleVersion: "1.0.0"),
                 new ExperienceBundleRequest(MonikerWaveMotionMicroBundle.BundleId, "", BundleVersion: "1.0.0"),
-                new ExperienceBundleRequest(RendererMicroBundle.BundleId, "", BundleVersion: "1.0.0")
+                new ExperienceBundleRequest(RendererMicroBundle.BundleId, "", BundleVersion: new RendererMicroBundle().Descriptor.Version)
             ]);
 
         var runtime = await AnyAppRuntime.ComposeAsync(
