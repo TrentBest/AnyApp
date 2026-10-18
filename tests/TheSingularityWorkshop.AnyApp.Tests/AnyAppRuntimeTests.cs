@@ -151,6 +151,40 @@ public sealed class AnyAppRuntimeTests
     }
 
     [Fact]
+    public async Task ComposeAsync_LocalExperienceManifest_ComposesThroughCos()
+    {
+        var experience = new ExperienceManifest(
+            MonikerExperience.ExperienceId,
+            "1.0.0",
+            MonikerExperience.RuntimeId,
+            [
+                new ExperienceBundleRequest(MonikerMicroBundle.BundleId, "", BundleVersion: "1.0.0"),
+                new ExperienceBundleRequest(MonikerWaveMotionMicroBundle.BundleId, "", BundleVersion: "1.0.0"),
+                new ExperienceBundleRequest(RendererMicroBundle.BundleId, "", BundleVersion: "1.0.0")
+            ]);
+
+        var runtime = await AnyAppRuntime.ComposeAsync(
+            experience,
+            new Uri("http://localhost:5000/"));
+
+        Assert.Equal(MonikerExperience.RuntimeId, runtime.RuntimeId);
+        Assert.Equal(3, runtime.Bundles.Count);
+        Assert.True(runtime.TryGetBundle<MonikerMicroBundle>(
+            MonikerMicroBundle.BundleId,
+            out var moniker));
+        Assert.NotNull(moniker);
+        Assert.True(runtime.TryGetBundle<MonikerWaveMotionMicroBundle>(
+            MonikerWaveMotionMicroBundle.BundleId,
+            out var motion));
+        Assert.NotNull(motion);
+        Assert.True(runtime.TryGetBundle<RendererMicroBundle>(
+            RendererMicroBundle.BundleId,
+            out var renderer));
+        Assert.NotNull(renderer);
+        Assert.True(renderer.IsLoaded);
+    }
+
+    [Fact]
     public void EmptyManifest_ComposesWithoutThrowing()
     {
         var runtime = AnyAppRuntime.Compose(RuntimeManifest.Empty(999));
