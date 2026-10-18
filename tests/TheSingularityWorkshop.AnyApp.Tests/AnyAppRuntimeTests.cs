@@ -203,7 +203,7 @@ public sealed class AnyAppRuntimeTests
         var startup = manifest.CreateStartupMonikerManifest();
 
         Assert.NotNull(startup);
-        Assert.Equal([MonikerExperience.MonikerBundleId], startup!.GetStartupMonikerBundleIds());
+        Assert.Equal(new[] { MonikerExperience.MonikerBundleId }, startup!.GetStartupMonikerBundleIds());
         Assert.Contains(startup.Bundles, bundle => bundle.BundleId == MonikerExperience.MonikerBundleId);
         Assert.Contains(startup.Bundles, bundle => bundle.BundleId == MonikerExperience.MotionBundleId);
         Assert.Contains(startup.Bundles, bundle => bundle.BundleId == MonikerExperience.RendererBundleId);
@@ -225,7 +225,7 @@ public sealed class AnyAppRuntimeTests
             3211,
             [new ExperienceBundleRequest(ForgeMicroBundle.BundleId, "")]);
 
-        Assert.Equal([MonikerExperience.MonikerBundleId], withMoniker.GetStartupMonikerBundleIds());
+        Assert.Equal(new[] { MonikerExperience.MonikerBundleId }, withMoniker.GetStartupMonikerBundleIds());
         Assert.Empty(withoutMoniker.GetStartupMonikerBundleIds());
     }
 
