@@ -96,7 +96,16 @@ jobs:
 
     - name: Build Renderer source graph in Release
       shell: pwsh
-      run: dotnet build _dependencies/TheSingularityWorkshop.Renderer/TheSingularityWorkshop.Renderer.csproj --configuration Release --no-restore -p:WorkshopUseRepositorySources=true -p:WorkshopSourceRoot="$env:GITHUB_WORKSPACE/_dependencies"
+      run: |
+        $log = "renderer-build-diag.log"
+        dotnet build _dependencies/TheSingularityWorkshop.Renderer/TheSingularityWorkshop.Renderer.csproj --configuration Release --no-restore --verbosity diagnostic -p:WorkshopUseRepositorySources=true -p:WorkshopSourceRoot="$env:GITHUB_WORKSPACE/_dependencies" *> $log
+        $buildExitCode = $LASTEXITCODE
+        Write-Host "---- Renderer compiler/reference evidence ----"
+        Select-String -Path $log -Pattern 'Task "Csc"|Csc.*(CommandLineArguments|References)|FSM_API\.dll|TheSingularityWorkshop\.MicroBundleDomain\.dll|TheSingularityWorkshop\.ProtocolAi\.dll|error CS' | Select-Object -Last 160
+        if ($buildExitCode -ne 0) {
+          Write-Host "Renderer source graph build failed; full diagnostic log retained as workflow artifact only if uploaded separately."
+          exit $buildExitCode
+        }
 
     - name: Pack local composition dependencies
       shell: pwsh
