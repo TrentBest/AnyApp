@@ -70,10 +70,33 @@ public partial class MainWindow : Window
 
     private async Task StartDefaultExperienceAsync()
     {
-        // The Moniker is the common first Experience manifestation for AnyApp.
-        // Other Experiences are entered from the Workshop shell rather than
-        // replacing the Workshop's common first surface.
-        await LaunchMonikerAsync();
+        // Match WebPage's manifest-first contract: the Moniker is the introduction,
+        // not the destination. Resume the last assigned Experience when possible;
+        // otherwise enter the Workshop Forge after the Moniker presentation.
+        ExperienceManifest? lastManifest = null;
+        try
+        {
+            lastManifest = await LastManifestStore.TryLoadAsync();
+        }
+        catch
+        {
+            // A damaged last-run record must not prevent the default entry Experience.
+        }
+
+        if (lastManifest is not null)
+        {
+            try
+            {
+                await LaunchManifestAsync(lastManifest, persistLastManifest: true);
+                return;
+            }
+            catch
+            {
+                // A stale/unavailable last Experience falls back to Forge.
+            }
+        }
+
+        await LaunchForgeAsync();
     }
 
     private async Task LaunchPublishedExperienceAsync(AnyAppLaunchRequest request)
@@ -313,12 +336,40 @@ public partial class MainWindow : Window
                 $"Experience intent '{manifest.Intent.Name}' is not admitted by the host semantic grammar.");
         }
 
-        var compositionTask = AnyAppRuntime.ComposeAsync(
-            manifest,
-            GetRepositoryEndpoint());
+        // Start the destination composition immediately. Compose a small startup
+        // manifest in parallel so its Moniker can be presented while the destination
+        // loads; the hand-off waits for both the authored presentation window and the
+        // destination runtime to be ready.
+        var endpoint = GetRepositoryEndpoint();
+        var compositionTask = AnyAppRuntime.ComposeAsync(manifest, endpoint);
 
-        if (showStartupSplash)
-            await StartupSplash.PresentAsync(RootHost, compositionTask);
+        ExperienceManifest? fallbackMoniker = null;
+        if (manifest.GetStartupMonikerBundleIds().Count == 0)
+        {
+            var monikerPath = System.IO.Path.Combine(
+                AppContext.BaseDirectory,
+                "experiences",
+                "moniker",
+                "development",
+                "manifest.json");
+            try
+            {
+                fallbackMoniker = ExperienceManifest.Parse(
+                    await File.ReadAllBytesAsync(monikerPath));
+            }
+            catch
+            {
+                // A destination can still run if the optional fallback Moniker is absent.
+            }
+        }
+
+        var startupManifest = manifest.CreateStartupMonikerManifest(fallbackMoniker);
+        if (startupManifest is not null)
+        {
+            var startupTask = AnyAppRuntime.ComposeAsync(startupManifest, endpoint);
+            var startupRuntime = await startupTask;
+            await PresentStartupMonikersAsync(startupManifest, startupRuntime);
+        }
 
         var runtime = await compositionTask;
         await RenderRuntimeAsync(manifest, runtime);
@@ -327,6 +378,62 @@ public partial class MainWindow : Window
             manifest.ExperienceId != ForgeMicroBundle.ExperienceId)
         {
             await LastManifestStore.SaveAsync(manifest);
+        }
+    }
+
+    private async Task PresentStartupMonikersAsync(
+        ExperienceManifest manifest,
+        RuntimeAssembly runtime)
+    {
+        _currentMonikerRoot = null;
+        _currentMonikerMotion = runtime.TryGetBundle<MonikerWaveMotionMicroBundle>(
+            MonikerWaveMotionMicroBundle.BundleId,
+            out var motion)
+            ? motion
+            : null;
+
+        _monikerMotionEnabled = false;
+        if (runtime.TryGetBundle<RendererMicroBundle>(
+                RendererMicroBundle.BundleId,
+                out var renderer) &&
+            renderer is { IsLoaded: true })
+        {
+            using var rendererMachine = new RendererComputationMachine(
+                new RendererComputationContext(
+                    $"Experience-{manifest.ExperienceId}-Moniker",
+                    RepresentationTarget.Interactive));
+            var representation = rendererMachine.Advance();
+            _monikerMotionEnabled = representation is
+                RepresentationTarget.Near or RepresentationTarget.Interactive;
+        }
+
+        foreach (var bundleId in manifest.GetStartupMonikerBundleIds())
+        {
+            if (!runtime.TryGetBundle<IMicroBundle>(bundleId, out var bundle) ||
+                bundle is null ||
+                !MicroBundleGuiSurface.TryGetRoot(bundle, out var root) ||
+                root is null)
+            {
+                continue;
+            }
+
+            _currentMonikerRoot = bundleId == MonikerExperience.MonikerBundleId
+                ? root
+                : _currentMonikerRoot;
+
+            RootHost.Children.Clear();
+            var presentation = bundleId == MonikerExperience.MonikerBundleId
+                ? MonikerExperience.ExecutePresentation(
+                    root,
+                    _currentMonikerMotion,
+                    _monikerMotionEnabled)
+                : root;
+            RootHost.Children.Add(WpfGuiRenderer.Render(presentation));
+            _webBridge.SetState("moniker", false);
+
+            // Match WebPage's host-owned startup presentation window per Moniker.
+            // The destination composition has already been running in parallel.
+            await Task.Delay(TimeSpan.FromSeconds(3));
         }
     }
 
@@ -342,58 +449,12 @@ public partial class MainWindow : Window
             return;
         }
 
-        // A MicroBundle can contribute behavior without exposing a GUI surface.
-        // Choose the next presentable bundle, not merely the next bundle in the manifest.
+        var startupMonikerIds = manifest.GetStartupMonikerBundleIds().ToHashSet();
         var selectedBundleId = manifest.Bundles
             .Select(bundle => bundle.BundleId)
             .FirstOrDefault(bundleId =>
-                bundleId != MonikerMicroBundle.BundleId &&
+                !startupMonikerIds.Contains(bundleId) &&
                 HasGuiSurface(runtime, bundleId));
-
-        _currentMonikerRoot = null;
-        _currentMonikerMotion = runtime.TryGetBundle<MonikerWaveMotionMicroBundle>(
-            MonikerWaveMotionMicroBundle.BundleId,
-            out var motion)
-            ? motion
-            : null;
-
-        // The Renderer FSM determines how much presentation work is justified for
-        // this observer. The opening Moniker is in the interactive horizon.
-        _monikerMotionEnabled = false;
-        if (runtime.TryGetBundle<RendererMicroBundle>(RendererMicroBundle.BundleId, out var renderer) &&
-            renderer is { IsLoaded: true })
-        {
-            using var rendererMachine = new RendererComputationMachine(
-                new RendererComputationContext(
-                    $"Experience-{manifest.ExperienceId}-Moniker",
-                    RepresentationTarget.Interactive));
-            var representation = rendererMachine.Advance();
-            _monikerMotionEnabled = representation is
-                RepresentationTarget.Near or RepresentationTarget.Interactive;
-        }
-
-        if (runtime.TryGetBundle<IMicroBundle>(
-                MonikerMicroBundle.BundleId,
-                out var monikerBundle) &&
-            monikerBundle is not null &&
-            MicroBundleGuiSurface.TryGetRoot(monikerBundle, out var monikerRoot) &&
-            monikerRoot is not null)
-        {
-            _currentMonikerRoot = monikerRoot;
-            RootHost.Children.Clear();
-            RootHost.Children.Add(
-                WpfGuiRenderer.Render(
-                    MonikerExperience.ExecutePresentation(monikerRoot, _currentMonikerMotion, _monikerMotionEnabled)));
-            _webBridge.SetState("moniker", false);
-
-            if (selectedBundleId == 0)
-            {
-                _ = PresentWorkshopGatewayAsync();
-                return;
-            }
-
-            await Task.Delay(TimeSpan.FromSeconds(3));
-        }
 
         if (selectedBundleId != 0 &&
             runtime.TryGetBundle<IMicroBundle>(
@@ -414,7 +475,10 @@ public partial class MainWindow : Window
         }
 
         if (selectedBundleId == 0)
+        {
+            await PresentWorkshopGatewayAsync(waitForMoniker: false);
             return;
+        }
 
         ShowMessage(
             "The selected Experience could not be manifested.",
@@ -529,9 +593,10 @@ public partial class MainWindow : Window
         _webBridge.SetState("moniker", false);
     }
 
-    private async Task PresentWorkshopGatewayAsync()
+    private async Task PresentWorkshopGatewayAsync(bool waitForMoniker = true)
     {
-        await Task.Delay(TimeSpan.FromSeconds(3));
+        if (waitForMoniker)
+            await Task.Delay(TimeSpan.FromSeconds(3));
 
         await Dispatcher.InvokeAsync(() =>
         {
