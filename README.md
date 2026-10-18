@@ -342,6 +342,11 @@ Singularity Studios is the proposed reusable data-driven filming studio shared w
 This is a design handoff only; no studio simulator or physics/audio integration is claimed to be implemented.
 
 
+## Visualize adapter coordination
+
+AnyApp's current source-mode build failure has a focused handoff for VisualizeLLM: [Visualize Renderer-adapter build request](docs/VISUALIZE_LLM_HANDOFF.md). It records the observed unresolved Renderer frame/representation types, the MSBuild evidence to inspect, the source/package-mode acceptance gates, and the division of responsibility between Visualize and AnyApp. This is a coordination request, not a claim that the adapter has already been repaired.
+
+
 ---
 
 <p align="center">
