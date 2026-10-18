@@ -12,7 +12,8 @@ public sealed record ExperienceManifest(
     string Version,
     ulong RuntimeId,
     IReadOnlyList<ExperienceBundleRequest> Bundles,
-    SemanticIntent? Intent = null)
+    SemanticIntent? Intent = null,
+    IReadOnlyList<ulong>? StartupMonikerBundleIds = null)
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
     {
@@ -21,6 +22,55 @@ public sealed record ExperienceManifest(
 
     public bool UsesRepositoryArtifacts =>
         Bundles.Count > 0 && Bundles.All(bundle => bundle.HasArtifactIdentity);
+
+    /// <summary>
+    /// The ordered Moniker MicroBundles to present before the destination Experience.
+    /// Legacy manifests infer the Workshop Moniker only when they already include it.
+    /// </summary>
+    public IReadOnlyList<ulong> GetStartupMonikerBundleIds()
+    {
+        if (StartupMonikerBundleIds is { Count: > 0 })
+            return StartupMonikerBundleIds.Distinct().ToArray();
+
+        return Bundles.Any(bundle => bundle.BundleId == MonikerExperience.MonikerBundleId)
+            ? [MonikerExperience.MonikerBundleId]
+            : [];
+    }
+
+    /// <summary>
+    /// Creates the startup-only composition used to put the Moniker on screen while
+    /// the full destination manifest is composing independently in the background.
+    /// </summary>
+    public ExperienceManifest? CreateStartupMonikerManifest(
+        ExperienceManifest? fallbackMoniker = null)
+    {
+        var monikerIds = GetStartupMonikerBundleIds();
+        if (monikerIds.Count == 0)
+            return fallbackMoniker?.CreateStartupMonikerManifest();
+
+        var startupIds = monikerIds.ToHashSet();
+
+        // The Workshop Moniker's motion and renderer are separate MicroBundles.
+        // Include them in the startup composition without making them the destination.
+        if (startupIds.Contains(MonikerExperience.MonikerBundleId))
+        {
+            startupIds.Add(MonikerExperience.MotionBundleId);
+            startupIds.Add(MonikerExperience.RendererBundleId);
+        }
+
+        var startupBundles = Bundles
+            .Where(bundle => startupIds.Contains(bundle.BundleId))
+            .ToArray();
+
+        if (startupBundles.Length == 0)
+            return fallbackMoniker?.CreateStartupMonikerManifest();
+
+        return this with
+        {
+            Bundles = startupBundles,
+            StartupMonikerBundleIds = monikerIds
+        };
+    }
 
     public RuntimeManifest ToRuntimeManifest()
     {
