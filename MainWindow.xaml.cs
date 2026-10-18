@@ -321,8 +321,7 @@ public partial class MainWindow : Window
 
     private async Task LaunchManifestAsync(
         ExperienceManifest manifest,
-        bool persistLastManifest,
-        bool showStartupSplash = false)
+        bool persistLastManifest)
     {
         ArgumentNullException.ThrowIfNull(manifest);
 
@@ -696,8 +695,7 @@ public partial class MainWindow : Window
             var content = await File.ReadAllBytesAsync(path);
             await LaunchManifestAsync(
                 ExperienceManifest.Parse(content),
-                persistLastManifest: false,
-                showStartupSplash: false);
+                persistLastManifest: false);
         }
         catch (Exception ex)
         {
@@ -707,7 +705,7 @@ public partial class MainWindow : Window
         }
     }
 
-    private async Task LaunchForgeAsync(bool showStartupSplash = false)
+    private async Task LaunchForgeAsync()
     {
         try
         {
@@ -721,8 +719,7 @@ public partial class MainWindow : Window
             var content = await File.ReadAllBytesAsync(path);
             await LaunchManifestAsync(
                 ExperienceManifest.Parse(content),
-                persistLastManifest: false,
-                showStartupSplash: showStartupSplash);
+                persistLastManifest: false);
         }
         catch (Exception ex)
         {
