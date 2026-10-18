@@ -26,6 +26,34 @@ jobs:
         ref: development
         path: _dependencies/Experiences
 
+    - name: Checkout FSM_UserIO source dependency
+      uses: actions/checkout@v5
+      with:
+        repository: TrentBest/FSM_UserIO
+        ref: development
+        path: _dependencies/FSM_UserIO
+
+    - name: Checkout FSM_REST source dependency
+      uses: actions/checkout@v5
+      with:
+        repository: TrentBest/TheSingularityWorkshop.FSM_REST
+        ref: development
+        path: _dependencies/TheSingularityWorkshop.FSM_REST
+
+    - name: Checkout GrammarAi source dependency
+      uses: actions/checkout@v5
+      with:
+        repository: TrentBest/TheSingularityWorkshop.GrammarAi
+        ref: development
+        path: _dependencies/TheSingularityWorkshop.GrammarAi
+
+    - name: Checkout GUI source dependency
+      uses: actions/checkout@v5
+      with:
+        repository: TrentBest/TheSingularityWorkshop.GUI
+        ref: development
+        path: _dependencies/TheSingularityWorkshop.GUI
+
     - name: Checkout FSM_API source dependency for Renderer
       uses: actions/checkout@v5
       with:
@@ -106,34 +134,6 @@ jobs:
           Write-Host "Renderer source graph build failed; full diagnostic log retained as workflow artifact only if uploaded separately."
           exit $buildExitCode
         }
-
-    - name: Pack local composition dependencies
-      shell: pwsh
-      run: |
-        dotnet restore _dependencies/MicroBundleDomain/TheSingularityWorkshop.MicroBundleDomain.slnx
-        dotnet build _dependencies/MicroBundleDomain/TheSingularityWorkshop.MicroBundleDomain.slnx --configuration Release --no-restore
-
-        New-Item -ItemType Directory -Force -Path _dependencies/nuget | Out-Null
-        dotnet pack _dependencies/MicroBundleDomain/TheSingularityWorkshop.MicroBundleDomain.csproj --configuration Release --no-build --output _dependencies/nuget
-
-    - name: Add local dependency feed
-      shell: pwsh
-      run: dotnet nuget add source "$env:GITHUB_WORKSPACE/_dependencies/nuget" --name CompositionDependenciesLocal
-
-    - name: Pack corrected FSM_COS dependency
-      shell: pwsh
-      run: |
-        dotnet restore _dependencies/FSM_COS/TheSingularityWorkshop.FSM_COS.sln
-        dotnet build _dependencies/FSM_COS/TheSingularityWorkshop.FSM_COS.sln --configuration Release --no-restore
-        dotnet pack _dependencies/FSM_COS/src/FSM_COS/FSM_COS.csproj --configuration Release --no-build --output _dependencies/nuget
-
-    - name: Pack MicroBundleRepository dependency
-      shell: pwsh
-      run: |
-        dotnet restore _dependencies/MicroBundleRepository/TheSingularityWorkshop.MicroBundleRepository.slnx
-        dotnet build _dependencies/MicroBundleRepository/TheSingularityWorkshop.MicroBundleRepository.slnx --configuration Release --no-restore
-        dotnet pack _dependencies/MicroBundleRepository/src/Core/TheSingularityWorkshop.MicroBundleRepository.Core/TheSingularityWorkshop.MicroBundleRepository.Core.csproj --configuration Release --no-build --output _dependencies/nuget
-        dotnet pack _dependencies/MicroBundleRepository/src/REST/TheSingularityWorkshop.MicroBundleRepository.Rest/TheSingularityWorkshop.MicroBundleRepository.Rest.csproj --configuration Release --no-build --output _dependencies/nuget
 
     - name: Restore AnyApp test graph in repository-source mode
       shell: pwsh
