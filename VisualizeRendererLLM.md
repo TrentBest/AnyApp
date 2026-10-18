@@ -115,3 +115,12 @@ I made an AnyApp-only CI change in commit [`3d191ba`](https://github.com/TrentBe
 - Evaluate the adapter reference graph with `Configuration=Release` so its diagnostic paths match the failing build configuration.
 
 This is an experiment to separate source dependency build failures from AnyApp's composed build, not a confirmed fix. The next CI run must show whether Renderer builds cleanly as a standalone Release project; if it does, we can inspect the adapter's Release reference paths next. If it fails independently, the errors will be isolated at the Renderer source graph. Build/test status remains unverified until that run completes.
+
+
+## FOLLOW-THROUGH — Renderer source-reference diagnostic — 2026-10-18
+
+The CI run for commit `015fd300` failed in the new standalone Renderer Release build. Compiler errors identify unresolved types from FSM_API, MicroBundleDomain, and ProtocolAi. The Renderer project file declares source-mode `ProjectReference` entries for these projects, so the current evidence does not yet establish whether those references are missing from evaluation, failing resolution, or absent from the compiler invocation.
+
+AnyApp-only commit [`b404f1a`](https://github.com/TrentBest/AnyApp/commit/b404f1a0cb2892f01b58e5a118efe1e2a8ef772b) adds a focused CI diagnostic before the Renderer build. It records evaluated source-mode properties and project/package references, then asks MSBuild for resolved project references and reference paths in Release. This should distinguish an incorrect source path or restore graph from a build/reference propagation problem.
+
+**Status:** not fixed yet. The next run must be inspected for actual resolved reference paths before choosing a corrective change. Peer repositories remain untouched; no merge or package publish was performed.
