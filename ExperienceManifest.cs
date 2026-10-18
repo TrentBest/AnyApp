@@ -68,7 +68,8 @@ public sealed record ExperienceManifest(
         return this with
         {
             Bundles = startupBundles,
-            StartupMonikerBundleIds = monikerIds
+            StartupMonikerBundleIds = monikerIds,
+            Intent = null
         };
     }
 
