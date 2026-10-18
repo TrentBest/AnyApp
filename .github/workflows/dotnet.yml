@@ -135,8 +135,11 @@ jobs:
         dotnet pack _dependencies/MicroBundleRepository/src/Core/TheSingularityWorkshop.MicroBundleRepository.Core/TheSingularityWorkshop.MicroBundleRepository.Core.csproj --configuration Release --no-build --output _dependencies/nuget
         dotnet pack _dependencies/MicroBundleRepository/src/REST/TheSingularityWorkshop.MicroBundleRepository.Rest/TheSingularityWorkshop.MicroBundleRepository.Rest.csproj --configuration Release --no-build --output _dependencies/nuget
 
-    - name: Restore AnyApp test graph
-      run: dotnet restore tests/TheSingularityWorkshop.AnyApp.Tests/TheSingularityWorkshop.AnyApp.Tests.csproj
+    - name: Restore AnyApp test graph in repository-source mode
+      shell: pwsh
+      run: |
+        $sourceRoot = "$env:GITHUB_WORKSPACE/_dependencies"
+        dotnet restore tests/TheSingularityWorkshop.AnyApp.Tests/TheSingularityWorkshop.AnyApp.Tests.csproj -p:WorkshopUseRepositorySources=true -p:WorkshopSourceRoot="$sourceRoot"
 
     - name: Restore Renderer adapter in source mode
       shell: pwsh
@@ -153,8 +156,14 @@ jobs:
         dotnet msbuild $adapter -getProperty:Configuration,WorkshopUseRepositorySources,WorkshopSourceRoot,WorkshopRendererProjectPath -getItem:ProjectReference,PackageReference -p:Configuration=Release -p:WorkshopUseRepositorySources=true -p:WorkshopSourceRoot="$sourceRoot"
         dotnet msbuild $adapter -t:ResolveReferences -getItem:ReferencePath -p:Configuration=Release -p:WorkshopUseRepositorySources=true -p:WorkshopSourceRoot="$sourceRoot"
 
-    - name: Build
-      run: dotnet build AnyApp.csproj --configuration Release --no-restore
+    - name: Build AnyApp in the same repository-source mode used for restore
+      shell: pwsh
+      run: |
+        $sourceRoot = "$env:GITHUB_WORKSPACE/_dependencies"
+        dotnet build AnyApp.csproj --configuration Release --no-restore -p:WorkshopUseRepositorySources=true -p:WorkshopSourceRoot="$sourceRoot"
 
-    - name: Test
-      run: dotnet test tests/TheSingularityWorkshop.AnyApp.Tests/TheSingularityWorkshop.AnyApp.Tests.csproj --configuration Release --no-restore --verbosity normal
+    - name: Test AnyApp in the same repository-source mode used for restore
+      shell: pwsh
+      run: |
+        $sourceRoot = "$env:GITHUB_WORKSPACE/_dependencies"
+        dotnet test tests/TheSingularityWorkshop.AnyApp.Tests/TheSingularityWorkshop.AnyApp.Tests.csproj --configuration Release --no-restore --verbosity normal -p:WorkshopUseRepositorySources=true -p:WorkshopSourceRoot="$sourceRoot"
