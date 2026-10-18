@@ -34,6 +34,8 @@
     <PackageReference Include="TheSingularityWorkshop.GUI.WPF" Version="0.1.0-alpha.6" Condition="'$(WorkshopUseRepositorySources)' != 'true'" />
     <PackageReference Include="TheSingularityWorkshop.MicroBundleRepository.Rest" Version="0.1.0-alpha.2" Condition="'$(WorkshopUseRepositorySources)' != 'true'" />
     <PackageReference Include="TheSingularityWorkshop.Renderer" Version="0.1.0-alpha.2" Condition="'$(WorkshopUseRepositorySources)' != 'true'" />
+    <PackageReference Include="TheSingularityWorkshop.Experiences.Moniker" Version="0.1.0-alpha.3" Condition="'$(WorkshopUseRepositorySources)' != 'true'" />
+    <PackageReference Include="TheSingularityWorkshop.Experiences.Moniker.Motion.Wave" Version="0.1.0-alpha.1" Condition="'$(WorkshopUseRepositorySources)' != 'true'" />
 
     <ProjectReference Include="_dependencies/FSM_API/FSM_API/FSM_API.csproj" Condition="'$(WorkshopUseRepositorySources)' == 'true'" />
     <ProjectReference Include="_dependencies/FSM_COS/src/FSM_COS/FSM_COS.csproj" Condition="'$(WorkshopUseRepositorySources)' == 'true'" />
@@ -44,8 +46,8 @@
     <ProjectReference Include="_dependencies/MicroBundleRepository/src/REST/TheSingularityWorkshop.MicroBundleRepository.Rest/TheSingularityWorkshop.MicroBundleRepository.Rest.csproj" Condition="'$(WorkshopUseRepositorySources)' == 'true'" />
     <ProjectReference Include="_dependencies/TheSingularityWorkshop.Renderer/TheSingularityWorkshop.Renderer.csproj" Condition="'$(WorkshopUseRepositorySources)' == 'true'" />
 
-    <ProjectReference Include="_dependencies/Experiences/src/Moniker/TheSingularityWorkshop.Experiences.Moniker.csproj" />
-    <ProjectReference Include="_dependencies/Experiences/src/Moniker.Motion.Wave/TheSingularityWorkshop.Experiences.Moniker.Motion.Wave.csproj" />
+    <ProjectReference Include="_dependencies/Experiences/src/Moniker/TheSingularityWorkshop.Experiences.Moniker.csproj" Condition="'$(WorkshopUseRepositorySources)' == 'true'" />
+    <ProjectReference Include="_dependencies/Experiences/src/Moniker.Motion.Wave/TheSingularityWorkshop.Experiences.Moniker.Motion.Wave.csproj" Condition="'$(WorkshopUseRepositorySources)' == 'true'" />
     <ProjectReference Include="_dependencies/TheSingularityWorkshop.Visualize/TheSingularityWorkshop.Visualize.csproj" />
     <ProjectReference Include="_dependencies/TheSingularityWorkshop.Visualize/integrations/RendererAdapter/TheSingularityWorkshop.Renderer.VisualizeAdapter.csproj" />
   </ItemGroup>
