@@ -4,6 +4,8 @@ on:
   workflow_dispatch:
   push:
     branches: [ "master", "development" ]
+  pull_request:
+    branches: [ "master", "development" ]
 
 jobs:
   publish-baseline:
