@@ -20,6 +20,9 @@
   <ItemGroup>
     <Compile Remove="tests/**/*.cs" />
     <Compile Remove="_dependencies/**/*.cs" />
+    <!-- Nested dependency source trees are project inputs, not part of AnyApp's WPF XAML compilation. -->
+    <Page Remove="_dependencies/**/*.xaml" />
+    <ApplicationDefinition Remove="_dependencies/**/*.xaml" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="TheSingularityWorkshop.FSM_API" Version="1.0.13" />
