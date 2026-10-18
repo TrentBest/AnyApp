@@ -124,3 +124,22 @@ The CI run for commit `015fd300` failed in the new standalone Renderer Release b
 AnyApp-only commit [`b404f1a`](https://github.com/TrentBest/AnyApp/commit/b404f1a0cb2892f01b58e5a118efe1e2a8ef772b) adds a focused CI diagnostic before the Renderer build. It records evaluated source-mode properties and project/package references, then asks MSBuild for resolved project references and reference paths in Release. This should distinguish an incorrect source path or restore graph from a build/reference propagation problem.
 
 **Status:** not fixed yet. The next run must be inspected for actual resolved reference paths before choosing a corrective change. Peer repositories remain untouched; no merge or package publish was performed.
+## FOLLOW-THROUGH — host-to-Renderer property propagation — 2026-10-18
+
+The next run after the compiler diagnostic provides a decisive distinction:
+
+- The explicit standalone Renderer Release source-graph build passed.
+- The later `dotnet build AnyApp.csproj --configuration Release --no-restore` failed while rebuilding Renderer, with the same unresolved dependency namespaces/types.
+- `TheSingularityWorkshop.Renderer.csproj` selects its sibling `ProjectReference` dependencies only when `WorkshopUseRepositorySources=true`; otherwise it selects NuGet `PackageReference` dependencies.
+- AnyApp already passed the source-mode properties to the Visualize adapter project reference, but its direct Renderer project reference did **not** pass them. The Renderer source project was therefore restored/built in one mode and invoked from the host in another.
+
+This is stronger evidence than the earlier reference-path hypotheses: the mismatch is at the direct host-to-Renderer project-reference boundary. It explains why the standalone source build can pass while the composed host build fails.
+
+AnyApp-only commit [`da2da9b`](https://github.com/TrentBest/AnyApp/commit/da2da9b6221154497cb22b573d5ac7ee66646199) adds the same `AdditionalProperties` to the direct Renderer reference that the adapter reference already uses:
+
+```xml
+<ProjectReference Include="_dependencies/TheSingularityWorkshop.Renderer/TheSingularityWorkshop.Renderer.csproj"
+                  AdditionalProperties="WorkshopUseRepositorySources=true;WorkshopSourceRoot=$(MSBuildThisFileDirectory)_dependencies" />
+```
+
+**Verification status:** the corrective commit is in `development`; its CI run has not yet appeared in the Actions listing at the time of this note. Do not call the integration fixed until the run for `da2da9b` completes and the host build plus tests pass. No peer repository was edited, no package was published, and `master` was not changed.
