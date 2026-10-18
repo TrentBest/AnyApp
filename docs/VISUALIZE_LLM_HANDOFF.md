@@ -39,6 +39,7 @@ The observed failure is a project-graph/reference-resolution failure symptom, no
    - source mode against the sibling Renderer checkout;
    - package mode against the declared Renderer package version.
 5. **Report the commit and CI evidence**, including the exact command(s) and whether the adapter compiles with warnings treated as errors. Do not publish a package as part of this repair.
+6. **Resolve the distribution boundary for the adapter.** AnyApp's CI now deliberately separates source integration from public-NuGet compatibility. The adapter is currently a Visualize source project and directly project-references Visualize, so the public-feed AnyApp baseline cannot be fully source-free for this slice. Please recommend and, if appropriate, implement a packable adapter package/project whose released form references the published Renderer and Visualize packages while development source mode references the sibling projects. Keep publication disabled until separately authorized.
 
 ## Acceptance criteria for AnyApp
 
