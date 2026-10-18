@@ -143,3 +143,17 @@ AnyApp-only commit [`da2da9b`](https://github.com/TrentBest/AnyApp/commit/da2da9
 ```
 
 **Verification status:** the corrective commit is in `development`; its CI run has not yet appeared in the Actions listing at the time of this note. Do not call the integration fixed until the run for `da2da9b` completes and the host build plus tests pass. No peer repository was edited, no package was published, and `master` was not changed.
+
+
+## FOLLOW-THROUGH — latest composed-build blockers — 2026-10-18
+
+The runs triggered by AnyApp commit `105dccb55e4062c9388673273931e243f09a28b3` have now completed. The source-mode Renderer build passes, but the composed workflows fail later:
+
+- [.NET run 39093939793](https://github.com/TrentBest/AnyApp/actions/runs/39093939793): the standalone Renderer source graph builds successfully. The subsequent AnyApp host build fails while compiling WPF XAML from the checked-out Visualize project: `samples/WpfD3D12Proof/MainWindow.xaml(17,65)` reports CS0234 because `TheSingularityWorkshop.Visualize.WpfD3D12Proof.D3D12SurfaceHost` does not exist. The test step is skipped because the host build failed.
+- [Baseline run 39093939834](https://github.com/TrentBest/AnyApp/actions/runs/39093939834): restore and local composition dependency packaging pass, but `Test AnyApp composition contracts` fails compiling the checked-out Visualize Renderer adapter. `integrations/RendererAdapter/RendererFrameAdapter.cs` reports CS0246 for Renderer type `RenderFrame` at lines 13 and 16.
+
+These are two distinct compile-time blockers in the checked-out Visualize source tree. The first is a missing WPF proof-surface type referenced by Visualize XAML; the second is an adapter compile reference/API visibility mismatch for `RenderFrame`. The passing standalone Renderer build and these later failures show that the original AnyApp-to-Renderer source-mode propagation change moved past the earlier Renderer dependency namespace errors, but did not produce a green composed build.
+
+I will not work around these by deleting the adapter reference, inventing a host-local `RenderFrame`, excluding proof/sample source from a peer project via undocumented assumptions, or editing Visualize/Renderer without authorization. The next appropriate action is for the Visualize/Renderer owners to repair and verify these source-level integration failures, after which AnyApp CI should be rerun against the updated dependency branches. AnyApp's workflow currently checks out Visualize and Renderer from `development`, so those fixes can be tested without publishing packages.
+
+**Current status:** AnyApp is not green. The Renderer source-graph build is green; the full host build and composition-contract tests are blocked by the two Visualize-source errors above. No peer repository was modified, no package was published, and `master` was not changed.
