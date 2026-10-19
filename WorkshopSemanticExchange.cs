@@ -72,7 +72,22 @@ public static class WorkshopSemanticExchange
     /// </summary>
     public static bool IsAllowed(SemanticIntent intent)
     {
-        var reference = Resolve(intent);
+        ArgumentNullException.ThrowIfNull(intent);
+
+        // This is a structural grammar check, not application authorization.
+        // Unknown or foreign intents are not admitted by this host grammar.
+        if (intent.ProtocolId != IntentProtocolId)
+            return false;
+
+        ProtocolReference reference;
+        try
+        {
+            reference = IntentProtocol.ReferenceByValue(intent.Name);
+        }
+        catch (KeyNotFoundException)
+        {
+            return false;
+        }
 
         return IntentGrammar.Rules
             .SelectMany(rule => rule.RightHandSide)
