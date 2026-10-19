@@ -2,17 +2,17 @@ name: .NET
 
 on:
   push:
-    branches: [ "master", "development" ]
+    branches: [ "master", "development", "integration/fsm-cos-alpha7-proof" ]
   pull_request:
-    branches: [ "master", "development" ]
+    branches: [ "development" ]
 
 jobs:
   build:
-    if: ${{ (github.event_name == 'pull_request' && github.base_ref == 'development') || github.ref == 'refs/heads/development' }}
+    if: ${{ (github.event_name == 'pull_request' && github.base_ref == 'development') || github.ref == 'refs/heads/development' || github.ref == 'refs/heads/integration/fsm-cos-alpha7-proof' }}
     runs-on: windows-latest
 
     steps:
-    - name: Checkout
+    - name: Checkout AnyApp
       uses: actions/checkout@v5
 
     - name: Setup .NET
@@ -90,20 +90,6 @@ jobs:
         ref: development
         path: _dependencies/TheSingularityWorkshop.Visualize
 
-    - name: Checkout MicroBundleDomain dependency
-      uses: actions/checkout@v5
-      with:
-        repository: TrentBest/TheSingularityWorkshop.MicroBundleDomain
-        ref: development
-        path: _dependencies/MicroBundleDomain
-
-    - name: Checkout FSM_COS dependency
-      uses: actions/checkout@v5
-      with:
-        repository: TrentBest/TheSingularityWorkshop.FSM_COS
-        ref: development
-        path: _dependencies/TheSingularityWorkshop.FSM_COS
-
     - name: Checkout MicroBundleRepository dependency
       uses: actions/checkout@v5
       with:
@@ -111,60 +97,33 @@ jobs:
         ref: development
         path: _dependencies/MicroBundleRepository
 
+    - name: Checkout FSM_COS alpha.7 candidate
+      uses: actions/checkout@v5
+      with:
+        repository: TrentBest/TheSingularityWorkshop.FSM_COS
+        ref: f9c2ee0fa2fd2d06a9c94559c72ef5a9e63ea6cc
+        path: _dependencies/TheSingularityWorkshop.FSM_COS
+
     - name: Restore Renderer source dependency graph
       shell: pwsh
       run: dotnet restore _dependencies/TheSingularityWorkshop.Renderer/TheSingularityWorkshop.Renderer.csproj -p:WorkshopUseRepositorySources=true -p:WorkshopSourceRoot="$env:GITHUB_WORKSPACE/_dependencies"
 
-    - name: Diagnose Renderer source references
-      shell: pwsh
-      run: |
-        $renderer = "_dependencies/TheSingularityWorkshop.Renderer/TheSingularityWorkshop.Renderer.csproj"
-        $sourceRoot = "$env:GITHUB_WORKSPACE/_dependencies"
-        dotnet msbuild $renderer -getProperty:Configuration,WorkshopUseRepositorySources,WorkshopSourceRoot -getItem:ProjectReference,PackageReference -p:Configuration=Release -p:WorkshopUseRepositorySources=true -p:WorkshopSourceRoot="$sourceRoot"
-        dotnet msbuild $renderer -t:ResolveReferences -getItem:ResolvedProjectReferencePaths,ReferencePath -p:Configuration=Release -p:WorkshopUseRepositorySources=true -p:WorkshopSourceRoot="$sourceRoot"
-
     - name: Build Renderer source graph in Release
       shell: pwsh
-      run: |
-        $log = "renderer-build-diag.log"
-        dotnet build _dependencies/TheSingularityWorkshop.Renderer/TheSingularityWorkshop.Renderer.csproj --configuration Release --no-restore --verbosity diagnostic -p:WorkshopUseRepositorySources=true -p:WorkshopSourceRoot="$env:GITHUB_WORKSPACE/_dependencies" *> $log
-        $buildExitCode = $LASTEXITCODE
-        Write-Host "---- Renderer compiler/reference evidence ----"
-        Select-String -Path $log -Pattern 'Task "Csc"|Csc.*(CommandLineArguments|References)|FSM_API\.dll|TheSingularityWorkshop\.MicroBundleDomain\.dll|TheSingularityWorkshop\.ProtocolAi\.dll|error CS' | Select-Object -Last 160
-        if ($buildExitCode -ne 0) {
-          Write-Host "Renderer source graph build failed; full diagnostic log retained as workflow artifact only if uploaded separately."
-          exit $buildExitCode
-        }
+      run: dotnet build _dependencies/TheSingularityWorkshop.Renderer/TheSingularityWorkshop.Renderer.csproj --configuration Release --no-restore -p:WorkshopUseRepositorySources=true -p:WorkshopSourceRoot="$env:GITHUB_WORKSPACE/_dependencies"
 
     - name: Restore AnyApp test graph in repository-source mode
       shell: pwsh
-      run: |
-        $sourceRoot = "$env:GITHUB_WORKSPACE/_dependencies"
-        dotnet restore tests/TheSingularityWorkshop.AnyApp.Tests/TheSingularityWorkshop.AnyApp.Tests.csproj -p:WorkshopUseRepositorySources=true -p:WorkshopSourceRoot="$sourceRoot"
+      run: dotnet restore tests/TheSingularityWorkshop.AnyApp.Tests/TheSingularityWorkshop.AnyApp.Tests.csproj -p:WorkshopUseRepositorySources=true -p:WorkshopSourceRoot="$env:GITHUB_WORKSPACE/_dependencies"
 
     - name: Restore Renderer adapter in source mode
       shell: pwsh
-      run: |
-        $adapter = "_dependencies/TheSingularityWorkshop.Visualize/integrations/RendererAdapter/TheSingularityWorkshop.Renderer.VisualizeAdapter.csproj"
-        $sourceRoot = "$env:GITHUB_WORKSPACE/_dependencies"
-        dotnet restore $adapter -p:WorkshopUseRepositorySources=true -p:WorkshopSourceRoot="$sourceRoot"
+      run: dotnet restore _dependencies/TheSingularityWorkshop.Visualize/integrations/RendererAdapter/TheSingularityWorkshop.Renderer.VisualizeAdapter.csproj -p:WorkshopUseRepositorySources=true -p:WorkshopSourceRoot="$env:GITHUB_WORKSPACE/_dependencies"
 
-    - name: Diagnose Renderer adapter reference graph
+    - name: Build AnyApp against the pinned FSM_COS alpha.7 source
       shell: pwsh
-      run: |
-        $adapter = "_dependencies/TheSingularityWorkshop.Visualize/integrations/RendererAdapter/TheSingularityWorkshop.Renderer.VisualizeAdapter.csproj"
-        $sourceRoot = "$env:GITHUB_WORKSPACE/_dependencies"
-        dotnet msbuild $adapter -getProperty:Configuration,WorkshopUseRepositorySources,WorkshopSourceRoot,WorkshopRendererProjectPath -getItem:ProjectReference,PackageReference -p:Configuration=Release -p:WorkshopUseRepositorySources=true -p:WorkshopSourceRoot="$sourceRoot"
-        dotnet msbuild $adapter -t:ResolveReferences -getItem:ReferencePath -p:Configuration=Release -p:WorkshopUseRepositorySources=true -p:WorkshopSourceRoot="$sourceRoot"
+      run: dotnet build AnyApp.csproj --configuration Release --no-restore -p:WorkshopUseRepositorySources=true -p:WorkshopSourceRoot="$env:GITHUB_WORKSPACE/_dependencies"
 
-    - name: Build AnyApp in the same repository-source mode used for restore
+    - name: Test AnyApp composition against the pinned FSM_COS alpha.7 source
       shell: pwsh
-      run: |
-        $sourceRoot = "$env:GITHUB_WORKSPACE/_dependencies"
-        dotnet build AnyApp.csproj --configuration Release --no-restore -p:WorkshopUseRepositorySources=true -p:WorkshopSourceRoot="$sourceRoot"
-
-    - name: Test AnyApp in the same repository-source mode used for restore
-      shell: pwsh
-      run: |
-        $sourceRoot = "$env:GITHUB_WORKSPACE/_dependencies"
-        dotnet test tests/TheSingularityWorkshop.AnyApp.Tests/TheSingularityWorkshop.AnyApp.Tests.csproj --configuration Release --no-restore --verbosity normal -p:WorkshopUseRepositorySources=true -p:WorkshopSourceRoot="$sourceRoot"
+      run: dotnet test tests/TheSingularityWorkshop.AnyApp.Tests/TheSingularityWorkshop.AnyApp.Tests.csproj --configuration Release --no-restore --verbosity normal -p:WorkshopUseRepositorySources=true -p:WorkshopSourceRoot="$env:GITHUB_WORKSPACE/_dependencies"
