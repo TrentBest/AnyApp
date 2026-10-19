@@ -328,6 +328,26 @@ public sealed class AnyAppRuntimeTests
     }
 
     [Fact]
+    public void SemanticExchange_IsAllowedReturnsFalseForUnknownOrForeignIntents()
+    {
+        Assert.False(WorkshopSemanticExchange.IsAllowed(
+            new SemanticIntent("open.forge", 9999)));
+        Assert.False(WorkshopSemanticExchange.IsAllowed(
+            new SemanticIntent("not.a.known.intent", WorkshopSemanticExchange.IntentProtocolId)));
+        Assert.True(WorkshopSemanticExchange.IsAllowed(WorkshopSemanticExchange.ExploreExperiencesIntent));
+    }
+
+    [Fact]
+    public void SemanticExchange_ResolveRejectsUnknownOrForeignIntents()
+    {
+        Assert.Throws<ArgumentException>(() =>
+            WorkshopSemanticExchange.Resolve(new SemanticIntent("open.forge", 9999)));
+        Assert.Throws<KeyNotFoundException>(() =>
+            WorkshopSemanticExchange.Resolve(
+                new SemanticIntent("not.a.known.intent", WorkshopSemanticExchange.IntentProtocolId)));
+    }
+
+    [Fact]
     public void ExperienceManifest_CarriesSemanticIntent()
     {
         var manifest = new ExperienceManifest(
