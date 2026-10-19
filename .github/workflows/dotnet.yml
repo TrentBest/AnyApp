@@ -13,92 +13,92 @@ jobs:
 
     steps:
     - name: Checkout AnyApp
-      uses: actions/checkout@v5
+      uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
 
     - name: Setup .NET
-      uses: actions/setup-dotnet@v5
+      uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5
       with:
         dotnet-version: 8.0.x
 
     - name: Checkout Experiences dependency
-      uses: actions/checkout@v5
+      uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
       with:
         repository: TrentBest/TheSingularityWorkshop.Experiences
         ref: development
         path: _dependencies/Experiences
 
     - name: Checkout FSM_UserIO source dependency
-      uses: actions/checkout@v5
+      uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
       with:
         repository: TrentBest/FSM_UserIO
         ref: development
         path: _dependencies/FSM_UserIO
 
     - name: Checkout FSM_REST source dependency
-      uses: actions/checkout@v5
+      uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
       with:
         repository: TrentBest/TheSingularityWorkshop.FSM_REST
         ref: development
         path: _dependencies/TheSingularityWorkshop.FSM_REST
 
     - name: Checkout GrammarAi source dependency
-      uses: actions/checkout@v5
+      uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
       with:
         repository: TrentBest/TheSingularityWorkshop.GrammarAi
         ref: development
         path: _dependencies/TheSingularityWorkshop.GrammarAi
 
     - name: Checkout GUI source dependency
-      uses: actions/checkout@v5
+      uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
       with:
         repository: TrentBest/TheSingularityWorkshop.GUI
         ref: development
         path: _dependencies/TheSingularityWorkshop.GUI
 
     - name: Checkout FSM_API source dependency for Renderer
-      uses: actions/checkout@v5
+      uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
       with:
         repository: TrentBest/FSM_API
         ref: development
         path: _dependencies/FSM_API
 
     - name: Checkout ProtocolAi source dependency for Renderer
-      uses: actions/checkout@v5
+      uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
       with:
         repository: TrentBest/TheSingularityWorkshop.ProtocolAi
         ref: development
         path: _dependencies/TheSingularityWorkshop.ProtocolAi
 
     - name: Checkout MicroBundleDomain source dependency for Renderer
-      uses: actions/checkout@v5
+      uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
       with:
         repository: TrentBest/TheSingularityWorkshop.MicroBundleDomain
         ref: development
         path: _dependencies/TheSingularityWorkshop.MicroBundleDomain
 
     - name: Checkout Renderer dependency
-      uses: actions/checkout@v5
+      uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
       with:
         repository: TrentBest/TheSingularityWorkshop.Renderer
         ref: development
         path: _dependencies/TheSingularityWorkshop.Renderer
 
     - name: Checkout Visualize dependency
-      uses: actions/checkout@v5
+      uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
       with:
         repository: TrentBest/TheSingularityWorkshop.Visualize
         ref: development
         path: _dependencies/TheSingularityWorkshop.Visualize
 
     - name: Checkout MicroBundleRepository dependency
-      uses: actions/checkout@v5
+      uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
       with:
         repository: TrentBest/TheSingularityWorkshop.MicroBundleRepository
         ref: development
         path: _dependencies/MicroBundleRepository
 
     - name: Checkout FSM_COS alpha.7 candidate
-      uses: actions/checkout@v5
+      uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
       with:
         repository: TrentBest/TheSingularityWorkshop.FSM_COS
         ref: f9c2ee0fa2fd2d06a9c94559c72ef5a9e63ea6cc
