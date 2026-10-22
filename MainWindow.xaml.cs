@@ -33,6 +33,7 @@ public partial class MainWindow : Window
     private bool _monikerMotionEnabled;
 #if WORKSHOP_STORYBUILDER
     private StoryBuilderAuthoringSurface? _storyBuilderSurface;
+    private bool _storyBuilderPersistenceAvailable = true;
 #endif
 
     public MainWindow()
@@ -84,20 +85,39 @@ public partial class MainWindow : Window
     }
 
 #if WORKSHOP_STORYBUILDER
-    /// <summary>Starts an isolated StoryBuilder authoring session in the native AnyApp host.</summary>
+    /// <summary>Starts a native StoryBuilder session and restores its host-local binary workspace.</summary>
     private void StartStoryBuilder()
     {
-        _storyBuilderSurface = new StoryBuilderAuthoringSurface(
-            new StoryBuilderAuthoringBundle().CreateSession("AnyApp StoryBuilder"));
+        var session = new StoryBuilderAuthoringBundle().CreateSession("AnyApp StoryBuilder");
+        _storyBuilderPersistenceAvailable = true;
 
-        Title = "AnyApp — StoryBuilder";
+        try
+        {
+            StoryBuilderDesktopPersistenceStore.LoadIfPresent(session);
+        }
+        catch (Exception exception) when (
+            exception is IOException
+                or InvalidDataException
+                or ArgumentException
+                or FormatException
+                or InvalidOperationException)
+        {
+            // Keep the original unreadable save intact; never silently replace it with an empty session.
+            _storyBuilderPersistenceAvailable = false;
+            Title = $"AnyApp — StoryBuilder — Save not loaded: {exception.Message}";
+        }
+
+        _storyBuilderSurface = new StoryBuilderAuthoringSurface(session);
+        if (_storyBuilderPersistenceAvailable)
+            Title = "AnyApp — StoryBuilder";
+
         RootHost.Children.Clear();
         RootHost.Children.Add(WpfGuiRenderer.Render(
             _storyBuilderSurface.Root,
             HandleStoryBuilderCommand));
     }
 
-    /// <summary>Dispatches only the explicit StoryBuilder commands and refreshes from domain state.</summary>
+    /// <summary>Dispatches explicit StoryBuilder commands, persists successful edits, and refreshes the view.</summary>
     private void HandleStoryBuilderCommand(string commandId)
     {
         if (_storyBuilderSurface is null)
@@ -116,15 +136,38 @@ public partial class MainWindow : Window
         try
         {
             var result = _storyBuilderSurface.Execute(commandId);
-            Title = $"AnyApp — StoryBuilder — {result.Message}";
-
-            if (result.Succeeded)
+            if (!result.Succeeded)
             {
-                RootHost.Children.Clear();
-                RootHost.Children.Add(WpfGuiRenderer.Render(
-                    _storyBuilderSurface.Root,
-                    HandleStoryBuilderCommand));
+                Title = $"AnyApp — StoryBuilder — {result.Message}";
+                return;
             }
+
+            if (_storyBuilderPersistenceAvailable)
+            {
+                try
+                {
+                    StoryBuilderDesktopPersistenceStore.Save(_storyBuilderSurface.Session);
+                    Title = $"AnyApp — StoryBuilder — {result.Message} Saved.";
+                }
+                catch (Exception exception) when (
+                    exception is IOException
+                        or UnauthorizedAccessException
+                        or InvalidDataException
+                        or ArgumentException
+                        or InvalidOperationException)
+                {
+                    Title = $"AnyApp — StoryBuilder — Edit created but not saved: {exception.Message}";
+                }
+            }
+            else
+            {
+                Title = $"AnyApp — StoryBuilder — Edit is session-only; unreadable save preserved.";
+            }
+
+            RootHost.Children.Clear();
+            RootHost.Children.Add(WpfGuiRenderer.Render(
+                _storyBuilderSurface.Root,
+                HandleStoryBuilderCommand));
         }
         catch (Exception exception)
         {
