@@ -49,6 +49,11 @@ public partial class MainWindow : Window
     {
         Loaded -= OnLoaded;
 
+#if WORKSHOP_STORYBUILDER
+        if (TryRunStoryBuilderPersistenceProbe())
+            return;
+#endif
+
         var launchRequest = GetLaunchRequest();
         if (launchRequest is not null)
         {
@@ -83,6 +88,72 @@ public partial class MainWindow : Window
 
         await StartDefaultExperienceAsync();
     }
+
+#if WORKSHOP_STORYBUILDER
+    /// <summary>
+    /// Headless process-level smoke probe used by CI to prove a workspace survives
+    /// application shutdown and a second application process.
+    /// </summary>
+    private static bool TryRunStoryBuilderPersistenceProbe()
+    {
+        var arguments = Environment.GetCommandLineArgs();
+        var modeArgument = arguments.FirstOrDefault(argument =>
+            argument.StartsWith("--storybuilder-persistence-probe=", StringComparison.OrdinalIgnoreCase));
+        if (modeArgument is null)
+            return false;
+
+        var pathArgument = arguments.FirstOrDefault(argument =>
+            argument.StartsWith("--storybuilder-probe-path=", StringComparison.OrdinalIgnoreCase));
+        var path = pathArgument?["--storybuilder-probe-path=".Length..];
+        var mode = modeArgument["--storybuilder-persistence-probe=".Length..];
+
+        try
+        {
+            if (string.IsNullOrWhiteSpace(path))
+                throw new ArgumentException("A --storybuilder-probe-path is required.");
+
+            if (string.Equals(mode, "write", StringComparison.OrdinalIgnoreCase))
+            {
+                var session = new StoryBuilderAuthoringBundle().CreateSession("Process restart proof");
+                var surface = new StoryBuilderAuthoringSurface(session);
+                if (!surface.Execute(StoryBuilderAuthoringCommands.CreateEvent, "Restart-surviving event").Succeeded ||
+                    !surface.Execute(StoryBuilderAuthoringCommands.CreateManuscriptSection, "Restart-surviving chapter").Succeeded ||
+                    !surface.Execute(StoryBuilderAuthoringCommands.LinkLatestEventToLatestSection).Succeeded)
+                    throw new InvalidOperationException("Could not create and link the persistence probe records.");
+
+                StoryBuilderDesktopPersistenceStore.Save(session, path);
+            }
+            else if (string.Equals(mode, "verify", StringComparison.OrdinalIgnoreCase))
+            {
+                var session = new StoryBuilderAuthoringBundle().CreateSession("Fresh process");
+                if (!StoryBuilderDesktopPersistenceStore.LoadIfPresent(session, path))
+                    throw new InvalidDataException("The previous process did not create a workspace save.");
+
+                var storyEvent = session.Workspace.Events.SingleOrDefault(item => item.Title == "Restart-surviving event")
+                    ?? throw new InvalidDataException("The saved event was not restored.");
+                var section = session.Workspace.Manuscripts
+                    .SelectMany(manuscript => manuscript.Sections)
+                    .SingleOrDefault(item => item.Title == "Restart-surviving chapter")
+                    ?? throw new InvalidDataException("The saved manuscript section was not restored.");
+                if (!section.EventIds.Contains(storyEvent.Id))
+                    throw new InvalidDataException("The event-to-manuscript link did not survive process restart.");
+            }
+            else
+            {
+                throw new ArgumentException($"Unsupported persistence probe mode '{mode}'.");
+            }
+
+            Application.Current.Shutdown(0);
+        }
+        catch (Exception exception)
+        {
+            System.Diagnostics.Debug.WriteLine($"StoryBuilder persistence probe failed: {exception}");
+            Application.Current.Shutdown(1);
+        }
+
+        return true;
+    }
+#endif
 
 #if WORKSHOP_STORYBUILDER
     /// <summary>Starts a native StoryBuilder session and restores its host-local binary workspace.</summary>
