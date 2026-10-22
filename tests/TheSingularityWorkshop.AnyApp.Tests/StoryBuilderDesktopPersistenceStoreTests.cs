@@ -17,6 +17,7 @@ public sealed class StoryBuilderDesktopPersistenceStoreTests
 
             Assert.True(surface.Execute(StoryBuilderAuthoringCommands.CreateEvent, "Opening incident").Succeeded);
             Assert.True(surface.Execute(StoryBuilderAuthoringCommands.CreateManuscriptSection, "Chapter one").Succeeded);
+            Assert.True(surface.Execute(StoryBuilderAuthoringCommands.LinkLatestEventToLatestSection).Succeeded);
 
             var expectedEventIds = original.Workspace.Events.Select(item => item.Id).ToArray();
             var expectedManuscriptIds = original.Workspace.Manuscripts.Select(item => item.Id).ToArray();
@@ -37,7 +38,11 @@ public sealed class StoryBuilderDesktopPersistenceStoreTests
                 .SelectMany(item => item.Sections)
                 .Select(item => item.Id)
                 .ToArray());
+            var roundTripPath = Path.Combine(directory, "round-trip.bin");
+            StoryBuilderDesktopPersistenceStore.Save(restored, roundTripPath);
+            Assert.Equal(File.ReadAllBytes(path), File.ReadAllBytes(roundTripPath));
             Assert.False(File.Exists(path + ".tmp"));
+            Assert.False(File.Exists(roundTripPath + ".tmp"));
         }
         finally
         {
