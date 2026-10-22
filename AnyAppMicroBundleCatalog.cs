@@ -19,6 +19,9 @@ public sealed class AnyAppMicroBundleCatalog : IMicroBundleCatalog
             [MonikerWaveMotionMicroBundle.BundleId] = new MonikerWaveMotionMicroBundle(),
             [ForgeMicroBundle.BundleId] = new ForgeMicroBundle(),
             [RendererMicroBundle.BundleId] = new RendererMicroBundle()
+#if WORKSHOP_STORYBUILDER
+            , [StoryBuilderAuthoringBundle.BundleId] = new StoryBuilderAuthoringBundle()
+#endif
         };
 
     public bool TryResolve(ulong bundleId, out IMicroBundle? bundle) =>
