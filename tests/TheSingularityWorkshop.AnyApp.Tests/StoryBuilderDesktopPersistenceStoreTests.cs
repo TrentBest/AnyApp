@@ -21,10 +21,13 @@ public sealed class StoryBuilderDesktopPersistenceStoreTests
 
             var expectedEventIds = original.Workspace.Events.Select(item => item.Id).ToArray();
             var expectedManuscriptIds = original.Workspace.Manuscripts.Select(item => item.Id).ToArray();
-            var expectedSectionIds = original.Workspace.Manuscripts
+            var expectedSections = original.Workspace.Manuscripts
                 .SelectMany(item => item.Sections)
-                .Select(item => item.Id)
                 .ToArray();
+            var expectedSectionIds = expectedSections.Select(item => item.Id).ToArray();
+            var expectedSectionEventIds = expectedSections.ToDictionary(
+                item => item.Id,
+                item => item.EventIds.ToArray());
 
             StoryBuilderDesktopPersistenceStore.Save(original, path);
 
@@ -34,10 +37,14 @@ public sealed class StoryBuilderDesktopPersistenceStoreTests
             Assert.Equal("Persistence test", restored.Workspace.Name);
             Assert.Equal(expectedEventIds, restored.Workspace.Events.Select(item => item.Id).ToArray());
             Assert.Equal(expectedManuscriptIds, restored.Workspace.Manuscripts.Select(item => item.Id).ToArray());
-            Assert.Equal(expectedSectionIds, restored.Workspace.Manuscripts
+            var restoredSections = restored.Workspace.Manuscripts
                 .SelectMany(item => item.Sections)
-                .Select(item => item.Id)
-                .ToArray());
+                .ToArray();
+            Assert.Equal(expectedSectionIds, restoredSections.Select(item => item.Id).ToArray());
+            foreach (var section in restoredSections)
+            {
+                Assert.Equal(expectedSectionEventIds[section.Id], section.EventIds.ToArray());
+            }
             var roundTripPath = Path.Combine(directory, "round-trip.bin");
             StoryBuilderDesktopPersistenceStore.Save(restored, roundTripPath);
             Assert.Equal(File.ReadAllBytes(path), File.ReadAllBytes(roundTripPath));
