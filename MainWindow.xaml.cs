@@ -127,7 +127,10 @@ public partial class MainWindow : Window
             StoryBuilderAuthoringCommands.CreateTimeline or
             StoryBuilderAuthoringCommands.CreateCharacter or
             StoryBuilderAuthoringCommands.CreateScene or
-            StoryBuilderAuthoringCommands.CreateManuscript))
+            StoryBuilderAuthoringCommands.CreateManuscript or
+            StoryBuilderAuthoringCommands.CreateEvent or
+            StoryBuilderAuthoringCommands.CreateManuscriptSection or
+            StoryBuilderAuthoringCommands.LinkLatestEventToLatestSection))
         {
             Title = $"AnyApp — StoryBuilder — Rejected command: {commandId}";
             return;
