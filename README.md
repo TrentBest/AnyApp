@@ -69,9 +69,9 @@ When the StoryBuilder repository is checked out at `_dependencies/StoryBuilder` 
 dotnet run --project AnyApp.csproj -p:WorkshopUseRepositorySources=true -- --storybuilder
 ~~~
 
-This opt-in source path references StoryBuilder's MicroBundle project and explicitly points it at AnyApp's GUI.Core project, preserving one semantic GUI assembly identity. The AnyApp window creates a fresh in-memory `StoryBuilderSession` for that launch, renders the session's current semantic tree through GUI.WPF, and dispatches only the four declared create commands (timeline, character, scene, manuscript). Successful commands rebuild the view from the updated domain state.
+This opt-in source path references StoryBuilder's MicroBundle and Persistence projects and explicitly points the MicroBundle at AnyApp's GUI.Core project, preserving one semantic GUI assembly identity. The native window restores a host-local, versioned binary workspace when one exists, renders the session's semantic tree through GUI.WPF, and dispatches explicit create commands for timelines, characters, scenes, manuscripts, timeline events, manuscript sections, and event-to-section linking. Successful edits are saved through `FSM_Serialization` using a temporary file and atomic replacement, then the view is rebuilt from current domain state. If an existing save cannot be read, AnyApp preserves it and avoids silently replacing it with an empty workspace.
 
-This is an integration slice, not a release claim: workspace persistence in the native host, package validation/consumption through the real AnyApp composition path, and end-to-end desktop CI verification remain outstanding. Normal/package builds do not gain a StoryBuilder package dependency.
+This remains an integration slice, not a release claim: the complete native create → link → save → restart → reopen smoke test and validated composition-package consumption through the real AnyApp composition path are still outstanding. Normal/package builds do not gain a StoryBuilder package dependency.
 
 ## Composition boundary
 
