@@ -18,9 +18,9 @@ public sealed class AnyAppMicroBundleCatalog : IMicroBundleCatalog
             [MonikerMicroBundle.BundleId] = new MonikerMicroBundle(),
             [MonikerWaveMotionMicroBundle.BundleId] = new MonikerWaveMotionMicroBundle(),
             [ForgeMicroBundle.BundleId] = new ForgeMicroBundle(),
-            [RendererMicroBundle.BundleId] = new RendererMicroBundle()
+            [RendererMicroBundle.BundleId] = new RendererMicroBundle(),
 #if WORKSHOP_STORYBUILDER
-            , [StoryBuilderAuthoringBundle.BundleId] = new StoryBuilderAuthoringBundle()
+            [StoryBuilderAuthoringBundle.BundleId] = new StoryBuilderAuthoringBundle(),
 #endif
         };
 
