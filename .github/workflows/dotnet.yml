@@ -55,6 +55,13 @@ jobs:
         ref: development
         path: _dependencies/TheSingularityWorkshop.GUI
 
+    - name: Checkout StoryBuilder source dependency
+      uses: actions/checkout@v5
+      with:
+        repository: TrentBest/StoryBuilder
+        ref: development
+        path: _dependencies/StoryBuilder
+
     - name: Checkout FSM_API source dependency for Renderer
       uses: actions/checkout@v5
       with:
