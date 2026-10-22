@@ -61,6 +61,18 @@ The repository endpoint used by the Workshop Experience exploration portal can b
 dotnet run --project AnyApp.csproj -- --repository-endpoint=http://localhost:5000/
 ~~~
 
+## StoryBuilder native authoring proof
+
+When the StoryBuilder repository is checked out at `_dependencies/StoryBuilder` alongside the other source-mode dependencies, AnyApp can launch its native authoring surface directly:
+
+~~~powershell
+dotnet run --project AnyApp.csproj -p:WorkshopUseRepositorySources=true -- --storybuilder
+~~~
+
+This opt-in source path references StoryBuilder's MicroBundle project and explicitly points it at AnyApp's GUI.Core project, preserving one semantic GUI assembly identity. The AnyApp window creates a fresh in-memory `StoryBuilderSession` for that launch, renders the session's current semantic tree through GUI.WPF, and dispatches only the four declared create commands (timeline, character, scene, manuscript). Successful commands rebuild the view from the updated domain state.
+
+This is an integration slice, not a release claim: workspace persistence in the native host, package validation/consumption through the real AnyApp composition path, and end-to-end desktop CI verification remain outstanding. Normal/package builds do not gain a StoryBuilder package dependency.
+
 ## Composition boundary
 
 Once a manifest has been selected, the runtime path remains:
