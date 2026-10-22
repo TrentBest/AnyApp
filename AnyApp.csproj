@@ -18,6 +18,9 @@
     <Description>Desktop AnyApp host proving FSM_COS composition through GUI.WPF.</Description>
   </PropertyGroup>
   <ItemGroup>
+    <InternalsVisibleTo Include="TheSingularityWorkshop.AnyApp.Tests" />
+  </ItemGroup>
+  <ItemGroup>
     <Compile Remove="tests/**/*.cs" />
     <Compile Remove="_dependencies/**/*.cs" />
     <!-- Nested dependency source trees are project inputs, not part of AnyApp's WPF XAML compilation. -->
