@@ -6,6 +6,9 @@ using TheSingularityWorkshop.Experiences.Moniker.Motion.Wave;
 using TheSingularityWorkshop.Renderer;
 using TheSingularityWorkshop.MicroBundleDomain;
 using Xunit;
+#if WORKSHOP_STORYBUILDER
+using StoryBuilder.MicroBundle;
+#endif
 
 namespace TheSingularityWorkshop.AnyApp.Tests;
 
@@ -27,6 +30,20 @@ public sealed class AnyAppRuntimeTests
             "9.9.9",
             out _));
     }
+
+#if WORKSHOP_STORYBUILDER
+    [Fact]
+    public void Catalog_ResolvesStoryBuilderAuthoringBundleForComposition()
+    {
+        var catalog = new AnyAppMicroBundleCatalog();
+
+        Assert.True(catalog.TryResolve(
+            StoryBuilderAuthoringBundle.BundleId,
+            StoryBuilderAuthoringBundle.BundleVersion,
+            out var bundle));
+        Assert.IsType<StoryBuilderAuthoringBundle>(bundle);
+    }
+#endif
 
     [Fact]
     public void Compose_ProducesMonikerExperienceThroughCos()
