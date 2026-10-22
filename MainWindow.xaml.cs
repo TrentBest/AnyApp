@@ -15,6 +15,9 @@ using TheSingularityWorkshop.Experiences.Moniker.Motion.Wave;
 using TheSingularityWorkshop.MicroBundleDomain;
 using TheSingularityWorkshop.GUI.WPF;
 using TheSingularityWorkshop.Workshop.Gui;
+#if WORKSHOP_STORYBUILDER
+using StoryBuilder.MicroBundle;
+#endif
 
 namespace TheSingularityWorkshop.AnyApp;
 
@@ -28,6 +31,9 @@ public partial class MainWindow : Window
     private GuiNode? _currentMonikerRoot;
     private IMonikerMotion? _currentMonikerMotion;
     private bool _monikerMotionEnabled;
+#if WORKSHOP_STORYBUILDER
+    private StoryBuilderAuthoringSurface? _storyBuilderSurface;
+#endif
 
     public MainWindow()
     {
@@ -57,6 +63,15 @@ public partial class MainWindow : Window
             return;
         }
 
+#if WORKSHOP_STORYBUILDER
+        if (Environment.GetCommandLineArgs().Any(argument =>
+                string.Equals(argument, "--storybuilder", StringComparison.OrdinalIgnoreCase)))
+        {
+            StartStoryBuilder();
+            return;
+        }
+#endif
+
         if (Environment.GetCommandLineArgs().Any(argument =>
                 string.Equals(argument, "--renderer-proof", StringComparison.OrdinalIgnoreCase)))
         {
@@ -67,6 +82,58 @@ public partial class MainWindow : Window
 
         await StartDefaultExperienceAsync();
     }
+
+#if WORKSHOP_STORYBUILDER
+    /// <summary>Starts an isolated StoryBuilder authoring session in the native AnyApp host.</summary>
+    private void StartStoryBuilder()
+    {
+        _storyBuilderSurface = new StoryBuilderAuthoringSurface(
+            new StoryBuilderAuthoringBundle().CreateSession("AnyApp StoryBuilder"));
+
+        Title = "AnyApp — StoryBuilder";
+        RootHost.Children.Clear();
+        RootHost.Children.Add(WpfGuiRenderer.Render(
+            _storyBuilderSurface.Root,
+            HandleStoryBuilderCommand));
+    }
+
+    /// <summary>Dispatches only the explicit StoryBuilder commands and refreshes from domain state.</summary>
+    private void HandleStoryBuilderCommand(string commandId)
+    {
+        if (_storyBuilderSurface is null)
+            return;
+
+        if (commandId is not (
+            StoryBuilderAuthoringCommands.CreateTimeline or
+            StoryBuilderAuthoringCommands.CreateCharacter or
+            StoryBuilderAuthoringCommands.CreateScene or
+            StoryBuilderAuthoringCommands.CreateManuscript))
+        {
+            Title = $"AnyApp — StoryBuilder — Rejected command: {commandId}";
+            return;
+        }
+
+        try
+        {
+            var result = _storyBuilderSurface.Execute(commandId);
+            Title = result.Succeeded
+                ? $"AnyApp — StoryBuilder — {result.Message}"
+                : $"AnyApp — StoryBuilder — {result.Message}";
+
+            if (result.Succeeded)
+            {
+                RootHost.Children.Clear();
+                RootHost.Children.Add(WpfGuiRenderer.Render(
+                    _storyBuilderSurface.Root,
+                    HandleStoryBuilderCommand));
+            }
+        }
+        catch (Exception exception)
+        {
+            Title = $"AnyApp — StoryBuilder — {exception.Message}";
+        }
+    }
+#endif
 
     private async Task StartDefaultExperienceAsync()
     {
