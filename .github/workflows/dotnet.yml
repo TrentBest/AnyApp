@@ -147,7 +147,8 @@ jobs:
       shell: pwsh
       run: |
         $sourceRoot = "$env:GITHUB_WORKSPACE/_dependencies"
-        dotnet restore tests/TheSingularityWorkshop.AnyApp.Tests/TheSingularityWorkshop.AnyApp.Tests.csproj -p:WorkshopUseRepositorySources=true -p:WorkshopSourceRoot="$sourceRoot"
+        $guiCoreProject = Join-Path $sourceRoot "TheSingularityWorkshop.GUI/src/Core/TheSingularityWorkshop.GUI.Core.csproj"
+        dotnet restore tests/TheSingularityWorkshop.AnyApp.Tests/TheSingularityWorkshop.AnyApp.Tests.csproj -p:WorkshopUseRepositorySources=true -p:WorkshopSourceRoot="$sourceRoot" "-p:WorkshopGuiCoreProject=$guiCoreProject"
 
     - name: Restore Renderer adapter in source mode
       shell: pwsh
@@ -168,10 +169,12 @@ jobs:
       shell: pwsh
       run: |
         $sourceRoot = "$env:GITHUB_WORKSPACE/_dependencies"
-        dotnet build AnyApp.csproj --configuration Release --no-restore -p:WorkshopUseRepositorySources=true -p:WorkshopSourceRoot="$sourceRoot"
+        $guiCoreProject = Join-Path $sourceRoot "TheSingularityWorkshop.GUI/src/Core/TheSingularityWorkshop.GUI.Core.csproj"
+        dotnet build AnyApp.csproj --configuration Release --no-restore -p:WorkshopUseRepositorySources=true -p:WorkshopSourceRoot="$sourceRoot" "-p:WorkshopGuiCoreProject=$guiCoreProject"
 
     - name: Test AnyApp in the same repository-source mode used for restore
       shell: pwsh
       run: |
         $sourceRoot = "$env:GITHUB_WORKSPACE/_dependencies"
-        dotnet test tests/TheSingularityWorkshop.AnyApp.Tests/TheSingularityWorkshop.AnyApp.Tests.csproj --configuration Release --no-restore --verbosity normal -p:WorkshopUseRepositorySources=true -p:WorkshopSourceRoot="$sourceRoot"
+        $guiCoreProject = Join-Path $sourceRoot "TheSingularityWorkshop.GUI/src/Core/TheSingularityWorkshop.GUI.Core.csproj"
+        dotnet test tests/TheSingularityWorkshop.AnyApp.Tests/TheSingularityWorkshop.AnyApp.Tests.csproj --configuration Release --no-restore --verbosity normal -p:WorkshopUseRepositorySources=true -p:WorkshopSourceRoot="$sourceRoot" "-p:WorkshopGuiCoreProject=$guiCoreProject"
