@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using StoryBuilder.MicroBundle;
 using Xunit;
 
@@ -55,6 +56,50 @@ public sealed class StoryBuilderDesktopPersistenceStoreTests
         {
             Directory.Delete(directory, recursive: true);
         }
+    }
+
+    [Fact]
+    public void NativeApplication_RestoresEventToManuscriptLinkAcrossProcessRestart()
+    {
+        var assemblyPath = typeof(MainWindow).Assembly.Location;
+        var applicationPath = Path.ChangeExtension(assemblyPath, ".exe");
+        Assert.True(File.Exists(applicationPath), $"Native AnyApp apphost was not found at '{applicationPath}'.");
+
+        var directory = CreateTemporaryDirectory();
+        try
+        {
+            var path = Path.Combine(directory, "process-restart.workspace.bin");
+            RunPersistenceProbe(applicationPath, "write", path);
+            Assert.True(File.Exists(path), "The first application process did not write a workspace.");
+            RunPersistenceProbe(applicationPath, "verify", path);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    private static void RunPersistenceProbe(string applicationPath, string mode, string path)
+    {
+        using var process = Process.Start(new ProcessStartInfo
+        {
+            FileName = applicationPath,
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            ArgumentList =
+            {
+                $"--storybuilder-persistence-probe={mode}",
+                $"--storybuilder-probe-path={path}"
+            }
+        }) ?? throw new InvalidOperationException("Could not start the native AnyApp process.");
+
+        if (!process.WaitForExit(30_000))
+        {
+            process.Kill(entireProcessTree: true);
+            throw new TimeoutException($"The native AnyApp '{mode}' persistence probe did not exit within 30 seconds.");
+        }
+
+        Assert.True(process.ExitCode == 0, $"The native AnyApp '{mode}' persistence probe exited with code {process.ExitCode}.");
     }
 
     [Fact]
