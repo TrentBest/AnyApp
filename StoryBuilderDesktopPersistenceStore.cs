@@ -21,10 +21,14 @@ internal static class StoryBuilderDesktopPersistenceStore
             FileName);
 
     /// <summary>Restores a saved workspace when present; leaves a new session unchanged when absent.</summary>
-    public static bool LoadIfPresent(StoryBuilderSession session)
+    public static bool LoadIfPresent(StoryBuilderSession session) =>
+        LoadIfPresent(session, GetWorkspacePath());
+
+    /// <summary>Restores from an explicit path so persistence can be tested without touching user data.</summary>
+    internal static bool LoadIfPresent(StoryBuilderSession session, string path)
     {
         ArgumentNullException.ThrowIfNull(session);
-        var path = GetWorkspacePath();
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
         if (!File.Exists(path))
             return false;
 
@@ -37,10 +41,13 @@ internal static class StoryBuilderDesktopPersistenceStore
     }
 
     /// <summary>Atomically replaces the host-local save after encoding the complete workspace.</summary>
-    public static void Save(StoryBuilderSession session)
+    public static void Save(StoryBuilderSession session) => Save(session, GetWorkspacePath());
+
+    /// <summary>Writes to an explicit path so persistence can be tested in an isolated temporary directory.</summary>
+    internal static void Save(StoryBuilderSession session, string path)
     {
         ArgumentNullException.ThrowIfNull(session);
-        var path = GetWorkspacePath();
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
         var directory = Path.GetDirectoryName(path)
             ?? throw new InvalidOperationException("The StoryBuilder workspace path has no parent directory.");
         Directory.CreateDirectory(directory);
