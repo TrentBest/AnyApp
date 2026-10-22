@@ -116,9 +116,7 @@ public partial class MainWindow : Window
         try
         {
             var result = _storyBuilderSurface.Execute(commandId);
-            Title = result.Succeeded
-                ? $"AnyApp — StoryBuilder — {result.Message}"
-                : $"AnyApp — StoryBuilder — {result.Message}";
+            Title = $"AnyApp — StoryBuilder — {result.Message}";
 
             if (result.Succeeded)
             {
