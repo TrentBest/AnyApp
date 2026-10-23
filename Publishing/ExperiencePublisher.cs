@@ -1,4 +1,5 @@
 #if WORKSHOP_USE_REPOSITORY_SOURCES
+using System.IO;
 using System.Security.Cryptography;
 using System.Text.Json;
 using TheSingularityWorkshop.FSM_COS;
