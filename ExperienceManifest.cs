@@ -20,6 +20,18 @@ public sealed record ExperienceManifest(
         PropertyNameCaseInsensitive = true
     };
 
+    // Set only by LoadFile. Paths in a manifest are relative to that manifest and
+    // never resolved against the process working directory.
+    private string? ConfigurationRoot { get; init; }
+
+    public static ExperienceManifest LoadFile(string path)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+        var fullPath = Path.GetFullPath(path);
+        var content = File.ReadAllBytes(fullPath);
+        return Parse(content) with { ConfigurationRoot = Path.GetDirectoryName(fullPath) };
+    }
+
     public bool UsesRepositoryArtifacts =>
         Bundles.Count > 0 && Bundles.All(bundle => bundle.HasArtifactIdentity);
 
@@ -89,7 +101,7 @@ public sealed record ExperienceManifest(
     /// Configuration remains separate from the versioned bundle manifest.
     /// </summary>
     public IMicroBundleConfigurationSource CreateConfigurationSource() =>
-        new ExperienceConfigurationSource(RuntimeId, Bundles);
+        new ExperienceConfigurationSource(RuntimeId, Bundles, ConfigurationRoot);
 
     public static ExperienceManifest Parse(ReadOnlyMemory<byte> content) =>
         JsonSerializer.Deserialize<ExperienceManifest>(content.Span, JsonOptions)
@@ -110,28 +122,75 @@ public sealed record ExperienceManifest(
 
     private sealed class ExperienceConfigurationSource : IMicroBundleConfigurationSource
     {
+        private const long MaximumConfigurationFileBytes = 64L * 1024 * 1024;
         private readonly ulong _runtimeId;
         private readonly IReadOnlyDictionary<(ulong BundleId, string Version), ReadOnlyMemory<byte>> _values;
 
         public ExperienceConfigurationSource(
             ulong runtimeId,
-            IReadOnlyList<ExperienceBundleRequest> bundles)
+            IReadOnlyList<ExperienceBundleRequest> bundles,
+            string? configurationRoot)
         {
             _runtimeId = runtimeId;
             var values = new Dictionary<(ulong BundleId, string Version), ReadOnlyMemory<byte>>();
 
             foreach (var bundle in bundles)
             {
-                if (string.IsNullOrWhiteSpace(bundle.ConfigurationBase64))
+                var hasInlineConfiguration = !string.IsNullOrWhiteSpace(bundle.ConfigurationBase64);
+                var hasFileConfiguration = !string.IsNullOrWhiteSpace(bundle.ConfigurationPath);
+                if (hasInlineConfiguration && hasFileConfiguration)
+                    throw new InvalidOperationException(
+                        $"MicroBundle {bundle.BundleId} declares both inline and file-based configuration.");
+
+                if (!hasInlineConfiguration && !hasFileConfiguration)
                     continue;
 
+                byte[] bytes;
+                if (hasFileConfiguration)
+                {
+                    if (string.IsNullOrWhiteSpace(configurationRoot))
+                        throw new InvalidOperationException(
+                            $"MicroBundle {bundle.BundleId} uses configurationPath, but the manifest was not loaded from a file.");
+
+                    var path = ResolveConfigurationPath(configurationRoot, bundle.ConfigurationPath!);
+                    var info = new FileInfo(path);
+                    if (!info.Exists)
+                        throw new FileNotFoundException(
+                            $"Configuration file for MicroBundle {bundle.BundleId} was not found.", path);
+                    if (info.Length > MaximumConfigurationFileBytes)
+                        throw new InvalidOperationException(
+                            $"Configuration file for MicroBundle {bundle.BundleId} exceeds {MaximumConfigurationFileBytes} bytes.");
+                    bytes = File.ReadAllBytes(path);
+                }
+                else
+                {
+                    bytes = Convert.FromBase64String(bundle.ConfigurationBase64);
+                }
+
                 var key = (bundle.BundleId, ResolveBundleVersion(bundle));
-                if (!values.TryAdd(key, Convert.FromBase64String(bundle.ConfigurationBase64)))
+                if (!values.TryAdd(key, bytes))
                     throw new InvalidOperationException(
                         $"Experience manifest declares configuration more than once for MicroBundle {bundle.BundleId}.");
             }
 
             _values = values;
+        }
+
+        private static string ResolveConfigurationPath(string root, string relativePath)
+        {
+            if (Path.IsPathRooted(relativePath))
+                throw new InvalidOperationException("MicroBundle configurationPath must be relative to its manifest.");
+
+            var fullRoot = Path.GetFullPath(root);
+            var fullPath = Path.GetFullPath(Path.Combine(fullRoot, relativePath));
+            var rootPrefix = fullRoot.EndsWith(Path.DirectorySeparatorChar)
+                ? fullRoot
+                : fullRoot + Path.DirectorySeparatorChar;
+            if (!fullPath.StartsWith(rootPrefix, StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException(
+                    "MicroBundle configurationPath must remain inside the manifest directory.");
+
+            return fullPath;
         }
 
         public bool TryGetConfiguration(
@@ -155,7 +214,8 @@ public sealed record ExperienceBundleRequest(
     string ConfigurationBase64,
     string? ArtifactVersion = null,
     string? ContentHash = null,
-    string? BundleVersion = null)
+    string? BundleVersion = null,
+    string? ConfigurationPath = null)
 {
     public bool HasArtifactIdentity =>
         !string.IsNullOrWhiteSpace(ArtifactVersion) &&
