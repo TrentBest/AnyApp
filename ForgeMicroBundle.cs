@@ -8,7 +8,7 @@ namespace TheSingularityWorkshop.AnyApp;
 /// The Forge entry Experience. It is the user's diegetic Workshop entry point:
 /// composition produces the space, while the host wires navigation into it.
 /// </summary>
-public sealed class ForgeMicroBundle : IMicroBundle, IAnyAppSurface
+public sealed class ForgeMicroBundle : IMicroBundle, IMicroBundleResolvedConfiguration, IAnyAppSurface
 {
     public const ulong ExperienceId = 3201;
     public const ulong RuntimeId = 3211;
@@ -81,6 +81,11 @@ public sealed class ForgeMicroBundle : IMicroBundle, IAnyAppSurface
             .Child(column)
             .Build();
     }
+
+    /// <summary>
+    /// The Forge surface has no per-bundle overrides; its resolved defaults are empty.
+    /// </summary>
+    public ReadOnlyMemory<byte> ExportResolvedConfiguration() => ReadOnlyMemory<byte>.Empty;
 
     public bool Arbitrate(IMicroBundleArbitrationContext context, int roundIndex)
     {
