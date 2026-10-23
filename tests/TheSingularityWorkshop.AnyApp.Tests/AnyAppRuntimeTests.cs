@@ -439,4 +439,38 @@ public sealed class AnyAppRuntimeTests
         }
     }
 
+#if WORKSHOP_USE_REPOSITORY_SOURCES
+    [Fact]
+    public void ResolvedExperienceManifest_MapsFlatClosureAndPublishedArbitrationIntoFsmCos()
+    {
+        var manifest = new ExperienceManifest(
+            9001,
+            "1.0.0",
+            9002,
+            [
+                new ExperienceBundleRequest(
+                    1,
+                    ArtifactVersion: "1.0.0",
+                    ContentHash: "sha256:bundle-1",
+                    BundleVersion: "1.0.0"),
+                new ExperienceBundleRequest(
+                    2,
+                    ArtifactVersion: "1.0.0",
+                    ContentHash: "sha256:bundle-2",
+                    BundleVersion: "1.0.0")
+            ],
+            ResolvedPlan: new ExperienceResolvedPlan(
+                1,
+                [1, 2],
+                [new ExperienceResolvedDependency(2, 1)]));
+
+        var runtimeManifest = manifest.ToRuntimeManifest();
+
+        Assert.True(runtimeManifest.ArbitrationResolved);
+        Assert.Equal(1, runtimeManifest.PublishedArbitrationRounds);
+        Assert.Equal(new ulong[] { 1, 2 }, runtimeManifest.LoadPlan!.Select(entry => entry.Reference.BundleId));
+        Assert.Equal(new[] { new RuntimeManifestDependency(2, 1) }, runtimeManifest.Schedule!.Dependencies);
+    }
+#endif
+
 }
