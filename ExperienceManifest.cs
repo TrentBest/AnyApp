@@ -14,7 +14,8 @@ public sealed record ExperienceManifest(
     ulong RuntimeId,
     IReadOnlyList<ExperienceBundleRequest> Bundles,
     SemanticIntent? Intent = null,
-    IReadOnlyList<ulong>? StartupMonikerBundleIds = null)
+    IReadOnlyList<ulong>? StartupMonikerBundleIds = null,
+    ExperienceResolvedPlan? ResolvedPlan = null)
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
     {
@@ -94,7 +95,45 @@ public sealed record ExperienceManifest(
                 ResolveBundleVersion(bundle)))
             .ToArray();
 
-        return new RuntimeManifest(RuntimeId, requests, Intent: Intent);
+        if (ResolvedPlan is null)
+            return new RuntimeManifest(RuntimeId, requests, Intent: Intent);
+
+#if WORKSHOP_USE_REPOSITORY_SOURCES
+        if (!UsesRepositoryArtifacts)
+            throw new InvalidOperationException(
+                "A pre-resolved Experience manifest must identify immutable artifacts for every MicroBundle.");
+
+        var bundlesById = Bundles.ToDictionary(bundle => bundle.BundleId);
+        var loadPlan = ResolvedPlan.LoadOrder.Select(bundleId =>
+        {
+            if (!bundlesById.TryGetValue(bundleId, out var bundle))
+                throw new InvalidOperationException(
+                    $"Resolved load order references MicroBundle {bundleId}, which is absent from the Experience manifest.");
+            if (string.IsNullOrWhiteSpace(bundle.ContentHash))
+                throw new InvalidOperationException(
+                    $"Resolved MicroBundle {bundleId} has no artifact content hash.");
+
+            return new RuntimeManifestEntry(
+                new MicroBundleReference(bundleId, ResolveBundleVersion(bundle), bundle.ContentHash),
+                ManifestLoadStage.Resident);
+        }).ToArray();
+        var dependencies = ResolvedPlan.Dependencies
+            .Select(edge => new RuntimeManifestDependency(edge.BundleId, edge.DependencyId))
+            .ToArray();
+        var schedule = new RuntimeManifestSchedule(loadPlan, dependencies);
+
+        return new RuntimeManifest(
+            RuntimeId,
+            requests,
+            LoadPlan: loadPlan,
+            Schedule: schedule,
+            Intent: Intent,
+            ArbitrationResolved: true,
+            PublishedArbitrationRounds: ResolvedPlan.ArbitrationRounds);
+#else
+        throw new InvalidOperationException(
+            "This FSM_COS package does not expose the publish-resolved runtime contract; use the matching repository-source development graph.");
+#endif
     }
 
     /// <summary>
@@ -210,6 +249,20 @@ public sealed record ExperienceManifest(
         }
     }
 }
+
+
+/// <summary>
+/// The immutable, publish-resolved composition plan carried by an Experience manifest.
+/// LoadOrder is the dependency-first flat closure; Dependencies records each edge as
+/// (bundle -> prerequisite). ArbitrationRounds is the zero-based convergence round.
+/// </summary>
+public sealed record ExperienceResolvedPlan(
+    int ArbitrationRounds,
+    IReadOnlyList<ulong> LoadOrder,
+    IReadOnlyList<ExperienceResolvedDependency> Dependencies);
+
+/// <summary>A directed MicroBundle dependency edge in a resolved Experience plan.</summary>
+public sealed record ExperienceResolvedDependency(ulong BundleId, ulong DependencyId);
 
 public sealed record ExperienceBundleRequest(
     ulong BundleId,
