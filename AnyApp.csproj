@@ -22,8 +22,10 @@
   <PropertyGroup>
     <WorkshopExperiencesRoot Condition="'$(WorkshopExperiencesRoot)' == '' and Exists('$(MSBuildThisFileDirectory)_dependencies/Experiences/src/Moniker/TheSingularityWorkshop.Experiences.Moniker.csproj')">$(MSBuildThisFileDirectory)_dependencies/Experiences</WorkshopExperiencesRoot>
     <WorkshopExperiencesRoot Condition="'$(WorkshopExperiencesRoot)' == '' and Exists('$(MSBuildThisFileDirectory)../TheSingularityWorkshop.Experiences/src/Moniker/TheSingularityWorkshop.Experiences.Moniker.csproj')">$(MSBuildThisFileDirectory)../TheSingularityWorkshop.Experiences</WorkshopExperiencesRoot>
+    <WorkshopExperiencesRoot Condition="'$(WorkshopExperiencesRoot)' == '' and Exists('$(MSBuildThisFileDirectory)../Experiences/src/Moniker/TheSingularityWorkshop.Experiences.Moniker.csproj')">$(MSBuildThisFileDirectory)../Experiences</WorkshopExperiencesRoot>
     <WorkshopMicroBundleRepositoryRoot Condition="'$(WorkshopMicroBundleRepositoryRoot)' == '' and Exists('$(MSBuildThisFileDirectory)_dependencies/MicroBundleRepository/src/REST/TheSingularityWorkshop.MicroBundleRepository.Rest/TheSingularityWorkshop.MicroBundleRepository.Rest.csproj')">$(MSBuildThisFileDirectory)_dependencies/MicroBundleRepository</WorkshopMicroBundleRepositoryRoot>
     <WorkshopMicroBundleRepositoryRoot Condition="'$(WorkshopMicroBundleRepositoryRoot)' == '' and Exists('$(MSBuildThisFileDirectory)../TheSingularityWorkshop.MicroBundleRepository/src/REST/TheSingularityWorkshop.MicroBundleRepository.Rest/TheSingularityWorkshop.MicroBundleRepository.Rest.csproj')">$(MSBuildThisFileDirectory)../TheSingularityWorkshop.MicroBundleRepository</WorkshopMicroBundleRepositoryRoot>
+    <WorkshopMicroBundleRepositoryRoot Condition="'$(WorkshopMicroBundleRepositoryRoot)' == '' and Exists('$(MSBuildThisFileDirectory)../MicroBundleRepository/src/REST/TheSingularityWorkshop.MicroBundleRepository.Rest/TheSingularityWorkshop.MicroBundleRepository.Rest.csproj')">$(MSBuildThisFileDirectory)../MicroBundleRepository</WorkshopMicroBundleRepositoryRoot>
   </PropertyGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="TheSingularityWorkshop.AnyApp.Tests" />
