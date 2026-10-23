@@ -100,12 +100,19 @@ Missing configuration means **use the bundle defaults**; it does not mean “rep
 
 Existing code already has versioned Experience requests, repository-backed assembly materialization, optional per-bundle configuration input, RuntimeManifestSchedule, and bounded FSM_COS arbitration. The local manifest path now also supports separate manifest-relative configuration files.
 
-The following are still required before this contract is implemented end to end:
+Implemented on the development source-integration graph:
 
-1. A publisher that computes and serializes the flat, deduplicated closure and dependency order from the actual MicroBundle artifacts.
-2. A MicroBundleDomain contract for capturing and restoring publish-resolved per-bundle configuration/results, with explicit handling for bundles that cannot support pre-resolved execution.
-3. FSM_COS support for consuming the published plan as the runtime load order and skipping arbitration only when the publication explicitly proves it was resolved.
-4. Repository-backed immutable configuration artifact retrieval and hash verification.
-5. Tests proving two different manifests run through the same AnyApp binary, absent overrides preserve bundle defaults, and runtime loading does not repeat arbitration.
+- `ExperiencePublisher` resolves the authored closure through FSM_COS, captures each bundle's effective configuration, uploads immutable assembly/configuration artifacts, and writes the resolved manifest last.
+- The manifest carries the flat dependency-first load order, dependency edges, bundle artifact hashes, configuration artifact hashes, and the publish-time convergence round.
+- `IMicroBundleResolvedConfiguration` defines the opt-in contract for exporting configuration that can restore the post-arbitration state.
+- FSM_COS source integration consumes the published flat plan, loads in the recorded order, validates each bundle's restored configuration, and skips arbitration for a valid pre-resolved publication.
+- AnyApp retrieves and hash-verifies repository configuration artifacts and caches verified bundle/configuration artifacts by immutable identity.
+- Tests cover resolved-manifest mapping, pre-resolved arbitration skipping, rejection of bundles without the snapshot contract, and publishing separate configuration artifacts.
 
-A successful ordinary FsmCos.Execute is not evidence that these publish-time/runtime-separation requirements are complete.
+Remaining release gates:
+
+1. The new domain contract is not in the currently published MicroBundleDomain 1.0.1 package. The feature is therefore conditionally compiled for repository-source integration; the package release chain must be updated in dependency order before claiming the published FSM_COS package includes it.
+2. The current Experience catalog API in AnyApp is read-only. `ExperiencePublisher` writes the resolved manifest to a local file and returns its SHA-256; publishing that manifest into a hosted Experience catalog still requires a write API/adapter.
+3. End-to-end verification is still required for a real multi-bundle Experience and two distinct manifests using the same AnyApp executable.
+
+A successful ordinary FsmCos.Execute is not evidence that publish-time/runtime separation is complete; only a manifest carrying a verified resolved plan takes the new fast path.
