@@ -473,4 +473,38 @@ public sealed class AnyAppRuntimeTests
     }
 #endif
 
+#if WORKSHOP_USE_REPOSITORY_SOURCES
+    [Fact]
+    public void OneAnyAppHostComposesDifferentExperiencesFromDifferentManifests()
+    {
+        var forgeManifest = new ExperienceManifest(
+            3201,
+            "1.0.0",
+            3211,
+            [new ExperienceBundleRequest(ForgeMicroBundle.BundleId, BundleVersion: "1.0.0")]);
+        var monikerManifest = new ExperienceManifest(
+            3101,
+            "1.0.0",
+            3111,
+            [
+                new ExperienceBundleRequest(MonikerExperience.MonikerBundleId, BundleVersion: "1.0.0"),
+                new ExperienceBundleRequest(MonikerExperience.MotionBundleId, BundleVersion: "1.0.0"),
+                new ExperienceBundleRequest(MonikerExperience.RendererBundleId, BundleVersion: "0.1.0-alpha.2")
+            ]);
+
+        var forgeAssembly = AnyAppRuntime.Compose(forgeManifest.ToRuntimeManifest());
+        var monikerAssembly = AnyAppRuntime.Compose(monikerManifest.ToRuntimeManifest());
+
+        Assert.Equal(new ulong[] { ForgeMicroBundle.BundleId }, forgeAssembly.Bundles.Select(bundle => bundle.Id));
+        Assert.Equal(
+            new ulong[]
+            {
+                MonikerExperience.MonikerBundleId,
+                MonikerExperience.MotionBundleId,
+                MonikerExperience.RendererBundleId
+            },
+            monikerAssembly.Bundles.Select(bundle => bundle.Id));
+    }
+#endif
+
 }
