@@ -5,6 +5,11 @@
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
+  <!-- Set the mode in the test project itself: properties set inside a referenced AnyApp project
+       do not flow back up to the restore graph that Visual Studio evaluates for this project. -->
+  <PropertyGroup Condition="'$(WorkshopUseRepositorySources)' == '' and (Exists('$(MSBuildThisFileDirectory)../../_dependencies/Experiences/src/Moniker/TheSingularityWorkshop.Experiences.Moniker.csproj') or Exists('$(MSBuildThisFileDirectory)../../_dependencies/MicroBundleRepository/src/REST/TheSingularityWorkshop.MicroBundleRepository.Rest/TheSingularityWorkshop.MicroBundleRepository.Rest.csproj'))">
+    <WorkshopUseRepositorySources>true</WorkshopUseRepositorySources>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(WorkshopUseRepositorySources)' == 'true' and Exists('$(MSBuildThisFileDirectory)../../_dependencies/StoryBuilder/src/StoryBuilder.MicroBundle/StoryBuilder.MicroBundle.csproj')">
     <DefineConstants>$(DefineConstants);WORKSHOP_STORYBUILDER</DefineConstants>
   </PropertyGroup>
