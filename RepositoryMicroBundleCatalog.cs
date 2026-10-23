@@ -16,11 +16,14 @@ public sealed class RepositoryMicroBundleCatalog : IMicroBundleCatalog
     private readonly RestMicroBundleRepository _repository;
     private readonly IReadOnlyDictionary<ulong, MicroBundleArtifactAddress> _addresses;
     private readonly Dictionary<ulong, IMicroBundle> _loaded = new();
+    private readonly string _cacheDirectory;
+    private const long MaximumCachedArtifactBytes = 256L * 1024 * 1024;
 
     public RepositoryMicroBundleCatalog(
         Uri repositoryEndpoint,
         ExperienceManifest manifest,
-        HttpClient? httpClient = null)
+        HttpClient? httpClient = null,
+        string? cacheDirectory = null)
     {
         ArgumentNullException.ThrowIfNull(repositoryEndpoint);
         ArgumentNullException.ThrowIfNull(manifest);
@@ -40,6 +43,10 @@ public sealed class RepositoryMicroBundleCatalog : IMicroBundleCatalog
         }
 
         _addresses = addresses;
+        _cacheDirectory = Path.GetFullPath(cacheDirectory ?? Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "TheSingularityWorkshop",
+            "MicroBundleCache"));
         var client = httpClient ?? new HttpClient();
         _repository = new RestMicroBundleRepository(
             repositoryEndpoint,
@@ -67,10 +74,10 @@ public sealed class RepositoryMicroBundleCatalog : IMicroBundleCatalog
                 throw new InvalidOperationException(
                     $"No repository address is registered for MicroBundle {bundleId}.");
 
-            var artifact = await _repository.GetAsync(address, cancellationToken);
+            var artifact = await GetArtifactWithCacheAsync(address, cancellationToken);
             if (artifact is null)
                 throw new InvalidOperationException(
-                    $"MicroBundle artifact {address} was not found in the repository.");
+                    $"MicroBundle artifact {address} was not found in the repository or local cache.");
 
             var bundle = RepositoryAssemblyMicroBundleMaterializer.Materialize(artifact);
             ArgumentNullException.ThrowIfNull(bundle);
@@ -78,6 +85,9 @@ public sealed class RepositoryMicroBundleCatalog : IMicroBundleCatalog
             if (bundle.Id != bundleId)
                 throw new InvalidOperationException(
                     $"Materialized artifact {address} produced MicroBundle {bundle.Id}.");
+            if (!string.Equals(bundle.Descriptor.Version, address.Version, StringComparison.Ordinal))
+                throw new InvalidOperationException(
+                    $"Materialized artifact {address} produced version '{bundle.Descriptor.Version}'.");
 
             _loaded.Add(bundle.Id, bundle);
 
@@ -103,7 +113,7 @@ public sealed class RepositoryMicroBundleCatalog : IMicroBundleCatalog
                 request.BundleId,
                 request.ConfigurationArtifactVersion!,
                 request.ConfigurationContentHash!);
-            var artifact = await _repository.GetAsync(address, cancellationToken);
+            var artifact = await GetArtifactWithCacheAsync(address, cancellationToken);
             var version = string.IsNullOrWhiteSpace(request.BundleVersion)
                 ? string.IsNullOrWhiteSpace(request.ArtifactVersion) ? "1.0.0" : request.ArtifactVersion
                 : request.BundleVersion;
@@ -159,6 +169,72 @@ public sealed class RepositoryMicroBundleCatalog : IMicroBundleCatalog
 
             configuration = default;
             return false;
+        }
+    }
+
+    private async Task<MicroBundleArtifact?> GetArtifactWithCacheAsync(
+        MicroBundleArtifactAddress address,
+        CancellationToken cancellationToken)
+    {
+        var cachePath = GetCachePath(address);
+        if (File.Exists(cachePath))
+        {
+            try
+            {
+                var info = new FileInfo(cachePath);
+                if (info.Length <= MaximumCachedArtifactBytes)
+                {
+                    var bytes = await File.ReadAllBytesAsync(cachePath, cancellationToken);
+                    return new MicroBundleArtifact(address, bytes);
+                }
+            }
+            catch (ArgumentException)
+            {
+                // The cache entry's bytes do not match the immutable content hash.
+            }
+
+            try { File.Delete(cachePath); }
+            catch (IOException) { /* A failed delete must not make unverified bytes trusted. */ }
+            catch (UnauthorizedAccessException) { /* Fall through to repository retrieval. */ }
+        }
+
+        var artifact = await _repository.GetAsync(address, cancellationToken);
+        if (artifact is null)
+            return null;
+
+        await WriteCacheAsync(cachePath, artifact.Content, cancellationToken);
+        return artifact;
+    }
+
+    private string GetCachePath(MicroBundleArtifactAddress address) =>
+        Path.Combine(
+            _cacheDirectory,
+            address.BundleId.ToString(System.Globalization.CultureInfo.InvariantCulture),
+            address.Version,
+            $"{address.ContentHash}.artifact");
+
+    private async Task WriteCacheAsync(
+        string cachePath,
+        ReadOnlyMemory<byte> content,
+        CancellationToken cancellationToken)
+    {
+        if (content.Length > MaximumCachedArtifactBytes)
+            throw new InvalidOperationException(
+                $"Artifact exceeds the local cache limit of {MaximumCachedArtifactBytes} bytes.");
+
+        var directory = Path.GetDirectoryName(cachePath)
+            ?? throw new InvalidOperationException("Artifact cache path has no parent directory.");
+        Directory.CreateDirectory(directory);
+        var temporaryPath = cachePath + "." + Guid.NewGuid().ToString("N") + ".tmp";
+        try
+        {
+            await File.WriteAllBytesAsync(temporaryPath, content.ToArray(), cancellationToken);
+            File.Move(temporaryPath, cachePath, overwrite: true);
+        }
+        finally
+        {
+            if (File.Exists(temporaryPath))
+                File.Delete(temporaryPath);
         }
     }
 
