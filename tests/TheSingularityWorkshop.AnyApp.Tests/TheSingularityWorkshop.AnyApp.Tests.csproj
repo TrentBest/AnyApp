@@ -10,6 +10,9 @@
   <PropertyGroup Condition="'$(WorkshopUseRepositorySources)' == '' and (Exists('$(MSBuildThisFileDirectory)../../_dependencies/Experiences/src/Moniker/TheSingularityWorkshop.Experiences.Moniker.csproj') or Exists('$(MSBuildThisFileDirectory)../../_dependencies/MicroBundleRepository/src/REST/TheSingularityWorkshop.MicroBundleRepository.Rest/TheSingularityWorkshop.MicroBundleRepository.Rest.csproj') or Exists('$(MSBuildThisFileDirectory)../../../TheSingularityWorkshop.Experiences/src/Moniker/TheSingularityWorkshop.Experiences.Moniker.csproj') or Exists('$(MSBuildThisFileDirectory)../../../Experiences/src/Moniker/TheSingularityWorkshop.Experiences.Moniker.csproj') or Exists('$(MSBuildThisFileDirectory)../../../TheSingularityWorkshop.MicroBundleRepository/src/REST/TheSingularityWorkshop.MicroBundleRepository.Rest/TheSingularityWorkshop.MicroBundleRepository.Rest.csproj') or Exists('$(MSBuildThisFileDirectory)../../../MicroBundleRepository/src/REST/TheSingularityWorkshop.MicroBundleRepository.Rest/TheSingularityWorkshop.MicroBundleRepository.Rest.csproj'))">
     <WorkshopUseRepositorySources>true</WorkshopUseRepositorySources>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(WorkshopUseRepositorySources)' == 'true'">
+    <DefineConstants>$(DefineConstants);WORKSHOP_USE_REPOSITORY_SOURCES</DefineConstants>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(WorkshopUseRepositorySources)' == 'true' and Exists('$(MSBuildThisFileDirectory)../../_dependencies/StoryBuilder/src/StoryBuilder.MicroBundle/StoryBuilder.MicroBundle.csproj')">
     <DefineConstants>$(DefineConstants);WORKSHOP_STORYBUILDER</DefineConstants>
   </PropertyGroup>
