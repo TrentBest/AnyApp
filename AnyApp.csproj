@@ -75,7 +75,7 @@
     <DefineConstants>$(DefineConstants);WORKSHOP_STORYBUILDER</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
-    <None Update="experiences/**/manifest.json">
+    <None Update="experiences/**/*.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
