@@ -76,6 +76,46 @@ public sealed record ExperienceManifest(
             startupIds.Add(MonikerExperience.RendererBundleId);
         }
 
+        if (ResolvedPlan is not null)
+        {
+            var bundlesById = Bundles.ToDictionary(bundle => bundle.BundleId);
+            var closure = new HashSet<ulong>();
+            var pending = new Stack<ulong>(startupIds);
+            while (pending.Count > 0)
+            {
+                var bundleId = pending.Pop();
+                if (!closure.Add(bundleId))
+                    continue;
+                if (!bundlesById.ContainsKey(bundleId))
+                    throw new InvalidOperationException(
+                        $"Resolved startup Moniker references MicroBundle {bundleId}, which is absent from the published closure.");
+
+                foreach (var dependency in ResolvedPlan.Dependencies.Where(edge => edge.BundleId == bundleId))
+                    pending.Push(dependency.DependencyId);
+            }
+
+            var loadOrder = ResolvedPlan.LoadOrder.Where(closure.Contains).ToArray();
+            if (loadOrder.Length != closure.Count)
+                throw new InvalidOperationException(
+                    "The published startup Moniker closure does not match its recorded dependency-first load order.");
+
+            var startupPlan = ResolvedPlan with
+            {
+                LoadOrder = loadOrder,
+                Dependencies = ResolvedPlan.Dependencies
+                    .Where(edge => closure.Contains(edge.BundleId) && closure.Contains(edge.DependencyId))
+                    .ToArray()
+            };
+
+            return this with
+            {
+                Bundles = loadOrder.Select(bundleId => bundlesById[bundleId]).ToArray(),
+                StartupMonikerBundleIds = monikerIds,
+                Intent = null,
+                ResolvedPlan = startupPlan
+            };
+        }
+
         var startupBundles = Bundles
             .Where(bundle => startupIds.Contains(bundle.BundleId))
             .ToArray();
