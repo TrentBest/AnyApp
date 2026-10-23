@@ -66,37 +66,23 @@ public sealed class AnyAppWebBridge : IDisposable
         _launchToken = launchToken;
     }
 
-    public void Configure(ExperienceManifest manifest)
+    public void ConfigureEndpoint(Uri endpoint)
     {
-        ArgumentNullException.ThrowIfNull(manifest);
+        ArgumentNullException.ThrowIfNull(endpoint);
+        if (!endpoint.IsAbsoluteUri ||
+            endpoint.Scheme != Uri.UriSchemeHttp ||
+            !IPAddress.TryParse(endpoint.Host, out var address) ||
+            !IPAddress.IsLoopback(address))
+            throw new ArgumentException(
+                "The desktop web bridge must use an absolute HTTP loopback endpoint.",
+                nameof(endpoint));
 
-        foreach (var request in manifest.Bundles)
+        Endpoint = new UriBuilder(endpoint)
         {
-            if (string.IsNullOrWhiteSpace(request.ConfigurationBase64))
-                continue;
-
-            try
-            {
-                var bytes = Convert.FromBase64String(request.ConfigurationBase64);
-                var configuration = JsonSerializer.Deserialize<BridgeConfiguration>(bytes);
-
-                if (configuration?.WebBridgeEndpoint is not null &&
-                    Uri.TryCreate(configuration.WebBridgeEndpoint, UriKind.Absolute, out var endpoint) &&
-                    endpoint.Scheme == Uri.UriSchemeHttp &&
-                    IPAddress.TryParse(endpoint.Host, out var address) &&
-                    IPAddress.IsLoopback(address))
-                {
-                    Endpoint = endpoint;
-                    return;
-                }
-            }
-            catch (FormatException)
-            {
-            }
-            catch (JsonException)
-            {
-            }
-        }
+            Path = "/",
+            Query = "",
+            Fragment = ""
+        }.Uri;
     }
 
     public void Start()
@@ -573,6 +559,5 @@ public sealed class AnyAppWebBridge : IDisposable
         _listener = null;
     }
 
-    private sealed record BridgeConfiguration(string? WebBridgeEndpoint);
     private sealed record BridgeCommand(string? Command);
 }
