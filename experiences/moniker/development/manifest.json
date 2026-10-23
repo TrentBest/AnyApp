@@ -5,8 +5,7 @@
   "bundles": [
     {
       "bundleId": 3101,
-      "bundleVersion": "1.0.0",
-      "configurationPath": "configuration/3101.json"
+      "bundleVersion": "1.0.0"
     },
     {
       "bundleId": 3102,
