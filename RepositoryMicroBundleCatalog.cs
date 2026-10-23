@@ -85,6 +85,63 @@ public sealed class RepositoryMicroBundleCatalog : IMicroBundleCatalog
         }
     }
 
+    public async Task<IMicroBundleConfigurationSource> CreateConfigurationSourceAsync(
+        ExperienceManifest manifest,
+        IMicroBundleConfigurationSource? localOverrides = null,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(manifest);
+        var values = new Dictionary<(ulong BundleId, string Version), ReadOnlyMemory<byte>>();
+
+        foreach (var request in manifest.Bundles)
+        {
+            if (!request.HasConfigurationArtifactIdentity)
+                continue;
+
+            var address = new MicroBundleArtifactAddress(
+                request.BundleId,
+                request.ConfigurationArtifactVersion!,
+                request.ConfigurationContentHash!);
+            var artifact = await _repository.GetAsync(address, cancellationToken);
+            if (artifact is null)
+                throw new InvalidOperationException(
+                    $"Resolved configuration artifact {address} for MicroBundle {request.BundleId} was not found.");
+
+            var version = string.IsNullOrWhiteSpace(request.BundleVersion)
+                ? string.IsNullOrWhiteSpace(request.ArtifactVersion) ? "1.0.0" : request.ArtifactVersion
+                : request.BundleVersion;
+            if (!values.TryAdd((request.BundleId, version!), artifact.Content.ToArray()))
+                throw new InvalidOperationException(
+                    $"Experience manifest declares resolved configuration more than once for MicroBundle {request.BundleId}.");
+        }
+
+        return new RepositoryConfigurationSource(manifest.RuntimeId, values, localOverrides);
+    }
+
+    private sealed class RepositoryConfigurationSource(
+        ulong runtimeId,
+        IReadOnlyDictionary<(ulong BundleId, string Version), ReadOnlyMemory<byte>> values,
+        IMicroBundleConfigurationSource? fallback) : IMicroBundleConfigurationSource
+    {
+        public bool TryGetConfiguration(
+            ulong requestedRuntimeId,
+            ulong bundleId,
+            string version,
+            out ReadOnlyMemory<byte> configuration)
+        {
+            if (requestedRuntimeId == runtimeId &&
+                values.TryGetValue((bundleId, version), out configuration))
+                return true;
+
+            if (fallback is not null &&
+                fallback.TryGetConfiguration(requestedRuntimeId, bundleId, version, out configuration))
+                return true;
+
+            configuration = default;
+            return false;
+        }
+    }
+
     public bool TryResolve(ulong bundleId, out IMicroBundle? bundle) =>
         _loaded.TryGetValue(bundleId, out bundle);
 
