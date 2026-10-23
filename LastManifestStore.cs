@@ -53,7 +53,7 @@ public static class LastManifestStore
             cachedBundles.Add(bundle with
             {
                 ConfigurationBase64 = "",
-                ConfigurationPath = Path.Combine("configuration", fileName).Replace('\\\\', '/')
+                ConfigurationPath = Path.Combine("configuration", fileName).Replace(Path.DirectorySeparatorChar, '/')
             });
         }
 
