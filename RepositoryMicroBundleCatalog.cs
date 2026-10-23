@@ -1,3 +1,4 @@
+using System.IO;
 using System.Security.Cryptography;
 using TheSingularityWorkshop.MicroBundleDomain;
 using System.Net.Http;
