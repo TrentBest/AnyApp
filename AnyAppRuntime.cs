@@ -36,6 +36,10 @@ public static class AnyAppRuntime
             runtimeManifest.Bundles.Select(bundle => bundle.BundleId),
             cancellationToken);
 
-        return new FsmCos(catalog).Execute(runtimeManifest, experience.CreateConfigurationSource());
+        var configurationSource = await catalog.CreateConfigurationSourceAsync(
+            experience,
+            experience.CreateConfigurationSource(),
+            cancellationToken);
+        return new FsmCos(catalog).Execute(runtimeManifest, configurationSource);
     }
 }
