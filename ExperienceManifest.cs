@@ -183,10 +183,11 @@ public sealed record ExperienceManifest(
 
             var fullRoot = Path.GetFullPath(root);
             var fullPath = Path.GetFullPath(Path.Combine(fullRoot, relativePath));
-            var rootPrefix = fullRoot.EndsWith(Path.DirectorySeparatorChar)
-                ? fullRoot
-                : fullRoot + Path.DirectorySeparatorChar;
-            if (!fullPath.StartsWith(rootPrefix, StringComparison.OrdinalIgnoreCase))
+            var relativeToRoot = Path.GetRelativePath(fullRoot, fullPath);
+            if (Path.IsPathRooted(relativeToRoot) ||
+                relativeToRoot.Equals("..", StringComparison.Ordinal) ||
+                relativeToRoot.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal) ||
+                relativeToRoot.StartsWith(".." + Path.AltDirectorySeparatorChar, StringComparison.Ordinal))
                 throw new InvalidOperationException(
                     "MicroBundle configurationPath must remain inside the manifest directory.");
 
@@ -211,7 +212,7 @@ public sealed record ExperienceManifest(
 
 public sealed record ExperienceBundleRequest(
     ulong BundleId,
-    string ConfigurationBase64,
+    string ConfigurationBase64 = "",
     string? ArtifactVersion = null,
     string? ContentHash = null,
     string? BundleVersion = null,
