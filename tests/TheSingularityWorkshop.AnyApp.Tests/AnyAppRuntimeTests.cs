@@ -507,4 +507,58 @@ public sealed class AnyAppRuntimeTests
     }
 #endif
 
+#if WORKSHOP_USE_REPOSITORY_SOURCES
+    [Fact]
+    public void StartupMonikerKeepsOnlyItsTransitiveResolvedClosure()
+    {
+        static ExperienceBundleRequest Bundle(ulong id, string version = "1.0.0") =>
+            new(
+                id,
+                ArtifactVersion: version,
+                ContentHash: new string('a', 64),
+                BundleVersion: version,
+                ConfigurationArtifactVersion: $"configuration-{version}",
+                ConfigurationContentHash: new string('b', 64));
+
+        var manifest = new ExperienceManifest(
+            3101,
+            "1.0.0",
+            3111,
+            [
+                Bundle(4001),
+                Bundle(MonikerExperience.MonikerBundleId),
+                Bundle(MonikerExperience.MotionBundleId),
+                Bundle(MonikerExperience.RendererBundleId, "0.1.0-alpha.2"),
+                Bundle(5000)
+            ],
+            StartupMonikerBundleIds: [MonikerExperience.MonikerBundleId],
+            ResolvedPlan: new ExperienceResolvedPlan(
+                1,
+                [4001, MonikerExperience.MonikerBundleId, MonikerExperience.MotionBundleId,
+                    MonikerExperience.RendererBundleId, 5000],
+                [
+                    new ExperienceResolvedDependency(MonikerExperience.MonikerBundleId, 4001),
+                    new ExperienceResolvedDependency(5000, 4001)
+                ]));
+
+        var startup = manifest.CreateStartupMonikerManifest();
+        Assert.NotNull(startup);
+        Assert.NotNull(startup!.ResolvedPlan);
+        Assert.Equal(
+            new ulong[]
+            {
+                4001,
+                MonikerExperience.MonikerBundleId,
+                MonikerExperience.MotionBundleId,
+                MonikerExperience.RendererBundleId
+            },
+            startup.ResolvedPlan!.LoadOrder);
+        Assert.Single(startup.ResolvedPlan.Dependencies);
+
+        var runtimeManifest = startup.ToRuntimeManifest();
+        Assert.True(runtimeManifest.ArbitrationResolved);
+        Assert.Equal(startup.ResolvedPlan.LoadOrder, runtimeManifest.LoadPlan!.Select(entry => entry.Reference.BundleId));
+    }
+#endif
+
 }
