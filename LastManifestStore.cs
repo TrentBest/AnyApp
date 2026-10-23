@@ -26,8 +26,39 @@ public static class LastManifestStore
         ArgumentNullException.ThrowIfNull(manifest);
 
         Directory.CreateDirectory(DirectoryPath);
+        var configurationDirectory = Path.Combine(DirectoryPath, "configuration");
+        Directory.CreateDirectory(configurationDirectory);
 
-        var json = JsonSerializer.Serialize(manifest, JsonOptions);
+        // Keep cached configuration as sidecar files too. The last-manifest cache is
+        // not the canonical published artifact, but it must preserve the same separation.
+        var source = manifest.CreateConfigurationSource();
+        var cachedBundles = new List<ExperienceBundleRequest>(manifest.Bundles.Count);
+        foreach (var bundle in manifest.Bundles)
+        {
+            if (!source.TryGetConfiguration(
+                    manifest.RuntimeId,
+                    bundle.BundleId,
+                    string.IsNullOrWhiteSpace(bundle.BundleVersion)
+                        ? string.IsNullOrWhiteSpace(bundle.ArtifactVersion) ? "1.0.0" : bundle.ArtifactVersion
+                        : bundle.BundleVersion,
+                    out var configuration))
+            {
+                cachedBundles.Add(bundle with { ConfigurationBase64 = "", ConfigurationPath = null });
+                continue;
+            }
+
+            var fileName = $"{bundle.BundleId}.bin";
+            var fullPath = Path.Combine(configurationDirectory, fileName);
+            await File.WriteAllBytesAsync(fullPath, configuration.ToArray(), cancellationToken);
+            cachedBundles.Add(bundle with
+            {
+                ConfigurationBase64 = "",
+                ConfigurationPath = Path.Combine("configuration", fileName).Replace('\\\\', '/')
+            });
+        }
+
+        var cachedManifest = manifest with { Bundles = cachedBundles };
+        var json = JsonSerializer.Serialize(cachedManifest, JsonOptions);
         await File.WriteAllTextAsync(FilePath, json, cancellationToken);
     }
 
@@ -39,8 +70,7 @@ public static class LastManifestStore
 
         try
         {
-            var content = await File.ReadAllBytesAsync(FilePath, cancellationToken);
-            return ExperienceManifest.Parse(content);
+            return ExperienceManifest.LoadFile(FilePath);
         }
         catch (Exception) when (!cancellationToken.IsCancellationRequested)
         {
