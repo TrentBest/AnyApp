@@ -387,4 +387,56 @@ public sealed class AnyAppRuntimeTests
         Assert.True(WorkshopSemanticExchange.IsAllowed(parsed.Intent));
     }
 
+    [Fact]
+    public void ExperienceManifest_LoadFileResolvesPerBundleConfigurationRelativeToManifest()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "AnyAppManifestTests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(Path.Combine(root, "configuration"));
+        try
+        {
+            File.WriteAllText(
+                Path.Combine(root, "manifest.json"),
+                "{\\"experienceId\\":3101,\\"version\\":\\"1.0.0-dev\\",\\"runtimeId\\":3111," +
+                "\\"bundles\\":[{\\"bundleId\\":3101,\\"bundleVersion\\":\\"1.0.0\\"," +
+                "\\"configurationPath\\":\\"configuration/3101.json\\"}]}");
+            File.WriteAllText(
+                Path.Combine(root, "configuration", "3101.json"),
+                "{\\"webBridgeEndpoint\\":\\"http://127.0.0.1:48156/\\"}");
+
+            var manifest = ExperienceManifest.LoadFile(Path.Combine(root, "manifest.json"));
+            var source = manifest.CreateConfigurationSource();
+
+            Assert.True(source.TryGetConfiguration(3111, 3101, "1.0.0", out var configuration));
+            Assert.Contains("webBridgeEndpoint", Encoding.UTF8.GetString(configuration.Span));
+            Assert.False(source.TryGetConfiguration(9999, 3101, "1.0.0", out _));
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void ExperienceManifest_RejectsConfigurationPathsOutsideManifestDirectory()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "AnyAppManifestTests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            File.WriteAllText(
+                Path.Combine(root, "manifest.json"),
+                "{\\"experienceId\\":3101,\\"version\\":\\"1.0.0-dev\\",\\"runtimeId\\":3111," +
+                "\\"bundles\\":[{\\"bundleId\\":3101,\\"bundleVersion\\":\\"1.0.0\\"," +
+                "\\"configurationPath\\":\\"../outside.json\\"}]}");
+
+            var manifest = ExperienceManifest.LoadFile(Path.Combine(root, "manifest.json"));
+
+            Assert.Throws<InvalidOperationException>(() => manifest.CreateConfigurationSource());
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
 }
