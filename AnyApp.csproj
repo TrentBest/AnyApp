@@ -17,9 +17,10 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <Description>Desktop AnyApp host proving FSM_COS composition through GUI.WPF.</Description>
   </PropertyGroup>
-  <!-- Make a developer's checked-out source graph the default when the AnyApp dependency workspace is present.
-       Public/package compatibility checks can explicitly set WorkshopUseRepositorySources=false. -->
-  <PropertyGroup Condition="'$(WorkshopUseRepositorySources)' == '' and Exists('$(MSBuildThisFileDirectory)_dependencies/FSM_API/FSM_API/FSM_API.csproj')">
+  <!-- Prefer repository sources whenever this checkout contains a source dependency for packages that are
+       not yet published to NuGet. FSM_API alone is not a reliable workspace sentinel. Package-compatibility
+       checks explicitly set WorkshopUseRepositorySources=false. -->
+  <PropertyGroup Condition="'$(WorkshopUseRepositorySources)' == '' and (Exists('$(MSBuildThisFileDirectory)_dependencies/Experiences/src/Moniker/TheSingularityWorkshop.Experiences.Moniker.csproj') or Exists('$(MSBuildThisFileDirectory)_dependencies/MicroBundleRepository/src/REST/TheSingularityWorkshop.MicroBundleRepository.Rest/TheSingularityWorkshop.MicroBundleRepository.Rest.csproj'))">
     <WorkshopUseRepositorySources>true</WorkshopUseRepositorySources>
   </PropertyGroup>
   <ItemGroup>
