@@ -396,12 +396,12 @@ public sealed class AnyAppRuntimeTests
         {
             File.WriteAllText(
                 Path.Combine(root, "manifest.json"),
-                "{\\"experienceId\\":3101,\\"version\\":\\"1.0.0-dev\\",\\"runtimeId\\":3111," +
-                "\\"bundles\\":[{\\"bundleId\\":3101,\\"bundleVersion\\":\\"1.0.0\\"," +
-                "\\"configurationPath\\":\\"configuration/3101.json\\"}]}");
+                "{\"experienceId\":3101,\"version\":\"1.0.0-dev\",\"runtimeId\":3111," +
+                "\"bundles\":[{\"bundleId\":3101,\"bundleVersion\":\"1.0.0\"," +
+                "\"configurationPath\":\"configuration/3101.json\"}]}");
             File.WriteAllText(
                 Path.Combine(root, "configuration", "3101.json"),
-                "{\\"webBridgeEndpoint\\":\\"http://127.0.0.1:48156/\\"}");
+                "{\"webBridgeEndpoint\":\"http://127.0.0.1:48156/\"}");
 
             var manifest = ExperienceManifest.LoadFile(Path.Combine(root, "manifest.json"));
             var source = manifest.CreateConfigurationSource();
@@ -425,9 +425,9 @@ public sealed class AnyAppRuntimeTests
         {
             File.WriteAllText(
                 Path.Combine(root, "manifest.json"),
-                "{\\"experienceId\\":3101,\\"version\\":\\"1.0.0-dev\\",\\"runtimeId\\":3111," +
-                "\\"bundles\\":[{\\"bundleId\\":3101,\\"bundleVersion\\":\\"1.0.0\\"," +
-                "\\"configurationPath\\":\\"../outside.json\\"}]}");
+                "{\"experienceId\":3101,\"version\":\"1.0.0-dev\",\"runtimeId\":3111," +
+                "\"bundles\":[{\"bundleId\":3101,\"bundleVersion\":\"1.0.0\"," +
+                "\"configurationPath\":\"../outside.json\"}]}");
 
             var manifest = ExperienceManifest.LoadFile(Path.Combine(root, "manifest.json"));
 
