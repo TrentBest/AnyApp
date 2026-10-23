@@ -1,4 +1,5 @@
 using System.IO;
+using System.Security.Cryptography;
 using System.Text.Json;
 using TheSingularityWorkshop.FSM_COS;
 using TheSingularityWorkshop.FSM_UserIO;
@@ -36,6 +37,9 @@ public sealed record ExperienceManifest(
 
     public bool UsesRepositoryArtifacts =>
         Bundles.Count > 0 && Bundles.All(bundle => bundle.HasArtifactIdentity);
+
+    public bool UsesResolvedRepositoryConfigurations =>
+        Bundles.Count > 0 && Bundles.All(bundle => bundle.HasConfigurationArtifactIdentity);
 
     /// <summary>
     /// The ordered Moniker MicroBundles to present before the destination Experience.
@@ -103,6 +107,9 @@ public sealed record ExperienceManifest(
         if (!UsesRepositoryArtifacts)
             throw new InvalidOperationException(
                 "A pre-resolved Experience manifest must identify immutable artifacts for every MicroBundle.");
+        if (!UsesResolvedRepositoryConfigurations)
+            throw new InvalidOperationException(
+                "A pre-resolved Experience manifest must identify immutable resolved-configuration artifacts for every MicroBundle.");
 
         var bundlesById = Bundles.ToDictionary(bundle => bundle.BundleId);
         var loadPlan = ResolvedPlan.LoadOrder.Select(bundleId =>
@@ -190,18 +197,33 @@ public sealed record ExperienceManifest(
                 if (hasFileConfiguration)
                 {
                     if (string.IsNullOrWhiteSpace(configurationRoot))
+                    {
+                        if (bundle.HasConfigurationArtifactIdentity)
+                            continue; // The repository-backed source supplies this immutable configuration.
                         throw new InvalidOperationException(
                             $"MicroBundle {bundle.BundleId} uses configurationPath, but the manifest was not loaded from a file.");
+                    }
 
                     var path = ResolveConfigurationPath(configurationRoot, bundle.ConfigurationPath!);
                     var info = new FileInfo(path);
                     if (!info.Exists)
+                    {
+                        if (bundle.HasConfigurationArtifactIdentity)
+                            continue; // Permit repository/cache fallback for a missing sidecar.
                         throw new FileNotFoundException(
                             $"Configuration file for MicroBundle {bundle.BundleId} was not found.", path);
+                    }
                     if (info.Length > MaximumConfigurationFileBytes)
                         throw new InvalidOperationException(
                             $"Configuration file for MicroBundle {bundle.BundleId} exceeds {MaximumConfigurationFileBytes} bytes.");
                     bytes = File.ReadAllBytes(path);
+                    if (!string.IsNullOrWhiteSpace(bundle.ConfigurationContentHash))
+                    {
+                        var actualHash = Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
+                        if (!string.Equals(actualHash, bundle.ConfigurationContentHash, StringComparison.OrdinalIgnoreCase))
+                            throw new InvalidOperationException(
+                                $"Configuration file for MicroBundle {bundle.BundleId} does not match its published SHA-256 identity.");
+                    }
                 }
                 else
                 {
@@ -271,9 +293,15 @@ public sealed record ExperienceBundleRequest(
     string? ArtifactVersion = null,
     string? ContentHash = null,
     string? BundleVersion = null,
-    string? ConfigurationPath = null)
+    string? ConfigurationPath = null,
+    string? ConfigurationArtifactVersion = null,
+    string? ConfigurationContentHash = null)
 {
     public bool HasArtifactIdentity =>
         !string.IsNullOrWhiteSpace(ArtifactVersion) &&
         !string.IsNullOrWhiteSpace(ContentHash);
+
+    public bool HasConfigurationArtifactIdentity =>
+        !string.IsNullOrWhiteSpace(ConfigurationArtifactVersion) &&
+        !string.IsNullOrWhiteSpace(ConfigurationContentHash);
 }
