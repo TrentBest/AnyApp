@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using TheSingularityWorkshop.MicroBundleDomain;
 using System.Net.Http;
 using TheSingularityWorkshop.FSM_COS;
@@ -103,14 +104,33 @@ public sealed class RepositoryMicroBundleCatalog : IMicroBundleCatalog
                 request.ConfigurationArtifactVersion!,
                 request.ConfigurationContentHash!);
             var artifact = await _repository.GetAsync(address, cancellationToken);
-            if (artifact is null)
-                throw new InvalidOperationException(
-                    $"Resolved configuration artifact {address} for MicroBundle {request.BundleId} was not found.");
-
             var version = string.IsNullOrWhiteSpace(request.BundleVersion)
                 ? string.IsNullOrWhiteSpace(request.ArtifactVersion) ? "1.0.0" : request.ArtifactVersion
                 : request.BundleVersion;
-            if (!values.TryAdd((request.BundleId, version!), artifact.Content.ToArray()))
+
+            byte[] bytes;
+            if (artifact is not null)
+            {
+                bytes = artifact.Content.ToArray();
+            }
+            else if (localOverrides is not null &&
+                     localOverrides.TryGetConfiguration(manifest.RuntimeId, request.BundleId, version!, out var localConfiguration))
+            {
+                // Local sidecars/overrides are accepted as a cache only when their bytes
+                // match the immutable identity recorded in the manifest.
+                bytes = localConfiguration.ToArray();
+                var actualHash = Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
+                if (!string.Equals(actualHash, request.ConfigurationContentHash, StringComparison.OrdinalIgnoreCase))
+                    throw new InvalidOperationException(
+                        $"Local resolved configuration for MicroBundle {request.BundleId} does not match its published SHA-256 identity.");
+            }
+            else
+            {
+                throw new InvalidOperationException(
+                    $"Resolved configuration artifact {address} for MicroBundle {request.BundleId} was not found.");
+            }
+
+            if (!values.TryAdd((request.BundleId, version!), bytes))
                 throw new InvalidOperationException(
                     $"Experience manifest declares resolved configuration more than once for MicroBundle {request.BundleId}.");
         }
