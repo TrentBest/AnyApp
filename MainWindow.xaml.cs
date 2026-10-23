@@ -490,9 +490,8 @@ public partial class MainWindow : Window
     {
         try
         {
-            var content = await File.ReadAllBytesAsync(path);
             await LaunchManifestAsync(
-                ExperienceManifest.Parse(content),
+                ExperienceManifest.LoadFile(path),
                 persistLastManifest: true);
         }
         catch (Exception ex)
@@ -535,8 +534,7 @@ public partial class MainWindow : Window
                 "manifest.json");
             try
             {
-                fallbackMoniker = ExperienceManifest.Parse(
-                    await File.ReadAllBytesAsync(monikerPath));
+                fallbackMoniker = ExperienceManifest.LoadFile(monikerPath);
             }
             catch
             {
