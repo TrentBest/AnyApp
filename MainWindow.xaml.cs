@@ -872,9 +872,8 @@ public partial class MainWindow : Window
                 "development",
                 "manifest.json");
 
-            var content = await File.ReadAllBytesAsync(path);
             await LaunchManifestAsync(
-                ExperienceManifest.Parse(content),
+                ExperienceManifest.LoadFile(path),
                 persistLastManifest: false);
         }
         catch (Exception ex)
@@ -896,9 +895,8 @@ public partial class MainWindow : Window
                 "1.0.0",
                 "manifest.json");
 
-            var content = await File.ReadAllBytesAsync(path);
             await LaunchManifestAsync(
-                ExperienceManifest.Parse(content),
+                ExperienceManifest.LoadFile(path),
                 persistLastManifest: false);
         }
         catch (Exception ex)
