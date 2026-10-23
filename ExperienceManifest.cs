@@ -217,17 +217,18 @@ public sealed record ExperienceManifest(
                         throw new InvalidOperationException(
                             $"Configuration file for MicroBundle {bundle.BundleId} exceeds {MaximumConfigurationFileBytes} bytes.");
                     bytes = File.ReadAllBytes(path);
-                    if (!string.IsNullOrWhiteSpace(bundle.ConfigurationContentHash))
-                    {
-                        var actualHash = Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
-                        if (!string.Equals(actualHash, bundle.ConfigurationContentHash, StringComparison.OrdinalIgnoreCase))
-                            throw new InvalidOperationException(
-                                $"Configuration file for MicroBundle {bundle.BundleId} does not match its published SHA-256 identity.");
-                    }
                 }
                 else
                 {
                     bytes = Convert.FromBase64String(bundle.ConfigurationBase64);
+                }
+
+                if (!string.IsNullOrWhiteSpace(bundle.ConfigurationContentHash))
+                {
+                    var actualHash = Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
+                    if (!string.Equals(actualHash, bundle.ConfigurationContentHash, StringComparison.OrdinalIgnoreCase))
+                        throw new InvalidOperationException(
+                            $"Configuration for MicroBundle {bundle.BundleId} does not match its published SHA-256 identity.");
                 }
 
                 var key = (bundle.BundleId, ResolveBundleVersion(bundle));
