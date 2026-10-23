@@ -17,6 +17,11 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <Description>Desktop AnyApp host proving FSM_COS composition through GUI.WPF.</Description>
   </PropertyGroup>
+  <!-- Make a developer's checked-out source graph the default when the AnyApp dependency workspace is present.
+       Public/package compatibility checks can explicitly set WorkshopUseRepositorySources=false. -->
+  <PropertyGroup Condition="'$(WorkshopUseRepositorySources)' == '' and Exists('$(MSBuildThisFileDirectory)_dependencies/FSM_API/FSM_API/FSM_API.csproj')">
+    <WorkshopUseRepositorySources>true</WorkshopUseRepositorySources>
+  </PropertyGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="TheSingularityWorkshop.AnyApp.Tests" />
   </ItemGroup>
@@ -56,8 +61,8 @@
                       Condition="'$(WorkshopUseRepositorySources)' == 'true' and Exists('$(MSBuildThisFileDirectory)_dependencies/StoryBuilder/src/StoryBuilder.Persistence/StoryBuilder.Persistence.csproj')" />
     <ProjectReference Include="_dependencies/Experiences/src/Moniker/TheSingularityWorkshop.Experiences.Moniker.csproj" Condition="'$(WorkshopUseRepositorySources)' == 'true'" />
     <ProjectReference Include="_dependencies/Experiences/src/Moniker.Motion.Wave/TheSingularityWorkshop.Experiences.Moniker.Motion.Wave.csproj" Condition="'$(WorkshopUseRepositorySources)' == 'true'" />
-    <ProjectReference Include="_dependencies/TheSingularityWorkshop.Visualize/TheSingularityWorkshop.Visualize.csproj" />
-    <ProjectReference Include="_dependencies/TheSingularityWorkshop.Visualize/integrations/RendererAdapter/TheSingularityWorkshop.Renderer.VisualizeAdapter.csproj" />
+    <ProjectReference Include="_dependencies/TheSingularityWorkshop.Visualize/TheSingularityWorkshop.Visualize.csproj" Condition="'$(WorkshopUseRepositorySources)' == 'true' and Exists('$(MSBuildThisFileDirectory)_dependencies/TheSingularityWorkshop.Visualize/TheSingularityWorkshop.Visualize.csproj')" />
+    <ProjectReference Include="_dependencies/TheSingularityWorkshop.Visualize/integrations/RendererAdapter/TheSingularityWorkshop.Renderer.VisualizeAdapter.csproj" Condition="'$(WorkshopUseRepositorySources)' == 'true' and Exists('$(MSBuildThisFileDirectory)_dependencies/TheSingularityWorkshop.Visualize/integrations/RendererAdapter/TheSingularityWorkshop.Renderer.VisualizeAdapter.csproj')" />
   </ItemGroup>
   <PropertyGroup Condition="'$(WorkshopUseRepositorySources)' == 'true' and Exists('$(MSBuildThisFileDirectory)_dependencies/StoryBuilder/src/StoryBuilder.MicroBundle/StoryBuilder.MicroBundle.csproj')">
     <DefineConstants>$(DefineConstants);WORKSHOP_STORYBUILDER</DefineConstants>
