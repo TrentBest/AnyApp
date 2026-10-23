@@ -1,4 +1,5 @@
 using System.IO;
+using System.Net;
 using System.Net.Http;
 using System.Windows;
 using System.Windows.Controls;
@@ -505,7 +506,7 @@ public partial class MainWindow : Window
     {
         ArgumentNullException.ThrowIfNull(manifest);
 
-        _webBridge.Configure(manifest);
+        _webBridge.ConfigureEndpoint(GetWebBridgeEndpoint());
         _webBridge.Start();
         _webBridge.SetState("composing", false);
 
@@ -1086,5 +1087,20 @@ public partial class MainWindow : Window
                Uri.TryCreate(argument[prefix.Length..], UriKind.Absolute, out var endpoint)
             ? endpoint
             : DefaultRepositoryEndpoint;
+    }
+
+    private static Uri GetWebBridgeEndpoint()
+    {
+        const string prefix = "--web-bridge-endpoint=";
+        var argument = Environment.GetCommandLineArgs().FirstOrDefault(
+            value => value.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
+        if (argument is not null &&
+            Uri.TryCreate(argument[prefix.Length..], UriKind.Absolute, out var endpoint) &&
+            endpoint.Scheme == Uri.UriSchemeHttp &&
+            IPAddress.TryParse(endpoint.Host, out var address) &&
+            IPAddress.IsLoopback(address))
+            return endpoint;
+
+        return new Uri("http://127.0.0.1:48156/");
     }
 }
