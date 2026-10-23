@@ -25,7 +25,7 @@ public sealed record ExperienceManifest(
 
     // Set only by LoadFile. Paths in a manifest are relative to that manifest and
     // never resolved against the process working directory.
-    private string? ConfigurationRoot { get; init; }
+    internal string? ConfigurationRoot { get; init; }
 
     public static ExperienceManifest LoadFile(string path)
     {
