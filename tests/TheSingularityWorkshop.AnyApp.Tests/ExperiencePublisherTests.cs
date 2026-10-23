@@ -44,6 +44,11 @@ public sealed class ExperiencePublisherTests
             var source = loaded.CreateConfigurationSource();
             Assert.True(source.TryGetConfiguration(9002, 9001, "1.0.0", out var configuration));
             Assert.Empty(configuration.ToArray());
+
+            var arbitrationCallsAfterPublish = bundle.ArbitrationCalls;
+            var runtimeAssembly = new FsmCos(new SingleBundleCatalog(bundle)).Execute(runtimeManifest, source);
+            Assert.Equal(arbitrationCallsAfterPublish, bundle.ArbitrationCalls);
+            Assert.Single(runtimeAssembly.Bundles);
         }
         finally
         {
