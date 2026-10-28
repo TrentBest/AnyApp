@@ -451,13 +451,17 @@ public sealed class AnyAppRuntimeTests
                 new ExperienceBundleRequest(
                     1,
                     ArtifactVersion: "1.0.0",
-                    ContentHash: "sha256:bundle-1",
-                    BundleVersion: "1.0.0"),
+                    ContentHash: new string('a', 64),
+                    BundleVersion: "1.0.0",
+                    ConfigurationArtifactVersion: "1.0.0",
+                    ConfigurationContentHash: new string('b', 64)),
                 new ExperienceBundleRequest(
                     2,
                     ArtifactVersion: "1.0.0",
-                    ContentHash: "sha256:bundle-2",
-                    BundleVersion: "1.0.0")
+                    ContentHash: new string('c', 64),
+                    BundleVersion: "1.0.0",
+                    ConfigurationArtifactVersion: "1.0.0",
+                    ConfigurationContentHash: new string('d', 64))
             ],
             ResolvedPlan: new ExperienceResolvedPlan(
                 1,
