@@ -253,17 +253,17 @@ public partial class MainWindow : Window
     private async Task StartDefaultExperienceAsync()
     {
         var decision = await ExperienceStartupCoordinator.ReconcileAsync(
-            _ => LastManifestStore.TryLoadAsync(),
-            _ => LastManifestStore.TryLoadPublicationAsync(),
-            async _ =>
+            cancellationToken => LastManifestStore.TryLoadAsync(cancellationToken),
+            cancellationToken => LastManifestStore.TryLoadPublicationAsync(cancellationToken),
+            async cancellationToken =>
             {
                 using var client = new ExperienceCatalogClient(GetRepositoryEndpoint());
-                return await client.ListAsync();
+                return await client.ListAsync(cancellationToken);
             },
-            async (publication, _) =>
+            async (publication, cancellationToken) =>
             {
                 using var client = new ExperienceCatalogClient(GetRepositoryEndpoint());
-                return await client.GetManifestAsync(publication);
+                return await client.GetManifestAsync(publication, cancellationToken);
             });
 
         if (decision.ShouldLaunchForge)
