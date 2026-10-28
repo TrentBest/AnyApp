@@ -108,4 +108,37 @@ public sealed class ExperienceStartupCoordinatorTests
 
         Assert.True(decision.ShouldLaunchForge);
     }
+    [Fact]
+    public async Task LegacyLocalManifestWithoutPublicationCanResumeWhenCatalogIsEmpty()
+    {
+        var manifest = new ExperienceManifest(41, "1.0.0", 1, Array.Empty<ExperienceBundleRequest>());
+
+        var decision = await ExperienceStartupCoordinator.ReconcileAsync(
+            _ => Task.FromResult<ExperienceManifest?>(manifest),
+            _ => Task.FromResult<PublishedExperience?>(null),
+            _ => Task.FromResult<IReadOnlyList<PublishedExperience>>([]),
+            (_, _) => throw new InvalidOperationException("No immutable artifact should be fetched."));
+
+        Assert.Same(manifest, decision.Manifest);
+        Assert.Null(decision.Publication);
+        Assert.True(decision.PersistLastManifest);
+        Assert.False(decision.ShouldLaunchForge);
+    }
+
+    [Fact]
+    public async Task CancellationFromCatalogLookupPropagates()
+    {
+        using var cancellation = new CancellationTokenSource();
+        cancellation.Cancel();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            ExperienceStartupCoordinator.ReconcileAsync(
+                _ => Task.FromResult<ExperienceManifest?>(
+                    new ExperienceManifest(41, "1.0.0", 1, Array.Empty<ExperienceBundleRequest>())),
+                _ => Task.FromResult<PublishedExperience?>(null),
+                _ => Task.FromCanceled<IReadOnlyList<PublishedExperience>>(cancellation.Token),
+                (_, _) => throw new InvalidOperationException("No fetch should occur."),
+                cancellation.Token));
+    }
+
 }
