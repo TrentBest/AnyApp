@@ -102,6 +102,7 @@ public sealed class ExperiencePublisherTests
 
         public MicroBundleDescriptor Descriptor { get; } = new(id, "1.0.0");
         public IReadOnlyList<MicroBundleDependencyRequest> Dependencies { get; } = Array.Empty<MicroBundleDependencyRequest>();
+        public int ArbitrationCalls { get; private set; }
 
         public void Load(IMicroBundleLoadContext context)
         {
@@ -110,7 +111,11 @@ public sealed class ExperiencePublisherTests
                 : ReadOnlyMemory<byte>.Empty;
         }
 
-        public bool Arbitrate(IMicroBundleArbitrationContext context, int roundIndex) => false;
+        public bool Arbitrate(IMicroBundleArbitrationContext context, int roundIndex)
+        {
+            ArbitrationCalls++;
+            return false;
+        }
 
         public ReadOnlyMemory<byte> ExportResolvedConfiguration() => _configuration.ToArray();
     }
