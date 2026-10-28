@@ -252,13 +252,16 @@ public partial class MainWindow : Window
 
     private async Task StartDefaultExperienceAsync()
     {
-        // Match WebPage's manifest-first contract: the Moniker is the introduction,
-        // not the destination. Resume the last assigned Experience when possible;
-        // otherwise enter the Workshop Forge after the Moniker presentation.
+        // Resume the last Experience, but verify its published immutable identity
+        // before treating the local manifest as current. An unavailable catalog is
+        // not proof of freshness; in that case we preserve offline startup and retry
+        // the comparison on the next launch.
         ExperienceManifest? lastManifest = null;
+        PublishedExperience? lastPublication = null;
         try
         {
             lastManifest = await LastManifestStore.TryLoadAsync();
+            lastPublication = await LastManifestStore.TryLoadPublicationAsync();
         }
         catch
         {
@@ -269,6 +272,50 @@ public partial class MainWindow : Window
         {
             try
             {
+                if (lastPublication is not null &&
+                    lastPublication.ExperienceId == lastManifest.ExperienceId)
+                {
+                    try
+                    {
+                        using var client = new ExperienceCatalogClient(GetRepositoryEndpoint());
+                        var published = (await client.ListAsync())
+                            .FirstOrDefault(item => item.ExperienceId == lastPublication.ExperienceId);
+
+                        if (published is null)
+                        {
+                            // The publisher no longer lists this Experience. Do not
+                            // silently treat an unlisted artifact as the current default.
+                            await LaunchForgeAsync();
+                            return;
+                        }
+
+                        if (IsSamePublication(published, lastPublication) &&
+                            string.Equals(lastManifest.Version, published.Version, StringComparison.Ordinal))
+                        {
+                            await LaunchManifestAsync(lastManifest, persistLastManifest: true, publishedExperience: published);
+                            return;
+                        }
+
+                        var updatedManifest = await client.GetManifestAsync(published);
+                        if (updatedManifest.ExperienceId != published.ExperienceId ||
+                            !string.Equals(updatedManifest.Version, published.Version, StringComparison.Ordinal))
+                            throw new InvalidOperationException("The current published Experience manifest has a different identity.");
+
+                        await LaunchManifestAsync(updatedManifest, persistLastManifest: true, publishedExperience: published);
+                        return;
+                    }
+                    catch (HttpRequestException)
+                    {
+                        // Offline fallback is allowed, but this does not update the
+                        // remembered publication identity or claim it is current.
+                        await LaunchManifestAsync(lastManifest, persistLastManifest: false);
+                        return;
+                    }
+                }
+
+                // A local manifest has no publisher identity to compare. Keep the
+                // existing local-resume behavior, but do not associate it with a stale
+                // publication record.
                 await LaunchManifestAsync(lastManifest, persistLastManifest: true);
                 return;
             }
@@ -280,6 +327,13 @@ public partial class MainWindow : Window
 
         await LaunchForgeAsync();
     }
+
+    private static bool IsSamePublication(
+        PublishedExperience left,
+        PublishedExperience right) =>
+        left.ExperienceId == right.ExperienceId &&
+        string.Equals(left.Version, right.Version, StringComparison.Ordinal) &&
+        string.Equals(left.ContentHash, right.ContentHash, StringComparison.OrdinalIgnoreCase);
 
     private async Task LaunchPublishedExperienceAsync(AnyAppLaunchRequest request)
     {
@@ -301,7 +355,8 @@ public partial class MainWindow : Window
 
             await LaunchManifestAsync(
                 manifest,
-                persistLastManifest: manifest.ExperienceId != ForgeMicroBundle.ExperienceId);
+                persistLastManifest: manifest.ExperienceId != ForgeMicroBundle.ExperienceId,
+                publishedExperience: new PublishedExperience(request.ExperienceId, request.Version, request.ContentHash));
         }
         catch (Exception ex)
         {
@@ -468,7 +523,7 @@ public partial class MainWindow : Window
 
             using var client = new ExperienceCatalogClient(GetRepositoryEndpoint());
             var manifest = await client.GetManifestAsync(selected);
-            await LaunchManifestAsync(manifest, persistLastManifest: true);
+            await LaunchManifestAsync(manifest, persistLastManifest: true, publishedExperience: selected);
         }
         catch (Exception ex)
         {
@@ -502,7 +557,8 @@ public partial class MainWindow : Window
 
     private async Task LaunchManifestAsync(
         ExperienceManifest manifest,
-        bool persistLastManifest)
+        bool persistLastManifest,
+        PublishedExperience? publishedExperience = null)
     {
         ArgumentNullException.ThrowIfNull(manifest);
 
@@ -557,6 +613,16 @@ public partial class MainWindow : Window
             manifest.ExperienceId != ForgeMicroBundle.ExperienceId)
         {
             await LastManifestStore.SaveAsync(manifest);
+            if (publishedExperience is not null &&
+                publishedExperience.ExperienceId == manifest.ExperienceId &&
+                string.Equals(publishedExperience.Version, manifest.Version, StringComparison.Ordinal))
+            {
+                await LastManifestStore.SavePublicationAsync(publishedExperience);
+            }
+            else
+            {
+                await LastManifestStore.ClearPublicationAsync();
+            }
         }
     }
 
