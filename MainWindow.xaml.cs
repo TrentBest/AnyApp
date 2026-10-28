@@ -555,17 +555,12 @@ public partial class MainWindow : Window
         if (persistLastManifest &&
             manifest.ExperienceId != ForgeMicroBundle.ExperienceId)
         {
-            await LastManifestStore.SaveAsync(manifest);
-            if (publishedExperience is not null &&
+            var matchingPublication = publishedExperience is not null &&
                 publishedExperience.ExperienceId == manifest.ExperienceId &&
-                string.Equals(publishedExperience.Version, manifest.Version, StringComparison.Ordinal))
-            {
-                await LastManifestStore.SavePublicationAsync(publishedExperience);
-            }
-            else
-            {
-                await LastManifestStore.ClearPublicationAsync();
-            }
+                string.Equals(publishedExperience.Version, manifest.Version, StringComparison.Ordinal)
+                    ? publishedExperience
+                    : null;
+            await LastManifestStore.SaveAsync(manifest, matchingPublication);
         }
     }
 
