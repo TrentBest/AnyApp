@@ -125,6 +125,36 @@ public sealed class LastManifestStoreTests
     }
 
     [Fact]
+    public async Task PublicationIdentityMustMatchActiveManifest()
+    {
+        var root = CreateTestRoot();
+        try
+        {
+            var manifest = new ExperienceManifest(3201, "1.0.0", 1, Array.Empty<ExperienceBundleRequest>());
+            await LastManifestStore.SaveAsync(manifest, root);
+            var activePointer = await File.ReadAllTextAsync(Path.Combine(root, "active-generation.txt"));
+
+            await Assert.ThrowsAsync<ArgumentException>(() =>
+                LastManifestStore.SavePublicationAsync(
+                    new PublishedExperience(3201, "2.0.0", "ABCDEF0123456789"), root));
+
+            await Assert.ThrowsAsync<ArgumentException>(() =>
+                LastManifestStore.SaveAsync(
+                    manifest,
+                    new PublishedExperience(3201, "2.0.0", "ABCDEF0123456789"),
+                    root));
+
+            Assert.Equal(activePointer, await File.ReadAllTextAsync(Path.Combine(root, "active-generation.txt")));
+            Assert.Equal("1.0.0", (await LastManifestStore.TryLoadAsync(root))?.Version);
+            Assert.Null(await LastManifestStore.TryLoadPublicationAsync(root));
+        }
+        finally
+        {
+            DeleteTestRoot(root);
+        }
+    }
+
+    [Fact]
     public async Task LegacyFlatManifestCanStillBeLoaded()
     {
         var root = CreateTestRoot();
