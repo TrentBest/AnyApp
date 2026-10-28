@@ -55,6 +55,12 @@ public static class ExperienceStartupCoordinator
         {
             throw;
         }
+        catch (OperationCanceledException)
+        {
+            // HttpClient timeouts also use OperationCanceledException. When the caller's
+            // token was not canceled, treat this as unavailable catalog access, not user intent.
+            return new ExperienceStartupDecision(cachedManifest, null, PersistLastManifest: false);
+        }
         catch
         {
             return ExperienceStartupDecision.LaunchForge;
