@@ -1,113 +1,139 @@
-using System.IO;
 using System.Security.Cryptography;
 using System.Text.Json;
 
 namespace TheSingularityWorkshop.AnyApp;
 
 /// <summary>
-/// Keeps the last successfully launched Experience manifest outside the host binary.
+/// Crash-safe local cache for the last successfully launched Experience.
+/// Each save writes a complete generation and atomically promotes its pointer.
 /// </summary>
 public static class LastManifestStore
 {
-    private static readonly JsonSerializerOptions JsonOptions =
-        new(JsonSerializerDefaults.Web);
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+    private const string StoreFolderName = "TheSingularityWorkshop/AnyApp";
+    private const string ActiveGenerationFileName = "active-generation.txt";
 
-    private static string DirectoryPath =>
-        Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "TheSingularityWorkshop",
-            "AnyApp");
+    private static string DefaultRoot => Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "TheSingularityWorkshop", "AnyApp");
 
-    private static string FilePath => Path.Combine(DirectoryPath, "last-manifest.json");
-    private static string PublicationFilePath => Path.Combine(DirectoryPath, "last-publication.json");
+    public static Task SaveAsync(ExperienceManifest manifest, CancellationToken cancellationToken = default) =>
+        SaveAsync(manifest, DefaultRoot, cancellationToken);
 
+    /// <summary>Saves into an explicitly selected root, primarily for isolated hosts and tests.</summary>
     public static async Task SaveAsync(
-        ExperienceManifest manifest,
-        CancellationToken cancellationToken = default)
+        ExperienceManifest manifest, string rootDirectory, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(manifest);
+        ArgumentException.ThrowIfNullOrWhiteSpace(rootDirectory);
+        cancellationToken.ThrowIfCancellationRequested();
 
-        Directory.CreateDirectory(DirectoryPath);
-        var configurationDirectory = Path.Combine(DirectoryPath, "configuration");
+        var root = Path.GetFullPath(rootDirectory);
+        var generations = Path.Combine(root, "generations");
+        Directory.CreateDirectory(generations);
+        var generationName = Guid.NewGuid().ToString("N");
+        var generationPath = Path.Combine(generations, generationName);
+        var configurationDirectory = Path.Combine(generationPath, "configuration");
         Directory.CreateDirectory(configurationDirectory);
 
-        // Keep cached configuration as sidecar files too. The last-manifest cache is
-        // not the canonical published artifact, but it must preserve the same separation.
-        var source = manifest.CreateConfigurationSource();
-        var cachedBundles = new List<ExperienceBundleRequest>(manifest.Bundles.Count);
-        foreach (var bundle in manifest.Bundles)
+        try
         {
-            if (!source.TryGetConfiguration(
-                    manifest.RuntimeId,
-                    bundle.BundleId,
+            var source = manifest.CreateConfigurationSource();
+            var cachedBundles = new List<ExperienceBundleRequest>(manifest.Bundles.Count);
+            foreach (var bundle in manifest.Bundles)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (!source.TryGetConfiguration(
+                    manifest.RuntimeId, bundle.BundleId,
                     string.IsNullOrWhiteSpace(bundle.BundleVersion)
                         ? string.IsNullOrWhiteSpace(bundle.ArtifactVersion) ? "1.0.0" : bundle.ArtifactVersion
                         : bundle.BundleVersion,
                     out var configuration))
-            {
-                cachedBundles.Add(bundle with { ConfigurationBase64 = "", ConfigurationPath = null });
-                continue;
+                {
+                    cachedBundles.Add(bundle with { ConfigurationBase64 = "", ConfigurationPath = null });
+                    continue;
+                }
+
+                var fileName = $"{bundle.BundleId}.bin";
+                await File.WriteAllBytesAsync(
+                    Path.Combine(configurationDirectory, fileName), configuration.ToArray(), cancellationToken)
+                    .ConfigureAwait(false);
+                cachedBundles.Add(bundle with
+                {
+                    ConfigurationBase64 = "",
+                    ConfigurationPath = Path.Combine("configuration", fileName)
+                        .Replace(Path.DirectorySeparatorChar, '/')
+                });
             }
 
-            var fileName = $"{bundle.BundleId}.bin";
-            var fullPath = Path.Combine(configurationDirectory, fileName);
-            await File.WriteAllBytesAsync(fullPath, configuration.ToArray(), cancellationToken);
-            cachedBundles.Add(bundle with
-            {
-                ConfigurationBase64 = "",
-                ConfigurationPath = Path.Combine("configuration", fileName).Replace(Path.DirectorySeparatorChar, '/')
-            });
-        }
+            var cachedManifest = manifest with { Bundles = cachedBundles };
+            var json = JsonSerializer.Serialize(cachedManifest, JsonOptions);
+            await File.WriteAllTextAsync(
+                Path.Combine(generationPath, "manifest.json"), json, cancellationToken).ConfigureAwait(false);
+            cancellationToken.ThrowIfCancellationRequested();
 
-        var cachedManifest = manifest with { Bundles = cachedBundles };
-        var json = JsonSerializer.Serialize(cachedManifest, JsonOptions);
-        await File.WriteAllTextAsync(FilePath, json, cancellationToken);
+            // The new generation is complete before this single pointer is promoted.
+            await WriteAtomicallyAsync(
+                Path.Combine(root, ActiveGenerationFileName), generationName, cancellationToken).ConfigureAwait(false);
+        }
+        catch
+        {
+            TryDeleteDirectory(generationPath);
+            throw;
+        }
     }
 
-    /// <summary>Persists the immutable publisher identity associated with the last launched manifest.</summary>
+    public static Task SavePublicationAsync(
+        PublishedExperience publication, CancellationToken cancellationToken = default) =>
+        SavePublicationAsync(publication, DefaultRoot, cancellationToken);
+
     public static async Task SavePublicationAsync(
-        PublishedExperience publication,
-        CancellationToken cancellationToken = default)
+        PublishedExperience publication, string rootDirectory, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(publication);
-        if (string.IsNullOrWhiteSpace(publication.Version) ||
-            string.IsNullOrWhiteSpace(publication.ContentHash))
+        if (string.IsNullOrWhiteSpace(publication.Version) || string.IsNullOrWhiteSpace(publication.ContentHash))
             throw new ArgumentException("A publication version and content hash are required.", nameof(publication));
 
-        Directory.CreateDirectory(DirectoryPath);
-        if (!File.Exists(FilePath))
+        var manifestPath = ResolveActiveManifestPath(rootDirectory);
+        if (manifestPath is null || !File.Exists(manifestPath))
             throw new InvalidOperationException("A cached manifest must be saved before its publication identity.");
 
-        var cachedManifestBytes = await File.ReadAllBytesAsync(FilePath, cancellationToken).ConfigureAwait(false);
-        var cachedManifestHash = Convert.ToHexString(SHA256.HashData(cachedManifestBytes)).ToLowerInvariant();
-        var record = new PublicationRecord(publication, cachedManifestHash);
-        var json = JsonSerializer.Serialize(record, JsonOptions);
-        await WriteAtomicallyAsync(PublicationFilePath, json, cancellationToken).ConfigureAwait(false);
+        var bytes = await File.ReadAllBytesAsync(manifestPath, cancellationToken).ConfigureAwait(false);
+        var hash = Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
+        var record = new PublicationRecord(publication, hash);
+        var publicationPath = Path.Combine(Path.GetDirectoryName(manifestPath)!, "publication.json");
+        await WriteAtomicallyAsync(
+            publicationPath, JsonSerializer.Serialize(record, JsonOptions), cancellationToken).ConfigureAwait(false);
     }
 
-    /// <summary>Loads the last known publisher identity, or null when no valid identity is available.</summary>
+    public static Task<PublishedExperience?> TryLoadPublicationAsync(CancellationToken cancellationToken = default) =>
+        TryLoadPublicationAsync(DefaultRoot, cancellationToken);
+
     public static async Task<PublishedExperience?> TryLoadPublicationAsync(
-        CancellationToken cancellationToken = default)
+        string rootDirectory, CancellationToken cancellationToken = default)
     {
-        if (!File.Exists(PublicationFilePath))
+        var manifestPath = ResolveActiveManifestPath(rootDirectory);
+        if (manifestPath is null)
+            return null;
+        var publicationPath = Path.Combine(Path.GetDirectoryName(manifestPath)!, "publication.json");
+        if (!File.Exists(publicationPath))
             return null;
 
         try
         {
-            var json = await File.ReadAllTextAsync(PublicationFilePath, cancellationToken).ConfigureAwait(false);
+            var json = await File.ReadAllTextAsync(publicationPath, cancellationToken).ConfigureAwait(false);
             var record = JsonSerializer.Deserialize<PublicationRecord>(json, JsonOptions);
             if (record?.Publication is not { } publication ||
                 string.IsNullOrWhiteSpace(publication.Version) ||
                 string.IsNullOrWhiteSpace(publication.ContentHash) ||
                 string.IsNullOrWhiteSpace(record.CachedManifestSha256) ||
-                !File.Exists(FilePath))
+                !File.Exists(manifestPath))
                 return null;
 
-            var cachedManifestBytes = await File.ReadAllBytesAsync(FilePath, cancellationToken).ConfigureAwait(false);
-            var actualHash = Convert.ToHexString(SHA256.HashData(cachedManifestBytes)).ToLowerInvariant();
+            var bytes = await File.ReadAllBytesAsync(manifestPath, cancellationToken).ConfigureAwait(false);
+            var actualHash = Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
             return string.Equals(actualHash, record.CachedManifestSha256, StringComparison.OrdinalIgnoreCase)
-                ? publication
-                : null;
+                ? publication : null;
         }
         catch (Exception) when (!cancellationToken.IsCancellationRequested)
         {
@@ -115,23 +141,74 @@ public static class LastManifestStore
         }
     }
 
-    public static Task ClearPublicationAsync(CancellationToken cancellationToken = default)
+    public static Task ClearPublicationAsync(CancellationToken cancellationToken = default) =>
+        ClearPublicationAsync(DefaultRoot, cancellationToken);
+
+    public static Task ClearPublicationAsync(string rootDirectory, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        if (File.Exists(PublicationFilePath))
-            File.Delete(PublicationFilePath);
+        var manifestPath = ResolveActiveManifestPath(rootDirectory);
+        if (manifestPath is not null)
+        {
+            var publicationPath = Path.Combine(Path.GetDirectoryName(manifestPath)!, "publication.json");
+            if (File.Exists(publicationPath))
+                File.Delete(publicationPath);
+        }
         return Task.CompletedTask;
     }
 
-    private sealed record PublicationRecord(
-        PublishedExperience Publication,
-        string CachedManifestSha256);
+    public static Task<ExperienceManifest?> TryLoadAsync(CancellationToken cancellationToken = default) =>
+        TryLoadAsync(DefaultRoot, cancellationToken);
+
+    public static async Task<ExperienceManifest?> TryLoadAsync(
+        string rootDirectory, CancellationToken cancellationToken = default)
+    {
+        var manifestPath = ResolveActiveManifestPath(rootDirectory);
+        if (manifestPath is null || !File.Exists(manifestPath))
+            return null;
+
+        try
+        {
+            var generationPath = Path.GetDirectoryName(manifestPath)!;
+            var publicationPath = Path.Combine(generationPath, "publication.json");
+            if (File.Exists(publicationPath) &&
+                await TryLoadPublicationAsync(rootDirectory, cancellationToken).ConfigureAwait(false) is null)
+                return null;
+            return ExperienceManifest.LoadFile(manifestPath);
+        }
+        catch (Exception) when (!cancellationToken.IsCancellationRequested)
+        {
+            return null;
+        }
+    }
+
+    private static string? ResolveActiveManifestPath(string rootDirectory)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(rootDirectory);
+        var root = Path.GetFullPath(rootDirectory);
+        var pointerPath = Path.Combine(root, ActiveGenerationFileName);
+        if (File.Exists(pointerPath))
+        {
+            var generationName = File.ReadAllText(pointerPath).Trim();
+            if (generationName.Length == 0 ||
+                generationName != Path.GetFileName(generationName) ||
+                generationName.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
+                return null;
+            return Path.Combine(root, "generations", generationName, "manifest.json");
+        }
+
+        // Backward compatibility for installations using the original flat cache.
+        var legacyPath = Path.Combine(root, "last-manifest.json");
+        return File.Exists(legacyPath) ? legacyPath : null;
+    }
+
+    private sealed record PublicationRecord(PublishedExperience Publication, string CachedManifestSha256);
 
     private static async Task WriteAtomicallyAsync(
-        string path,
-        string contents,
-        CancellationToken cancellationToken)
+        string path, string contents, CancellationToken cancellationToken)
     {
+        var directory = Path.GetDirectoryName(path)!;
+        Directory.CreateDirectory(directory);
         var temporaryPath = path + "." + Guid.NewGuid().ToString("N") + ".tmp";
         try
         {
@@ -146,25 +223,10 @@ public static class LastManifestStore
         }
     }
 
-    public static async Task<ExperienceManifest?> TryLoadAsync(
-        CancellationToken cancellationToken = default)
+    private static void TryDeleteDirectory(string path)
     {
-        if (!File.Exists(FilePath))
-            return null;
-
-        try
-        {
-            // If this manifest is associated with a publication, reject it when its
-            // persisted bytes no longer match the digest captured at publication save.
-            if (File.Exists(PublicationFilePath) &&
-                await TryLoadPublicationAsync(cancellationToken).ConfigureAwait(false) is null)
-                return null;
-
-            return ExperienceManifest.LoadFile(FilePath);
-        }
-        catch (Exception) when (!cancellationToken.IsCancellationRequested)
-        {
-            return null;
-        }
+        try { if (Directory.Exists(path)) Directory.Delete(path, recursive: true); }
+        catch (IOException) { }
+        catch (UnauthorizedAccessException) { }
     }
 }
