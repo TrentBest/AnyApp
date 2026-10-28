@@ -17,11 +17,20 @@ public static class LastManifestStore
         "TheSingularityWorkshop", "AnyApp");
 
     public static Task SaveAsync(ExperienceManifest manifest, CancellationToken cancellationToken = default) =>
-        SaveAsync(manifest, DefaultRoot, cancellationToken);
+        SaveAsync(manifest, publication: null, DefaultRoot, cancellationToken);
+
+    public static Task SaveAsync(
+        ExperienceManifest manifest, PublishedExperience? publication, CancellationToken cancellationToken = default) =>
+        SaveAsync(manifest, publication, DefaultRoot, cancellationToken);
 
     /// <summary>Saves into an explicitly selected root, primarily for isolated hosts and tests.</summary>
+    public static Task SaveAsync(
+        ExperienceManifest manifest, string rootDirectory, CancellationToken cancellationToken = default) =>
+        SaveAsync(manifest, publication: null, rootDirectory, cancellationToken);
+
     public static async Task SaveAsync(
-        ExperienceManifest manifest, string rootDirectory, CancellationToken cancellationToken = default)
+        ExperienceManifest manifest, PublishedExperience? publication, string rootDirectory,
+        CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(manifest);
         ArgumentException.ThrowIfNullOrWhiteSpace(rootDirectory);
@@ -67,11 +76,27 @@ public static class LastManifestStore
 
             var cachedManifest = manifest with { Bundles = cachedBundles };
             var json = JsonSerializer.Serialize(cachedManifest, JsonOptions);
-            await File.WriteAllTextAsync(
-                Path.Combine(generationPath, "manifest.json"), json, cancellationToken).ConfigureAwait(false);
+            var manifestPath = Path.Combine(generationPath, "manifest.json");
+            await File.WriteAllTextAsync(manifestPath, json, cancellationToken).ConfigureAwait(false);
+            if (publication is not null)
+            {
+                if (publication.ExperienceId != manifest.ExperienceId ||
+                    !string.Equals(publication.Version, manifest.Version, StringComparison.Ordinal) ||
+                    string.IsNullOrWhiteSpace(publication.ContentHash))
+                    throw new ArgumentException(
+                        "The cached publication identity must match the manifest and include a content hash.",
+                        nameof(publication));
+
+                var bytes = await File.ReadAllBytesAsync(manifestPath, cancellationToken).ConfigureAwait(false);
+                var hash = Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
+                var record = new PublicationRecord(publication, hash);
+                await File.WriteAllTextAsync(
+                    Path.Combine(generationPath, "publication.json"),
+                    JsonSerializer.Serialize(record, JsonOptions), cancellationToken).ConfigureAwait(false);
+            }
             cancellationToken.ThrowIfCancellationRequested();
 
-            // The new generation is complete before this single pointer is promoted.
+            // Manifest, sidecars, and optional publication identity are complete before promotion.
             await WriteAtomicallyAsync(
                 Path.Combine(root, ActiveGenerationFileName), generationName, cancellationToken).ConfigureAwait(false);
         }
