@@ -17,7 +17,7 @@ public static class LastManifestStore
         "TheSingularityWorkshop", "AnyApp");
 
     public static Task SaveAsync(ExperienceManifest manifest, CancellationToken cancellationToken = default) =>
-        SaveAsync(manifest, publication: null, DefaultRoot, cancellationToken);
+        SaveAsync(manifest, null, DefaultRoot, cancellationToken);
 
     public static Task SaveAsync(
         ExperienceManifest manifest, PublishedExperience? publication, CancellationToken cancellationToken = default) =>
@@ -26,7 +26,7 @@ public static class LastManifestStore
     /// <summary>Saves into an explicitly selected root, primarily for isolated hosts and tests.</summary>
     public static Task SaveAsync(
         ExperienceManifest manifest, string rootDirectory, CancellationToken cancellationToken = default) =>
-        SaveAsync(manifest, publication: null, rootDirectory, cancellationToken);
+        SaveAsync(manifest, null, rootDirectory, cancellationToken);
 
     public static async Task SaveAsync(
         ExperienceManifest manifest, PublishedExperience? publication, string rootDirectory,
