@@ -252,88 +252,31 @@ public partial class MainWindow : Window
 
     private async Task StartDefaultExperienceAsync()
     {
-        // Resume the last Experience, but verify its published immutable identity
-        // before treating the local manifest as current. An unavailable catalog is
-        // not proof of freshness; in that case we preserve offline startup and retry
-        // the comparison on the next launch.
-        ExperienceManifest? lastManifest = null;
-        PublishedExperience? lastPublication = null;
-        try
-        {
-            lastManifest = await LastManifestStore.TryLoadAsync();
-            lastPublication = await LastManifestStore.TryLoadPublicationAsync();
-        }
-        catch
-        {
-            // A damaged last-run record must not prevent the default entry Experience.
-        }
-
-        if (lastManifest is not null)
-        {
-            try
+        var decision = await ExperienceStartupCoordinator.ReconcileAsync(
+            _ => LastManifestStore.TryLoadAsync(),
+            _ => LastManifestStore.TryLoadPublicationAsync(),
+            async _ =>
             {
                 using var client = new ExperienceCatalogClient(GetRepositoryEndpoint());
-                var published = (await client.ListAsync())
-                    .FirstOrDefault(item => item.ExperienceId == lastManifest.ExperienceId);
-
-                if (published is not null)
-                {
-                    // Only use the saved manifest as a no-fetch fast path when a
-                    // previous launch recorded the same complete immutable identity.
-                    if (lastPublication is not null &&
-                        IsSamePublication(published, lastPublication) &&
-                        string.Equals(lastManifest.Version, published.Version, StringComparison.Ordinal))
-                    {
-                        await LaunchManifestAsync(lastManifest, persistLastManifest: true, publishedExperience: published);
-                        return;
-                    }
-
-                    // Older installations may have a cached manifest but no saved
-                    // content hash yet. Fetch the catalog's immutable version once to
-                    // establish the full identity before enabling the fast path.
-                    var updatedManifest = await client.GetManifestAsync(published);
-                    if (updatedManifest.ExperienceId != published.ExperienceId ||
-                        !string.Equals(updatedManifest.Version, published.Version, StringComparison.Ordinal))
-                        throw new InvalidOperationException("The current published Experience manifest has a different identity.");
-
-                    await LaunchManifestAsync(updatedManifest, persistLastManifest: true, publishedExperience: published);
-                    return;
-                }
-
-                if (lastPublication is not null)
-                {
-                    // A previously published Experience is no longer in the catalog.
-                    await LaunchForgeAsync();
-                    return;
-                }
-
-                // No publication record and no catalog entry: this may be a manifest
-                // loaded from a local file in an earlier session, so retain local resume.
-                await LaunchManifestAsync(lastManifest, persistLastManifest: true);
-                return;
-            }
-            catch (HttpRequestException)
+                return await client.ListAsync();
+            },
+            async (publication, _) =>
             {
-                // Offline fallback is allowed, but it does not claim that the cached
-                // manifest is current or overwrite the last known publication identity.
-                await LaunchManifestAsync(lastManifest, persistLastManifest: false);
-                return;
-            }
-            catch
-            {
-                // A stale or invalid last Experience falls back to Forge.
-            }
+                using var client = new ExperienceCatalogClient(GetRepositoryEndpoint());
+                return await client.GetManifestAsync(publication);
+            });
+
+        if (decision.ShouldLaunchForge)
+        {
+            await LaunchForgeAsync();
+            return;
         }
 
-        await LaunchForgeAsync();
+        await LaunchManifestAsync(
+            decision.Manifest!,
+            persistLastManifest: decision.PersistLastManifest,
+            publishedExperience: decision.Publication);
     }
-
-    private static bool IsSamePublication(
-        PublishedExperience left,
-        PublishedExperience right) =>
-        left.ExperienceId == right.ExperienceId &&
-        string.Equals(left.Version, right.Version, StringComparison.Ordinal) &&
-        string.Equals(left.ContentHash, right.ContentHash, StringComparison.OrdinalIgnoreCase);
 
     private async Task LaunchPublishedExperienceAsync(AnyAppLaunchRequest request)
     {
