@@ -35,6 +35,13 @@ public static class LastManifestStore
         ArgumentNullException.ThrowIfNull(manifest);
         ArgumentException.ThrowIfNullOrWhiteSpace(rootDirectory);
         cancellationToken.ThrowIfCancellationRequested();
+        if (publication is not null &&
+            (publication.ExperienceId != manifest.ExperienceId ||
+             !string.Equals(publication.Version, manifest.Version, StringComparison.Ordinal) ||
+             string.IsNullOrWhiteSpace(publication.ContentHash)))
+            throw new ArgumentException(
+                "The cached publication identity must match the manifest and include a content hash.",
+                nameof(publication));
 
         var root = Path.GetFullPath(rootDirectory);
         var generations = Path.Combine(root, "generations");
@@ -80,13 +87,6 @@ public static class LastManifestStore
             await File.WriteAllTextAsync(manifestPath, json, cancellationToken).ConfigureAwait(false);
             if (publication is not null)
             {
-                if (publication.ExperienceId != manifest.ExperienceId ||
-                    !string.Equals(publication.Version, manifest.Version, StringComparison.Ordinal) ||
-                    string.IsNullOrWhiteSpace(publication.ContentHash))
-                    throw new ArgumentException(
-                        "The cached publication identity must match the manifest and include a content hash.",
-                        nameof(publication));
-
                 var bytes = await File.ReadAllBytesAsync(manifestPath, cancellationToken).ConfigureAwait(false);
                 var hash = Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
                 var record = new PublicationRecord(publication, hash);
@@ -115,14 +115,22 @@ public static class LastManifestStore
         PublishedExperience publication, string rootDirectory, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(publication);
-        if (string.IsNullOrWhiteSpace(publication.Version) || string.IsNullOrWhiteSpace(publication.ContentHash))
-            throw new ArgumentException("A publication version and content hash are required.", nameof(publication));
+        if (publication.ExperienceId == 0 ||
+            string.IsNullOrWhiteSpace(publication.Version) ||
+            string.IsNullOrWhiteSpace(publication.ContentHash))
+            throw new ArgumentException("A publication Experience ID, version, and content hash are required.", nameof(publication));
 
         var manifestPath = ResolveActiveManifestPath(rootDirectory);
         if (manifestPath is null || !File.Exists(manifestPath))
             throw new InvalidOperationException("A cached manifest must be saved before its publication identity.");
 
         var bytes = await File.ReadAllBytesAsync(manifestPath, cancellationToken).ConfigureAwait(false);
+        var manifest = ExperienceManifest.Parse(bytes);
+        if (manifest.ExperienceId != publication.ExperienceId ||
+            !string.Equals(manifest.Version, publication.Version, StringComparison.Ordinal))
+            throw new ArgumentException(
+                "The cached publication identity must match the active manifest.", nameof(publication));
+
         var hash = Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
         var record = new PublicationRecord(publication, hash);
         var publicationPath = GetPublicationPath(manifestPath);
@@ -156,7 +164,12 @@ public static class LastManifestStore
 
             var bytes = await File.ReadAllBytesAsync(manifestPath, cancellationToken).ConfigureAwait(false);
             var actualHash = Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
-            return string.Equals(actualHash, record.CachedManifestSha256, StringComparison.OrdinalIgnoreCase)
+            if (!string.Equals(actualHash, record.CachedManifestSha256, StringComparison.OrdinalIgnoreCase))
+                return null;
+
+            var manifest = ExperienceManifest.Parse(bytes);
+            return manifest.ExperienceId == publication.ExperienceId &&
+                   string.Equals(manifest.Version, publication.Version, StringComparison.Ordinal)
                 ? publication : null;
         }
         catch (Exception) when (!cancellationToken.IsCancellationRequested)
