@@ -7,10 +7,12 @@ public sealed class LastManifestStoreTests
     [Fact]
     public async Task PublicationIdentitySurvivesReadAndCanBeCleared()
     {
+        var manifest = new ExperienceManifest(3201, "2.0.0", 1, Array.Empty<ExperienceBundleRequest>());
         var publication = new PublishedExperience(3201, "2.0.0", "ABCDEF0123456789");
 
         try
         {
+            await LastManifestStore.SaveAsync(manifest);
             await LastManifestStore.SavePublicationAsync(publication);
 
             var restored = await LastManifestStore.TryLoadPublicationAsync();
@@ -30,6 +32,9 @@ public sealed class LastManifestStoreTests
     [Fact]
     public async Task PublicationIdentityRejectsMissingImmutableFields()
     {
+        await LastManifestStore.SaveAsync(
+            new ExperienceManifest(3201, "2.0.0", 1, Array.Empty<ExperienceBundleRequest>()));
+
         await Assert.ThrowsAsync<ArgumentException>(() =>
             LastManifestStore.SavePublicationAsync(
                 new PublishedExperience(3201, "", "ABCDEF0123456789")));
