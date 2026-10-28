@@ -5,71 +5,139 @@ namespace TheSingularityWorkshop.AnyApp.Tests;
 public sealed class LastManifestStoreTests
 {
     [Fact]
-    public async Task PublicationIdentitySurvivesReadAndCanBeCleared()
+    public async Task PublicationIdentitySurvivesReadAndTamperedManifestIsRejected()
     {
-        var manifest = new ExperienceManifest(3201, "2.0.0", 1, Array.Empty<ExperienceBundleRequest>());
-        var publication = new PublishedExperience(3201, "2.0.0", "ABCDEF0123456789");
-
+        var root = CreateTestRoot();
         try
         {
-            await LastManifestStore.SaveAsync(manifest);
-            await LastManifestStore.SavePublicationAsync(publication);
+            var manifest = new ExperienceManifest(3201, "2.0.0", 1, Array.Empty<ExperienceBundleRequest>());
+            var publication = new PublishedExperience(3201, "2.0.0", "ABCDEF0123456789");
 
-            var restored = await LastManifestStore.TryLoadPublicationAsync();
+            await LastManifestStore.SaveAsync(manifest, root);
+            await LastManifestStore.SavePublicationAsync(publication, root);
+            Assert.Equal(publication, await LastManifestStore.TryLoadPublicationAsync(root));
+            Assert.NotNull(await LastManifestStore.TryLoadAsync(root));
 
-            Assert.Equal(publication, restored);
+            var manifestPath = GetActiveManifestPath(root);
+            await File.AppendAllTextAsync(manifestPath, " ");
+            Assert.Null(await LastManifestStore.TryLoadPublicationAsync(root));
+            Assert.Null(await LastManifestStore.TryLoadAsync(root));
 
-            var directory = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "TheSingularityWorkshop",
-                "AnyApp");
-            var cachedManifestPath = Path.Combine(directory, "last-manifest.json");
-            await File.AppendAllTextAsync(cachedManifestPath, " ");
-
-            Assert.Null(await LastManifestStore.TryLoadPublicationAsync());
-            Assert.Null(await LastManifestStore.TryLoadAsync());
-
-            await LastManifestStore.ClearPublicationAsync();
-
-            Assert.Null(await LastManifestStore.TryLoadPublicationAsync());
+            await LastManifestStore.ClearPublicationAsync(root);
+            Assert.Null(await LastManifestStore.TryLoadPublicationAsync(root));
         }
         finally
         {
-            await ClearTestStateAsync();
+            DeleteTestRoot(root);
         }
     }
 
     [Fact]
     public async Task PublicationIdentityRejectsMissingImmutableFields()
     {
+        var root = CreateTestRoot();
         try
         {
             await LastManifestStore.SaveAsync(
-                new ExperienceManifest(3201, "2.0.0", 1, Array.Empty<ExperienceBundleRequest>()));
+                new ExperienceManifest(3201, "2.0.0", 1, Array.Empty<ExperienceBundleRequest>()), root);
 
             await Assert.ThrowsAsync<ArgumentException>(() =>
                 LastManifestStore.SavePublicationAsync(
-                    new PublishedExperience(3201, "", "ABCDEF0123456789")));
+                    new PublishedExperience(3201, "", "ABCDEF0123456789"), root));
 
             await Assert.ThrowsAsync<ArgumentException>(() =>
                 LastManifestStore.SavePublicationAsync(
-                    new PublishedExperience(3201, "2.0.0", "")));
+                    new PublishedExperience(3201, "2.0.0", ""), root));
         }
         finally
         {
-            await ClearTestStateAsync();
+            DeleteTestRoot(root);
         }
     }
 
-    private static async Task ClearTestStateAsync()
+    [Fact]
+    public async Task CancelledSavePreservesPreviouslyPromotedGeneration()
     {
-        await LastManifestStore.ClearPublicationAsync();
-        var directory = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "TheSingularityWorkshop",
-            "AnyApp");
-        var manifestPath = Path.Combine(directory, "last-manifest.json");
-        if (File.Exists(manifestPath))
-            File.Delete(manifestPath);
+        var root = CreateTestRoot();
+        try
+        {
+            var original = new ExperienceManifest(3201, "1.0.0", 1, Array.Empty<ExperienceBundleRequest>());
+            await LastManifestStore.SaveAsync(original, root);
+            var originalPointer = await File.ReadAllTextAsync(Path.Combine(root, "active-generation.txt"));
+
+            using var cancellation = new CancellationTokenSource();
+            cancellation.Cancel();
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+                LastManifestStore.SaveAsync(
+                    new ExperienceManifest(3201, "2.0.0", 1, Array.Empty<ExperienceBundleRequest>()),
+                    root, cancellation.Token));
+
+            Assert.Equal(originalPointer, await File.ReadAllTextAsync(Path.Combine(root, "active-generation.txt")));
+            Assert.Equal("1.0.0", (await LastManifestStore.TryLoadAsync(root))?.Version);
+        }
+        finally
+        {
+            DeleteTestRoot(root);
+        }
+    }
+
+    [Fact]
+    public async Task SavePromotesNewGenerationWithoutOverwritingOldGeneration()
+    {
+        var root = CreateTestRoot();
+        try
+        {
+            await LastManifestStore.SaveAsync(
+                new ExperienceManifest(3201, "1.0.0", 1, Array.Empty<ExperienceBundleRequest>()), root);
+            var oldPointer = await File.ReadAllTextAsync(Path.Combine(root, "active-generation.txt"));
+
+            await LastManifestStore.SaveAsync(
+                new ExperienceManifest(3201, "2.0.0", 1, Array.Empty<ExperienceBundleRequest>()), root);
+            var newPointer = await File.ReadAllTextAsync(Path.Combine(root, "active-generation.txt"));
+
+            Assert.NotEqual(oldPointer, newPointer);
+            Assert.True(File.Exists(Path.Combine(root, "generations", oldPointer, "manifest.json")));
+            Assert.Equal("2.0.0", (await LastManifestStore.TryLoadAsync(root))?.Version);
+        }
+        finally
+        {
+            DeleteTestRoot(root);
+        }
+    }
+
+    [Fact]
+    public async Task LegacyFlatManifestCanStillBeLoaded()
+    {
+        var root = CreateTestRoot();
+        try
+        {
+            Directory.CreateDirectory(root);
+            var legacy = new ExperienceManifest(3201, "1.2.3", 1, Array.Empty<ExperienceBundleRequest>());
+            await File.WriteAllTextAsync(
+                Path.Combine(root, "last-manifest.json"),
+                System.Text.Json.JsonSerializer.Serialize(legacy,
+                    new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web)));
+
+            Assert.Equal("1.2.3", (await LastManifestStore.TryLoadAsync(root))?.Version);
+        }
+        finally
+        {
+            DeleteTestRoot(root);
+        }
+    }
+
+    private static string CreateTestRoot() =>
+        Path.Combine(Path.GetTempPath(), "AnyApp-LastManifestStoreTests", Guid.NewGuid().ToString("N"));
+
+    private static string GetActiveManifestPath(string root)
+    {
+        var generation = File.ReadAllText(Path.Combine(root, "active-generation.txt")).Trim();
+        return Path.Combine(root, "generations", generation, "manifest.json");
+    }
+
+    private static void DeleteTestRoot(string root)
+    {
+        if (Directory.Exists(root))
+            Directory.Delete(root, recursive: true);
     }
 }
