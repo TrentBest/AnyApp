@@ -149,7 +149,7 @@ public static class LastManifestStore
         var manifestPath = ResolveActiveManifestPath(rootDirectory);
         if (manifestPath is not null)
         {
-            var publicationPath = Path.Combine(Path.GetDirectoryName(manifestPath)!, "publication.json");
+            var publicationPath = GetPublicationPath(manifestPath);
             if (File.Exists(publicationPath))
                 File.Delete(publicationPath);
         }
@@ -168,7 +168,6 @@ public static class LastManifestStore
 
         try
         {
-            var generationPath = Path.GetDirectoryName(manifestPath)!;
             var publicationPath = GetPublicationPath(manifestPath);
             if (File.Exists(publicationPath) &&
                 await TryLoadPublicationAsync(rootDirectory, cancellationToken).ConfigureAwait(false) is null)
