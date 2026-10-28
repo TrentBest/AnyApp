@@ -78,6 +78,25 @@ public sealed class ExperienceStartupCoordinatorTests
     }
 
     [Fact]
+    public async Task CatalogTimeoutResumesCacheWithoutChangingPublicationIdentity()
+    {
+        var manifest = new ExperienceManifest(41, "1.0.0", 1, Array.Empty<ExperienceBundleRequest>());
+        var publication = new PublishedExperience(41, "1.0.0", "abc123");
+
+        var decision = await ExperienceStartupCoordinator.ReconcileAsync(
+            _ => Task.FromResult<ExperienceManifest?>(manifest),
+            _ => Task.FromResult<PublishedExperience?>(publication),
+            _ => Task.FromException<IReadOnlyList<PublishedExperience>>(
+                new OperationCanceledException("catalog request timed out")),
+            (_, _) => throw new InvalidOperationException("No artifact fetch should occur."));
+
+        Assert.Same(manifest, decision.Manifest);
+        Assert.Null(decision.Publication);
+        Assert.False(decision.PersistLastManifest);
+        Assert.False(decision.ShouldLaunchForge);
+    }
+
+    [Fact]
     public async Task MissingPreviouslyPublishedExperienceLaunchesForge()
     {
         var manifest = new ExperienceManifest(41, "1.0.0", 1, Array.Empty<ExperienceBundleRequest>());
@@ -108,6 +127,7 @@ public sealed class ExperienceStartupCoordinatorTests
 
         Assert.True(decision.ShouldLaunchForge);
     }
+
     [Fact]
     public async Task LegacyLocalManifestWithoutPublicationCanResumeWhenCatalogIsEmpty()
     {
@@ -140,5 +160,4 @@ public sealed class ExperienceStartupCoordinatorTests
                 (_, _) => throw new InvalidOperationException("No fetch should occur."),
                 cancellation.Token));
     }
-
 }
