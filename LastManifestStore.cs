@@ -34,9 +34,19 @@ public static class LastManifestStore
         ExperienceManifest manifest, string rootDirectory, CancellationToken cancellationToken = default) =>
         SaveAsync(manifest, null, rootDirectory, cancellationToken);
 
-    public static async Task SaveAsync(
+    public static Task SaveAsync(
         ExperienceManifest manifest, PublishedExperience? publication, string rootDirectory,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default) =>
+        SaveCoreAsync(manifest, publication, rootDirectory, cancellationToken, null);
+
+    internal static Task SaveAsync(
+        ExperienceManifest manifest, PublishedExperience? publication, string rootDirectory,
+        CancellationToken cancellationToken, Func<CancellationToken, Task> beforePromotion) =>
+        SaveCoreAsync(manifest, publication, rootDirectory, cancellationToken, beforePromotion);
+
+    private static async Task SaveCoreAsync(
+        ExperienceManifest manifest, PublishedExperience? publication, string rootDirectory,
+        CancellationToken cancellationToken, Func<CancellationToken, Task>? beforePromotion)
     {
         ArgumentNullException.ThrowIfNull(manifest);
         ArgumentException.ThrowIfNullOrWhiteSpace(rootDirectory);
@@ -101,6 +111,8 @@ public static class LastManifestStore
                     JsonSerializer.Serialize(record, JsonOptions), cancellationToken).ConfigureAwait(false);
             }
             cancellationToken.ThrowIfCancellationRequested();
+            if (beforePromotion is not null)
+                await beforePromotion(cancellationToken).ConfigureAwait(false);
 
             // Manifest, sidecars, and optional publication identity are complete before promotion.
             await WriteAtomicallyAsync(
