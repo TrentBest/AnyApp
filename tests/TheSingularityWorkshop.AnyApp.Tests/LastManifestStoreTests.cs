@@ -35,22 +35,41 @@ public sealed class LastManifestStoreTests
         }
         finally
         {
-            await LastManifestStore.ClearPublicationAsync();
+            await ClearTestStateAsync();
         }
     }
 
     [Fact]
     public async Task PublicationIdentityRejectsMissingImmutableFields()
     {
-        await LastManifestStore.SaveAsync(
-            new ExperienceManifest(3201, "2.0.0", 1, Array.Empty<ExperienceBundleRequest>()));
+        try
+        {
+            await LastManifestStore.SaveAsync(
+                new ExperienceManifest(3201, "2.0.0", 1, Array.Empty<ExperienceBundleRequest>()));
 
-        await Assert.ThrowsAsync<ArgumentException>(() =>
-            LastManifestStore.SavePublicationAsync(
-                new PublishedExperience(3201, "", "ABCDEF0123456789")));
+            await Assert.ThrowsAsync<ArgumentException>(() =>
+                LastManifestStore.SavePublicationAsync(
+                    new PublishedExperience(3201, "", "ABCDEF0123456789")));
 
-        await Assert.ThrowsAsync<ArgumentException>(() =>
-            LastManifestStore.SavePublicationAsync(
-                new PublishedExperience(3201, "2.0.0", "")));
+            await Assert.ThrowsAsync<ArgumentException>(() =>
+                LastManifestStore.SavePublicationAsync(
+                    new PublishedExperience(3201, "2.0.0", "")));
+        }
+        finally
+        {
+            await ClearTestStateAsync();
+        }
+    }
+
+    private static async Task ClearTestStateAsync()
+    {
+        await LastManifestStore.ClearPublicationAsync();
+        var directory = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "TheSingularityWorkshop",
+            "AnyApp");
+        var manifestPath = Path.Combine(directory, "last-manifest.json");
+        if (File.Exists(manifestPath))
+            File.Delete(manifestPath);
     }
 }
