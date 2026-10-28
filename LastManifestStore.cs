@@ -1,4 +1,5 @@
 using System.IO;
+using System.Security.Cryptography;
 using System.Text.Json;
 
 namespace TheSingularityWorkshop.AnyApp;
@@ -74,7 +75,13 @@ public static class LastManifestStore
             throw new ArgumentException("A publication version and content hash are required.", nameof(publication));
 
         Directory.CreateDirectory(DirectoryPath);
-        var json = JsonSerializer.Serialize(publication, JsonOptions);
+        if (!File.Exists(FilePath))
+            throw new InvalidOperationException("A cached manifest must be saved before its publication identity.");
+
+        var cachedManifestBytes = await File.ReadAllBytesAsync(FilePath, cancellationToken).ConfigureAwait(false);
+        var cachedManifestHash = Convert.ToHexString(SHA256.HashData(cachedManifestBytes)).ToLowerInvariant();
+        var record = new PublicationRecord(publication, cachedManifestHash);
+        var json = JsonSerializer.Serialize(record, JsonOptions);
         await WriteAtomicallyAsync(PublicationFilePath, json, cancellationToken).ConfigureAwait(false);
     }
 
@@ -88,10 +95,17 @@ public static class LastManifestStore
         try
         {
             var json = await File.ReadAllTextAsync(PublicationFilePath, cancellationToken).ConfigureAwait(false);
-            var publication = JsonSerializer.Deserialize<PublishedExperience>(json, JsonOptions);
-            return publication is not null &&
-                   !string.IsNullOrWhiteSpace(publication.Version) &&
-                   !string.IsNullOrWhiteSpace(publication.ContentHash)
+            var record = JsonSerializer.Deserialize<PublicationRecord>(json, JsonOptions);
+            if (record?.Publication is not { } publication ||
+                string.IsNullOrWhiteSpace(publication.Version) ||
+                string.IsNullOrWhiteSpace(publication.ContentHash) ||
+                string.IsNullOrWhiteSpace(record.CachedManifestSha256) ||
+                !File.Exists(FilePath))
+                return null;
+
+            var cachedManifestBytes = await File.ReadAllBytesAsync(FilePath, cancellationToken).ConfigureAwait(false);
+            var actualHash = Convert.ToHexString(SHA256.HashData(cachedManifestBytes)).ToLowerInvariant();
+            return string.Equals(actualHash, record.CachedManifestSha256, StringComparison.OrdinalIgnoreCase)
                 ? publication
                 : null;
         }
@@ -108,6 +122,10 @@ public static class LastManifestStore
             File.Delete(PublicationFilePath);
         return Task.CompletedTask;
     }
+
+    private sealed record PublicationRecord(
+        PublishedExperience Publication,
+        string CachedManifestSha256);
 
     private static async Task WriteAtomicallyAsync(
         string path,
@@ -136,6 +154,12 @@ public static class LastManifestStore
 
         try
         {
+            // If this manifest is associated with a publication, reject it when its
+            // persisted bytes no longer match the digest captured at publication save.
+            if (File.Exists(PublicationFilePath) &&
+                await TryLoadPublicationAsync(cancellationToken).ConfigureAwait(false) is null)
+                return null;
+
             return ExperienceManifest.LoadFile(FilePath);
         }
         catch (Exception) when (!cancellationToken.IsCancellationRequested)
