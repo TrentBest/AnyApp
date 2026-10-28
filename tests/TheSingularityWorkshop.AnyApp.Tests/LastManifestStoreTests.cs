@@ -56,6 +56,35 @@ public sealed class LastManifestStoreTests
     }
 
     [Fact]
+    public async Task FailedWriteBeforePromotionPreservesPreviouslyPromotedGeneration()
+    {
+        var root = CreateTestRoot();
+        try
+        {
+            await LastManifestStore.SaveAsync(
+                new ExperienceManifest(3201, "1.0.0", 1, Array.Empty<ExperienceBundleRequest>()), root);
+            var originalPointer = (await File.ReadAllTextAsync(Path.Combine(root, "active-generation.txt"))).Trim();
+
+            var exception = await Assert.ThrowsAsync<IOException>(() =>
+                LastManifestStore.SaveAsync(
+                    new ExperienceManifest(3201, "2.0.0", 1, Array.Empty<ExperienceBundleRequest>()),
+                    null,
+                    root,
+                    CancellationToken.None,
+                    _ => throw new IOException("Injected failure after generation writes, before promotion.")));
+
+            Assert.Contains("Injected failure", exception.Message);
+            Assert.Equal(originalPointer, (await File.ReadAllTextAsync(Path.Combine(root, "active-generation.txt"))).Trim());
+            Assert.Equal("1.0.0", (await LastManifestStore.TryLoadAsync(root))?.Version);
+            Assert.Single(Directory.GetDirectories(Path.Combine(root, "generations")));
+        }
+        finally
+        {
+            DeleteTestRoot(root);
+        }
+    }
+
+    [Fact]
     public async Task CancelledSavePreservesPreviouslyPromotedGeneration()
     {
         var root = CreateTestRoot();
