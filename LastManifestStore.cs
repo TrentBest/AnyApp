@@ -10,7 +10,6 @@ namespace TheSingularityWorkshop.AnyApp;
 public static class LastManifestStore
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
-    private const string StoreFolderName = "TheSingularityWorkshop/AnyApp";
     private const string ActiveGenerationFileName = "active-generation.txt";
 
     private static string DefaultRoot => Path.Combine(
@@ -101,7 +100,7 @@ public static class LastManifestStore
         var bytes = await File.ReadAllBytesAsync(manifestPath, cancellationToken).ConfigureAwait(false);
         var hash = Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
         var record = new PublicationRecord(publication, hash);
-        var publicationPath = Path.Combine(Path.GetDirectoryName(manifestPath)!, "publication.json");
+        var publicationPath = GetPublicationPath(manifestPath);
         await WriteAtomicallyAsync(
             publicationPath, JsonSerializer.Serialize(record, JsonOptions), cancellationToken).ConfigureAwait(false);
     }
@@ -115,7 +114,7 @@ public static class LastManifestStore
         var manifestPath = ResolveActiveManifestPath(rootDirectory);
         if (manifestPath is null)
             return null;
-        var publicationPath = Path.Combine(Path.GetDirectoryName(manifestPath)!, "publication.json");
+        var publicationPath = GetPublicationPath(manifestPath);
         if (!File.Exists(publicationPath))
             return null;
 
@@ -170,7 +169,7 @@ public static class LastManifestStore
         try
         {
             var generationPath = Path.GetDirectoryName(manifestPath)!;
-            var publicationPath = Path.Combine(generationPath, "publication.json");
+            var publicationPath = GetPublicationPath(manifestPath);
             if (File.Exists(publicationPath) &&
                 await TryLoadPublicationAsync(rootDirectory, cancellationToken).ConfigureAwait(false) is null)
                 return null;
@@ -201,6 +200,11 @@ public static class LastManifestStore
         var legacyPath = Path.Combine(root, "last-manifest.json");
         return File.Exists(legacyPath) ? legacyPath : null;
     }
+
+    private static string GetPublicationPath(string manifestPath) =>
+        string.Equals(Path.GetFileName(manifestPath), "manifest.json", StringComparison.OrdinalIgnoreCase)
+            ? Path.Combine(Path.GetDirectoryName(manifestPath)!, "publication.json")
+            : Path.Combine(Path.GetDirectoryName(manifestPath)!, "last-publication.json");
 
     private sealed record PublicationRecord(PublishedExperience Publication, string CachedManifestSha256);
 
