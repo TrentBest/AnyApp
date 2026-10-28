@@ -106,6 +106,25 @@ public sealed class LastManifestStoreTests
     }
 
     [Fact]
+    public async Task ManifestAndPublicationArePromotedTogether()
+    {
+        var root = CreateTestRoot();
+        try
+        {
+            var manifest = new ExperienceManifest(3201, "3.0.0", 1, Array.Empty<ExperienceBundleRequest>());
+            var publication = new PublishedExperience(3201, "3.0.0", "FEDCBA9876543210");
+            await LastManifestStore.SaveAsync(manifest, publication, root);
+
+            Assert.Equal("3.0.0", (await LastManifestStore.TryLoadAsync(root))?.Version);
+            Assert.Equal(publication, await LastManifestStore.TryLoadPublicationAsync(root));
+        }
+        finally
+        {
+            DeleteTestRoot(root);
+        }
+    }
+
+    [Fact]
     public async Task LegacyFlatManifestCanStillBeLoaded()
     {
         var root = CreateTestRoot();
