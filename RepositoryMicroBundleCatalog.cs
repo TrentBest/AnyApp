@@ -74,6 +74,16 @@ public sealed class RepositoryMicroBundleCatalog : IMicroBundleCatalog
                     nameof(manifest));
         }
 
+        if (manifest.ResolvedPlan is not null)
+        {
+            foreach (var bundleId in manifest.ResolvedPlan.LoadOrder)
+            {
+                if (!addresses.ContainsKey(bundleId))
+                    throw new InvalidOperationException(
+                        $"Resolved load order references MicroBundle {bundleId}, which is absent from the Experience artifact catalogue.");
+            }
+        }
+
         _addresses = addresses;
         _cacheDirectory = Path.GetFullPath(cacheDirectory ?? Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
