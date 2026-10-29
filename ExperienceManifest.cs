@@ -27,6 +27,21 @@ public sealed record ExperienceManifest(
     // never resolved against the process working directory.
     internal string? ConfigurationRoot { get; init; }
 
+    /// <summary>
+    /// Immutable identities for the full published artifact closure. This catalogue does not
+    /// create FSM_COS composition roots; those remain the entries in <see cref="Bundles"/>.
+    /// Null preserves compatibility with older flat manifests whose roots also carried identities.
+    /// </summary>
+    public IReadOnlyList<ExperienceArtifactIdentity>? ArtifactCatalogue { get; init; }
+
+    public IReadOnlyList<ExperienceArtifactIdentity> GetArtifactCatalogue() =>
+        ArtifactCatalogue is { Count: > 0 }
+            ? ArtifactCatalogue
+            : Bundles.Where(bundle => bundle.HasArtifactIdentity)
+                .Select(bundle => new ExperienceArtifactIdentity(
+                    bundle.BundleId, bundle.ArtifactVersion!, bundle.ContentHash!))
+                .ToArray();
+
     public static ExperienceManifest LoadFile(string path)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
@@ -78,7 +93,8 @@ public sealed record ExperienceManifest(
 
         if (ResolvedPlan is not null)
         {
-            var bundlesById = Bundles.ToDictionary(bundle => bundle.BundleId);
+            var artifactsById = GetArtifactCatalogue().ToDictionary(artifact => artifact.BundleId);
+            var rootRequestsById = Bundles.ToDictionary(bundle => bundle.BundleId);
             var closure = new HashSet<ulong>();
             var pending = new Stack<ulong>(startupIds);
             while (pending.Count > 0)
@@ -86,9 +102,9 @@ public sealed record ExperienceManifest(
                 var bundleId = pending.Pop();
                 if (!closure.Add(bundleId))
                     continue;
-                if (!bundlesById.ContainsKey(bundleId))
+                if (!artifactsById.ContainsKey(bundleId))
                     throw new InvalidOperationException(
-                        $"Resolved startup Moniker references MicroBundle {bundleId}, which is absent from the published closure.");
+                        $"Resolved startup Moniker references MicroBundle {bundleId}, which is absent from the published artifact catalogue.");
 
                 foreach (var dependency in ResolvedPlan.Dependencies.Where(edge => edge.BundleId == bundleId))
                     pending.Push(dependency.DependencyId);
@@ -109,7 +125,8 @@ public sealed record ExperienceManifest(
 
             return this with
             {
-                Bundles = loadOrder.Select(bundleId => bundlesById[bundleId]).ToArray(),
+                Bundles = Bundles.Where(bundle => startupIds.Contains(bundle.BundleId)).ToArray(),
+                ArtifactCatalogue = loadOrder.Select(bundleId => artifactsById[bundleId]).ToArray(),
                 StartupMonikerBundleIds = monikerIds,
                 Intent = null,
                 ResolvedPlan = startupPlan
@@ -151,18 +168,22 @@ public sealed record ExperienceManifest(
             throw new InvalidOperationException(
                 "A pre-resolved Experience manifest must identify immutable resolved-configuration artifacts for every MicroBundle.");
 
-        var bundlesById = Bundles.ToDictionary(bundle => bundle.BundleId);
+        var artifactsById = GetArtifactCatalogue().ToDictionary(artifact => artifact.BundleId);
         var loadPlan = ResolvedPlan.LoadOrder.Select(bundleId =>
         {
-            if (!bundlesById.TryGetValue(bundleId, out var bundle))
+            if (!artifactsById.TryGetValue(bundleId, out var artifact))
                 throw new InvalidOperationException(
-                    $"Resolved load order references MicroBundle {bundleId}, which is absent from the Experience manifest.");
-            if (string.IsNullOrWhiteSpace(bundle.ContentHash))
+                    $"Resolved load order references MicroBundle {bundleId}, which is absent from the Experience artifact catalogue.");
+            if (!artifact.HasArtifactIdentity)
                 throw new InvalidOperationException(
-                    $"Resolved MicroBundle {bundleId} has no artifact content hash.");
+                    $"Resolved MicroBundle {bundleId} has no immutable artifact version/content hash.");
 
+            var bundleVersion = Bundles.FirstOrDefault(bundle => bundle.BundleId == bundleId);
+            var version = bundleVersion is null
+                ? artifact.ArtifactVersion
+                : ResolveBundleVersion(bundleVersion);
             return new RuntimeManifestEntry(
-                new MicroBundleReference(bundleId, ResolveBundleVersion(bundle), bundle.ContentHash),
+                new MicroBundleReference(bundleId, version, artifact.ContentHash),
                 ManifestLoadStage.Resident);
         }).ToArray();
         var dependencies = ResolvedPlan.Dependencies
@@ -327,6 +348,17 @@ public sealed record ExperienceResolvedPlan(
 
 /// <summary>A directed MicroBundle dependency edge in a resolved Experience plan.</summary>
 public sealed record ExperienceResolvedDependency(ulong BundleId, ulong DependencyId);
+
+/// <summary>An immutable address identity for one artifact in a published dependency closure.</summary>
+public sealed record ExperienceArtifactIdentity(
+    ulong BundleId,
+    string ArtifactVersion,
+    string ContentHash)
+{
+    public bool HasArtifactIdentity =>
+        !string.IsNullOrWhiteSpace(ArtifactVersion) &&
+        !string.IsNullOrWhiteSpace(ContentHash);
+}
 
 public sealed record ExperienceBundleRequest(
     ulong BundleId,
