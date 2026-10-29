@@ -12,6 +12,14 @@
 - **Failure boundary:** a failed publication does not write the final manifest; orphaned content-addressed artifacts are harmless and reusable
 - **Runtime contract:** the output manifest carries the flat dependency-first load order and convergence round, allowing FSM_COS to restore configuration and skip runtime arbitration
 
+## Manifest schema and compatibility
+
+- `bundles` contains only explicit Experience composition roots and their per-root configuration identities.
+- `artifactCatalogue` contains immutable `(bundleId, artifactVersion, contentHash)` identities for every artifact in the published dependency closure. Catalogue entries are metadata, not composition requests.
+- `resolvedPlan.loadOrder` may include catalogue entries that are not present in `bundles`; the runtime load plan includes the full closure while FSM_COS receives only the authored roots.
+- New publications write `artifactCatalogue`. Legacy manifests without it are interpreted as flat publications: artifact identities are derived from the pinned entries in `bundles`. This compatibility path cannot supply identities for dependencies omitted from an old manifest.
+- A present catalogue is authoritative, including an empty catalogue. Duplicate IDs, conflicting root/catalogue identities, unpinned entries, and missing dependency addresses are rejected rather than guessed or fetched by an unpinned version.
+
 ## Constraints
 
 - Source-integration only until the MicroBundleDomain resolved-configuration contract is included in a published package and the dependent package versions are updated.
