@@ -82,6 +82,7 @@ public sealed class RepositoryMicroBundleCatalogIntegrationTests
             Assert.Equal(DependencyBundleId, dependency!.Descriptor.Id);
 
             var configurationSource = await catalog.CreateConfigurationSourceAsync(manifest);
+            // FSM_COS must load every pinned plan entry while preserving Bundles as authored roots.
             var assembly = new FsmCos(catalog).Execute(runtimeManifest, configurationSource);
 
             Assert.Equal(2, assembly.Bundles.Count);
