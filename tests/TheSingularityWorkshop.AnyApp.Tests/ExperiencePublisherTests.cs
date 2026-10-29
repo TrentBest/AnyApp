@@ -56,6 +56,47 @@ public sealed class ExperiencePublisherTests
         }
     }
 
+    [Fact]
+    public void ToRuntimeManifest_KeepsDependencyClosureOutOfCompositionRoots()
+    {
+        var manifest = new ExperienceManifest(
+            9100,
+            "1.0.0",
+            9101,
+            [new ExperienceBundleRequest(
+                9102,
+                ArtifactVersion: "1.0.0",
+                ContentHash: new string('a', 64),
+                BundleVersion: "1.0.0",
+                ConfigurationArtifactVersion: "configuration-1.0.0",
+                ConfigurationContentHash: new string('b', 64))],
+            ResolvedPlan: new ExperienceResolvedPlan(
+                0,
+                [9102, 9103, 9104],
+                [
+                    new ExperienceResolvedDependency(9102, 9103),
+                    new ExperienceResolvedDependency(9103, 9104)
+                ]))
+        {
+            ArtifactCatalogue =
+            [
+                new ExperienceArtifactIdentity(9102, "1.0.0", new string('a', 64)),
+                new ExperienceArtifactIdentity(9103, "1.0.0", new string('c', 64)),
+                new ExperienceArtifactIdentity(9104, "2.0.0", new string('d', 64))
+            ]
+        };
+
+        var runtimeManifest = manifest.ToRuntimeManifest();
+
+        Assert.Equal(new ulong[] { 9102 }, runtimeManifest.Requests.Select(request => request.BundleId));
+        Assert.Equal(
+            new ulong[] { 9102, 9103, 9104 },
+            runtimeManifest.LoadPlan!.Select(entry => entry.Reference.BundleId));
+        Assert.Equal(
+            new[] { "1.0.0", "1.0.0", "2.0.0" },
+            runtimeManifest.LoadPlan!.Select(entry => entry.Reference.Version));
+    }
+
     private sealed class SingleBundleCatalog(IMicroBundle bundle) : IMicroBundleCatalog
     {
         public bool TryResolve(ulong bundleId, out IMicroBundle? resolved)
