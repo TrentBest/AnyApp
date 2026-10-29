@@ -172,6 +172,22 @@ public sealed class ExperiencePublisherTests
     }
 
     [Fact]
+    public void RepositoryCatalog_RejectsMissingTransitiveArtifactIdentityBeforePreload()
+    {
+        var manifest = new ExperienceManifest(
+            9250, "1.0.0", 9251,
+            [new ExperienceBundleRequest(9252, ArtifactVersion: "1.0.0", ContentHash: new string('a', 64), BundleVersion: "1.0.0")],
+            ResolvedPlan: new ExperienceResolvedPlan(0, [9252, 9253], [new ExperienceResolvedDependency(9252, 9253)]))
+        {
+            ArtifactCatalogue = [new ExperienceArtifactIdentity(9252, "1.0.0", new string('a', 64))]
+        };
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            new RepositoryMicroBundleCatalog(new Uri("http://localhost/"), manifest));
+        Assert.Contains("MicroBundle 9253", exception.Message);
+        Assert.Contains("absent from the Experience artifact catalogue", exception.Message);
+    }
+
+    [Fact]
     public void RepositoryCatalog_RejectsConflictingArtifactIdentities()
     {
         var manifest = new ExperienceManifest(
