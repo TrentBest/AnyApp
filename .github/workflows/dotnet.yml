@@ -162,8 +162,9 @@ jobs:
       run: |
         $adapter = "_dependencies/TheSingularityWorkshop.Visualize/integrations/RendererAdapter/TheSingularityWorkshop.Renderer.VisualizeAdapter.csproj"
         $sourceRoot = "$env:GITHUB_WORKSPACE/_dependencies"
+        # Inspect declared adapter references without invoking ResolveReferences, which may compile
+        # dependency projects as a side effect. The actual source-graph builds below remain authoritative.
         dotnet msbuild $adapter -getProperty:Configuration,WorkshopUseRepositorySources,WorkshopSourceRoot,WorkshopRendererProjectPath -getItem:ProjectReference,PackageReference -p:Configuration=Release -p:WorkshopUseRepositorySources=true -p:WorkshopSourceRoot="$sourceRoot"
-        dotnet msbuild $adapter -t:ResolveReferences -getItem:ReferencePath -p:Configuration=Release -p:WorkshopUseRepositorySources=true -p:WorkshopSourceRoot="$sourceRoot"
 
     - name: Build AnyApp in the same repository-source mode used for restore
       shell: pwsh
