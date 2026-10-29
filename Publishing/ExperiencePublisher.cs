@@ -78,7 +78,13 @@ public sealed class ExperiencePublisher
         }
 
         var bundleIds = runtimeAssembly.Bundles.Select(bundle => bundle.Id).ToHashSet();
-        var rootIds = authoredManifest.Bundles.Select(request => request.BundleId).ToHashSet();
+        var authoredRootIds = authoredManifest.Bundles.Select(request => request.BundleId).ToArray();
+        if (authoredRootIds.Distinct().Count() != authoredRootIds.Length)
+            throw new ArgumentException(
+                "An authored Experience cannot request the same MicroBundle composition root more than once.",
+                nameof(authoredManifest));
+
+        var rootIds = authoredRootIds.ToHashSet();
         var requestsByRootId = new Dictionary<ulong, ExperienceBundleRequest>();
         var artifactCatalogue = new List<ExperienceArtifactIdentity>(runtimeAssembly.Bundles.Count);
         var bundleArtifacts = new List<MicroBundleArtifact>(runtimeAssembly.Bundles.Count);
