@@ -59,7 +59,7 @@ For current verification, consult the [AnyApp CI workflow](https://github.com/Tr
 ---
 
 <p align="center">
-  <img src="../Avatar.jpg" alt="The Singularity Workshop" width="112" />
+  <img src="https://raw.githubusercontent.com/TrentBest/WebPage/development/TheSingularityWorkshop/wwwroot/Images/TheSingularityWorkshopLivingAvatar.svg" alt="The Singularity Workshop living avatar" width="112" />
   <br />
   <strong>The Singularity Workshop</strong><br />
   <em>Forging Software for the Singularity.</em>
