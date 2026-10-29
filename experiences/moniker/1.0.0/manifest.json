@@ -9,5 +9,12 @@
       "artifactVersion": "1.0.0",
       "contentHash": "04f22c0904baa0cf17731435ee295893522a85aa7b3282e579b4113acfdf6209"
     }
+  ],
+  "artifactCatalogue": [
+    {
+      "bundleId": 3101,
+      "artifactVersion": "1.0.0",
+      "contentHash": "04f22c0904baa0cf17731435ee295893522a85aa7b3282e579b4113acfdf6209"
+    }
   ]
 }
