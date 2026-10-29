@@ -277,6 +277,10 @@ AnyApp consumes the architecture rather than silently replacing it.
 
 AnyApp's public distribution and code-signing strategy is documented in [docs/TRUSTED-DISTRIBUTION.md](docs/TRUSTED-DISTRIBUTION.md). The host must not require users to disable Windows security controls or install an untrusted root certificate.
 
+## Experience startup and offline recovery
+
+The startup reconciliation rules, offline fallback behavior, and crash-safe cache-generation model are documented in [Experience Startup and Offline Recovery](docs/EXPERIENCE-STARTUP-AND-OFFLINE-RECOVERY.md). The guide distinguishes catalog unavailability from a publication change and explains when AnyApp returns to Forge.
+
 ## Development
 
 The two CI dependency modes are documented in [CI Dependency Modes](docs/CI-DEPENDENCY-MODES.md): development integration uses checked-out dependency sources, while public-package compatibility restores from NuGet without a local development feed.
