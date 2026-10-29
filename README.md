@@ -71,7 +71,7 @@ dotnet run --project AnyApp.csproj -p:WorkshopUseRepositorySources=true -- --sto
 
 This opt-in source path references StoryBuilder's MicroBundle and Persistence projects and explicitly points the MicroBundle at AnyApp's GUI.Core project, preserving one semantic GUI assembly identity. The native window restores a host-local, versioned binary workspace when one exists, renders the session's semantic tree through GUI.WPF, and dispatches explicit create commands for timelines, characters, scenes, manuscripts, timeline events, manuscript sections, and event-to-section linking. Successful edits are saved through `FSM_Serialization` using a temporary file and atomic replacement, then the view is rebuilt from current domain state. If an existing save cannot be read, AnyApp preserves it and avoids silently replacing it with an empty workspace.
 
-This remains an integration slice, not a release claim: the complete native create → link → save → restart → reopen smoke test and validated composition-package consumption through the real AnyApp composition path are still outstanding. Normal/package builds do not gain a StoryBuilder package dependency.
+This remains an integration slice, not a release claim: an automated two-process persistence probe verifies that a saved event-to-section link survives process restart ([AnyApp workflow](https://github.com/TrentBest/AnyApp/actions/runs/39863022603)). The full interactive create → link → save → restart → reopen workflow and validated composition-package consumption through the real AnyApp composition path remain outstanding. Normal/package builds do not gain a StoryBuilder package dependency.
 
 ## Composition boundary
 
