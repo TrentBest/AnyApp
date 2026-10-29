@@ -75,9 +75,11 @@ public sealed class RepositoryMicroBundleCatalogIntegrationTests
             await catalog.PreloadClosureAsync(runtimeManifest.Bundles.Select(request => request.BundleId));
 
             Assert.True(catalog.TryResolve(RootBundleId, BundleVersion, out var root));
-            Assert.IsType<RootTestBundle>(root);
+            Assert.NotNull(root);
+            Assert.Equal(RootBundleId, root!.Descriptor.Id);
             Assert.True(catalog.TryResolve(DependencyBundleId, BundleVersion, out var dependency));
-            Assert.IsType<DependencyTestBundle>(dependency);
+            Assert.NotNull(dependency);
+            Assert.Equal(DependencyBundleId, dependency!.Descriptor.Id);
 
             var configurationSource = await catalog.CreateConfigurationSourceAsync(manifest);
             var assembly = new FsmCos(catalog).Execute(runtimeManifest, configurationSource);
