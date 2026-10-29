@@ -100,6 +100,78 @@ public sealed class ExperiencePublisherTests
     }
 
     [Fact]
+    public void ToRuntimeManifest_RejectsMissingTransitiveArtifactIdentityBeforeComposition()
+    {
+        var manifest = new ExperienceManifest(
+            9150,
+            "1.0.0",
+            9151,
+            [
+                new ExperienceBundleRequest(
+                    9152,
+                    ArtifactVersion: "1.0.0",
+                    ContentHash: new string('a', 64),
+                    BundleVersion: "1.0.0",
+                    ConfigurationArtifactVersion: "configuration-1.0.0",
+                    ConfigurationContentHash: new string('b', 64))
+            ],
+            ResolvedPlan: new ExperienceResolvedPlan(
+                0,
+                [9152, 9153],
+                [new ExperienceResolvedDependency(9152, 9153)]))
+        {
+            ArtifactCatalogue =
+            [
+                new ExperienceArtifactIdentity(9152, "1.0.0", new string('a', 64))
+            ]
+        };
+
+        var exception = Assert.Throws<InvalidOperationException>(() => manifest.ToRuntimeManifest());
+
+        Assert.Contains("MicroBundle 9153", exception.Message);
+        Assert.Contains("absent from the Experience artifact catalogue", exception.Message);
+    }
+
+    [Fact]
+    public void RepositoryManifest_KeepsConfigurationOnRootRequestNotDependencyCatalogue()
+    {
+        var rootConfigurationHash = new string('b', 64);
+        var manifest = new ExperienceManifest(
+            9160,
+            "1.0.0",
+            9161,
+            [
+                new ExperienceBundleRequest(
+                    9162,
+                    ArtifactVersion: "1.0.0",
+                    ContentHash: new string('a', 64),
+                    BundleVersion: "1.0.0",
+                    ConfigurationArtifactVersion: "configuration-1.0.0",
+                    ConfigurationContentHash: rootConfigurationHash)
+            ],
+            ResolvedPlan: new ExperienceResolvedPlan(
+                0,
+                [9162, 9163],
+                [new ExperienceResolvedDependency(9162, 9163)]))
+        {
+            ArtifactCatalogue =
+            [
+                new ExperienceArtifactIdentity(9162, "1.0.0", new string('a', 64)),
+                new ExperienceArtifactIdentity(9163, "2.0.0", new string('c', 64))
+            ]
+        };
+
+        var runtimeManifest = manifest.ToRuntimeManifest();
+
+        var root = Assert.Single(runtimeManifest.Bundles);
+        Assert.Equal(9162UL, root.BundleId);
+        Assert.Equal("configuration-1.0.0", manifest.Bundles[0].ConfigurationArtifactVersion);
+        Assert.Equal(rootConfigurationHash, manifest.Bundles[0].ConfigurationContentHash);
+        Assert.DoesNotContain(manifest.Bundles, request => request.BundleId == 9163);
+        Assert.Contains(manifest.GetArtifactCatalogue(), identity => identity.BundleId == 9163);
+    }
+
+    [Fact]
     public void RepositoryCatalog_RejectsConflictingArtifactIdentities()
     {
         var manifest = new ExperienceManifest(
