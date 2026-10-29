@@ -28,8 +28,8 @@ public sealed class ExperiencePublisherTests
 
             Assert.True(File.Exists(result.ManifestPath));
             Assert.True(File.Exists(Path.Combine(root, "configuration", "9001.bin")));
-            Assert.Equal(1, result.BundleArtifacts.Count);
-            Assert.Equal(1, result.ConfigurationArtifacts.Count);
+            Assert.Single(result.BundleArtifacts);
+            Assert.Single(result.ConfigurationArtifacts);
             Assert.Equal(2, repository.Count);
             Assert.NotNull(result.Manifest.ResolvedPlan);
             Assert.Equal(new ulong[] { 9001 }, result.Manifest.ResolvedPlan!.LoadOrder);
