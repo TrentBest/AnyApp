@@ -90,7 +90,7 @@ public sealed class ExperiencePublisherTests
 
         var runtimeManifest = manifest.ToRuntimeManifest();
 
-        Assert.Equal(new ulong[] { 9102 }, runtimeManifest.Requests.Select(request => request.BundleId));
+        Assert.Equal(new ulong[] { 9102 }, runtimeManifest.Bundles.Select(request => request.BundleId));
         Assert.Equal(
             new ulong[] { 9102, 9103, 9104 },
             runtimeManifest.LoadPlan!.Select(entry => entry.Reference.BundleId));
