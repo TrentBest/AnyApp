@@ -78,7 +78,9 @@ public sealed class ExperiencePublisher
         }
 
         var bundleIds = runtimeAssembly.Bundles.Select(bundle => bundle.Id).ToHashSet();
-        var requests = new List<ExperienceBundleRequest>(runtimeAssembly.Bundles.Count);
+        var rootIds = authoredManifest.Bundles.Select(request => request.BundleId).ToHashSet();
+        var requestsByRootId = new Dictionary<ulong, ExperienceBundleRequest>();
+        var artifactCatalogue = new List<ExperienceArtifactIdentity>(runtimeAssembly.Bundles.Count);
         var bundleArtifacts = new List<MicroBundleArtifact>(runtimeAssembly.Bundles.Count);
         var configurationArtifacts = new List<MicroBundleArtifact>(runtimeAssembly.Bundles.Count);
         var bundleAddresses = new List<MicroBundleArtifactAddress>(runtimeAssembly.Bundles.Count);
@@ -115,6 +117,8 @@ public sealed class ExperiencePublisher
                 bundleHash);
             bundleArtifacts.Add(new MicroBundleArtifact(bundleAddress, assemblyBytes));
             bundleAddresses.Add(bundleAddress);
+            artifactCatalogue.Add(new ExperienceArtifactIdentity(
+                bundle.Id, bundleAddress.Version, bundleAddress.ContentHash));
 
             if (!runtimeAssembly.TryGetResolvedConfiguration(bundle.Id, out var resolvedConfiguration))
                 throw new InvalidOperationException(
@@ -137,17 +141,28 @@ public sealed class ExperiencePublisher
                     $"Refusing to overwrite immutable resolved configuration '{configurationPath}'.");
             await File.WriteAllBytesAsync(configurationPath, configurationBytes, cancellationToken);
 
-            requests.Add(new ExperienceBundleRequest(
-                bundle.Id,
-                ConfigurationBase64: "",
-                ArtifactVersion: bundle.Descriptor.Version,
-                ContentHash: bundleHash,
-                BundleVersion: bundle.Descriptor.Version,
-                ConfigurationPath: configurationRelativePath,
-                ConfigurationArtifactVersion: configurationVersion,
-                ConfigurationContentHash: configurationHash));
+            if (rootIds.Contains(bundle.Id))
+            {
+                requestsByRootId.Add(bundle.Id, new ExperienceBundleRequest(
+                    bundle.Id,
+                    ConfigurationBase64: "",
+                    ArtifactVersion: bundle.Descriptor.Version,
+                    ContentHash: bundleHash,
+                    BundleVersion: bundle.Descriptor.Version,
+                    ConfigurationPath: configurationRelativePath,
+                    ConfigurationArtifactVersion: configurationVersion,
+                    ConfigurationContentHash: configurationHash));
+            }
         }
 
+        var missingRoots = rootIds.Where(rootId => !requestsByRootId.ContainsKey(rootId)).OrderBy(id => id).ToArray();
+        if (missingRoots.Length > 0)
+            throw new InvalidOperationException(
+                $"Published runtime assembly omitted requested composition roots: [{string.Join(", ", missingRoots)}].");
+
+        var requests = authoredManifest.Bundles
+            .Select(root => requestsByRootId[root.BundleId])
+            .ToArray();
         var resolvedPlan = new ExperienceResolvedPlan(
             runtimeAssembly.ArbitrationRounds,
             runtimeAssembly.Bundles.Select(bundle => bundle.Id).ToArray(),
@@ -155,6 +170,7 @@ public sealed class ExperiencePublisher
         var publishedManifest = authoredManifest with
         {
             Bundles = requests,
+            ArtifactCatalogue = artifactCatalogue,
             ResolvedPlan = resolvedPlan,
             ConfigurationRoot = outputDirectory
         };
