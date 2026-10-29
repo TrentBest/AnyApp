@@ -35,7 +35,7 @@ public sealed record ExperienceManifest(
     public IReadOnlyList<ExperienceArtifactIdentity>? ArtifactCatalogue { get; init; }
 
     public IReadOnlyList<ExperienceArtifactIdentity> GetArtifactCatalogue() =>
-        ArtifactCatalogue is { Count: > 0 }
+        ArtifactCatalogue is not null
             ? ArtifactCatalogue
             : Bundles.Where(bundle => bundle.HasArtifactIdentity)
                 .Select(bundle => new ExperienceArtifactIdentity(
@@ -94,7 +94,6 @@ public sealed record ExperienceManifest(
         if (ResolvedPlan is not null)
         {
             var artifactsById = GetArtifactCatalogue().ToDictionary(artifact => artifact.BundleId);
-            var rootRequestsById = Bundles.ToDictionary(bundle => bundle.BundleId);
             var closure = new HashSet<ulong>();
             var pending = new Stack<ulong>(startupIds);
             while (pending.Count > 0)
