@@ -55,6 +55,32 @@ public sealed class ExperienceStartupCoordinatorTests
     }
 
     [Fact]
+    public async Task ChangedContentHashWithSameVersionFetchesNewImmutableManifest()
+    {
+        var cached = new ExperienceManifest(41, "1.0.0", 1, Array.Empty<ExperienceBundleRequest>());
+        var updated = new ExperienceManifest(41, "1.0.0", 1, Array.Empty<ExperienceBundleRequest>());
+        var oldPublication = new PublishedExperience(41, "1.0.0", "old-hash");
+        var current = new PublishedExperience(41, "1.0.0", "new-hash");
+        var fetchCount = 0;
+
+        var decision = await ExperienceStartupCoordinator.ReconcileAsync(
+            _ => Task.FromResult<ExperienceManifest?>(cached),
+            _ => Task.FromResult<PublishedExperience?>(oldPublication),
+            _ => Task.FromResult<IReadOnlyList<PublishedExperience>>([current]),
+            (publication, _) =>
+            {
+                fetchCount++;
+                Assert.Equal(current, publication);
+                return Task.FromResult(updated);
+            });
+
+        Assert.Same(updated, decision.Manifest);
+        Assert.Equal(current, decision.Publication);
+        Assert.Equal(1, fetchCount);
+        Assert.True(decision.PersistLastManifest);
+    }
+
+    [Fact]
     public async Task OfflineCatalogResumesCacheWithoutChangingPublicationIdentity()
     {
         var manifest = new ExperienceManifest(41, "1.0.0", 1, Array.Empty<ExperienceBundleRequest>());
