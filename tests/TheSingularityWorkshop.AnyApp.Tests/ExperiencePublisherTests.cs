@@ -35,6 +35,8 @@ public sealed class ExperiencePublisherTests
             Assert.Equal(new ulong[] { 9001 }, result.Manifest.ResolvedPlan!.LoadOrder);
             Assert.True(result.Manifest.UsesRepositoryArtifacts);
             Assert.True(result.Manifest.UsesResolvedRepositoryConfigurations);
+            Assert.Single(result.Manifest.Bundles);
+            Assert.Single(result.Manifest.ArtifactCatalogue!);
 
             var loaded = ExperienceManifest.LoadFile(result.ManifestPath);
             var runtimeManifest = loaded.ToRuntimeManifest();
@@ -95,6 +97,32 @@ public sealed class ExperiencePublisherTests
         Assert.Equal(
             new[] { "1.0.0", "1.0.0", "2.0.0" },
             runtimeManifest.LoadPlan!.Select(entry => entry.Reference.Version));
+    }
+
+    [Fact]
+    public void RepositoryCatalog_RejectsConflictingArtifactIdentities()
+    {
+        var manifest = new ExperienceManifest(
+            9200,
+            "1.0.0",
+            9201,
+            [new ExperienceBundleRequest(
+                9202,
+                ArtifactVersion: "1.0.0",
+                ContentHash: new string('a', 64),
+                BundleVersion: "1.0.0")])
+        {
+            ArtifactCatalogue =
+            [
+                new ExperienceArtifactIdentity(9202, "1.0.0", new string('a', 64)),
+                new ExperienceArtifactIdentity(9202, "2.0.0", new string('b', 64))
+            ]
+        };
+
+        var exception = Assert.Throws<ArgumentException>(() =>
+            new RepositoryMicroBundleCatalog(new Uri("http://localhost/"), manifest));
+
+        Assert.Contains("conflicting immutable identities", exception.Message);
     }
 
     private sealed class SingleBundleCatalog(IMicroBundle bundle) : IMicroBundleCatalog
