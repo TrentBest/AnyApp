@@ -35,12 +35,43 @@ public sealed class RepositoryMicroBundleCatalog : IMicroBundleCatalog
                 nameof(manifest));
 
         var addresses = new Dictionary<ulong, MicroBundleArtifactAddress>();
+        foreach (var identity in manifest.GetArtifactCatalogue())
+        {
+            if (!identity.HasArtifactIdentity)
+                throw new ArgumentException(
+                    $"Artifact catalogue entry for MicroBundle {identity.BundleId} must pin a non-empty version and SHA-256 content hash.",
+                    nameof(manifest));
+
+            var address = new MicroBundleArtifactAddress(
+                identity.BundleId,
+                identity.ArtifactVersion,
+                identity.ContentHash);
+            if (addresses.TryGetValue(identity.BundleId, out var existing))
+            {
+                if (existing != address)
+                    throw new ArgumentException(
+                        $"Artifact catalogue contains conflicting immutable identities for MicroBundle {identity.BundleId}.",
+                        nameof(manifest));
+                throw new ArgumentException(
+                    $"Artifact catalogue contains duplicate identity entries for MicroBundle {identity.BundleId}.",
+                    nameof(manifest));
+            }
+
+            addresses.Add(identity.BundleId, address);
+        }
+
         foreach (var request in manifest.Bundles)
         {
-            addresses[request.BundleId] = new MicroBundleArtifactAddress(
-                request.BundleId,
-                request.ArtifactVersion!,
-                request.ContentHash!);
+            if (!addresses.TryGetValue(request.BundleId, out var address))
+                throw new ArgumentException(
+                    $"Composition root MicroBundle {request.BundleId} is missing from the artifact catalogue.",
+                    nameof(manifest));
+            if (request.HasArtifactIdentity &&
+                (request.ArtifactVersion != address.Version ||
+                 !string.Equals(request.ContentHash, address.ContentHash, StringComparison.OrdinalIgnoreCase)))
+                throw new ArgumentException(
+                    $"Composition root MicroBundle {request.BundleId} conflicts with its immutable artifact catalogue identity.",
+                    nameof(manifest));
         }
 
         _addresses = addresses;
