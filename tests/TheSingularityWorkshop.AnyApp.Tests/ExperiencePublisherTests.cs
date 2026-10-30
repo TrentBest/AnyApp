@@ -143,6 +143,38 @@ public sealed class ExperiencePublisherTests
     }
 
     [Fact]
+    public void ToRuntimeManifest_RejectsMissingDependencyConfigurationIdentity()
+    {
+        var manifest = new ExperienceManifest(
+            9155,
+            "1.0.0",
+            9156,
+            [new ExperienceBundleRequest(
+                9157,
+                ArtifactVersion: "1.0.0",
+                ContentHash: new string('a', 64),
+                BundleVersion: "1.0.0",
+                ConfigurationArtifactVersion: "configuration-1.0.0",
+                ConfigurationContentHash: new string('b', 64))],
+            ResolvedPlan: new ExperienceResolvedPlan(
+                0,
+                [9157, 9158],
+                [new ExperienceResolvedDependency(9157, 9158)]))
+        {
+            ArtifactCatalogue =
+            [
+                new ExperienceArtifactIdentity(9157, "1.0.0", new string('a', 64)),
+                new ExperienceArtifactIdentity(9158, "1.0.0", new string('c', 64))
+            ]
+        };
+
+        var exception = Assert.Throws<InvalidOperationException>(() => manifest.ToRuntimeManifest());
+
+        Assert.Contains("MicroBundle 9158", exception.Message);
+        Assert.Contains("resolved-configuration artifact identity", exception.Message);
+    }
+
+    [Fact]
     public void RepositoryManifest_KeepsConfigurationOnRootRequestNotDependencyCatalogue()
     {
         var rootConfigurationHash = new string('b', 64);
