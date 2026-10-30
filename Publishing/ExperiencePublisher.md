@@ -16,6 +16,8 @@
 
 - `bundles` contains only explicit Experience composition roots and their per-root configuration identities.
 - `artifactCatalogue` contains immutable `(bundleId, artifactVersion, contentHash)` identities for every artifact in the published dependency closure. Catalogue entries are metadata, not composition requests.
+- `resolvedConfigurationCatalogue` contains the immutable resolved-configuration artifact identity for every bundle in that closure, keyed by `(bundleId, bundleVersion)` and carrying its artifact version, SHA-256 hash, and local sidecar path. Dependency configuration is not stored by promoting dependencies into `bundles`.
+- Runtime repository configuration loading consumes the closure-wide catalogue. Legacy manifests without it fall back to configuration identities on their root entries; a pre-resolved flat plan must pin configuration for every plan entry.
 - `resolvedPlan.loadOrder` may include catalogue entries that are not present in `bundles`; the runtime load plan includes the full closure while FSM_COS receives only the authored roots.
 - New publications write `artifactCatalogue`. Legacy manifests without it are interpreted as flat publications: artifact identities are derived from the pinned entries in `bundles`. This compatibility path cannot supply identities for dependencies omitted from an old manifest.
 - A present catalogue is authoritative, including an empty catalogue. Duplicate IDs, conflicting root/catalogue identities, unpinned entries, and missing dependency addresses are rejected rather than guessed or fetched by an unpinned version.
