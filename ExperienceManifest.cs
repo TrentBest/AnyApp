@@ -65,8 +65,21 @@ public sealed record ExperienceManifest(
     public bool UsesRepositoryArtifacts =>
         Bundles.Count > 0 && Bundles.All(bundle => bundle.HasArtifactIdentity);
 
-    public bool UsesResolvedRepositoryConfigurations =>
-        Bundles.Count > 0 && Bundles.All(bundle => bundle.HasConfigurationArtifactIdentity);
+    public bool UsesResolvedRepositoryConfigurations
+    {
+        get
+        {
+            if (ResolvedPlan is null)
+                return Bundles.Count > 0 && Bundles.All(bundle => bundle.HasConfigurationArtifactIdentity);
+
+            var configurations = GetResolvedConfigurationCatalogue()
+                .Where(configuration => configuration.HasConfigurationIdentity)
+                .Select(configuration => configuration.BundleId)
+                .ToHashSet();
+            return ResolvedPlan.LoadOrder.Count > 0 &&
+                   ResolvedPlan.LoadOrder.All(configurations.Contains);
+        }
+    }
 
     /// <summary>
     /// The ordered Moniker MicroBundles to present before the destination Experience.
