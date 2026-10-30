@@ -89,6 +89,12 @@ public sealed class ExperiencePublisherTests
                 new ExperienceArtifactIdentity(9102, "1.0.0", new string('a', 64)),
                 new ExperienceArtifactIdentity(9103, "1.0.0", new string('c', 64)),
                 new ExperienceArtifactIdentity(9104, "2.0.0", new string('d', 64))
+            ],
+            ResolvedConfigurationCatalogue =
+            [
+                new ExperienceResolvedConfigurationIdentity(9102, "1.0.0", "configuration-1.0.0", new string('b', 64)),
+                new ExperienceResolvedConfigurationIdentity(9103, "1.0.0", "configuration-1.0.0", new string('e', 64)),
+                new ExperienceResolvedConfigurationIdentity(9104, "2.0.0", "configuration-2.0.0", new string('f', 64))
             ]
         };
 
@@ -162,6 +168,11 @@ public sealed class ExperiencePublisherTests
             [
                 new ExperienceArtifactIdentity(9162, "1.0.0", new string('a', 64)),
                 new ExperienceArtifactIdentity(9163, "2.0.0", new string('c', 64))
+            ],
+            ResolvedConfigurationCatalogue =
+            [
+                new ExperienceResolvedConfigurationIdentity(9162, "1.0.0", "configuration-1.0.0", rootConfigurationHash),
+                new ExperienceResolvedConfigurationIdentity(9163, "2.0.0", "configuration-2.0.0", new string('d', 64))
             ]
         };
 
