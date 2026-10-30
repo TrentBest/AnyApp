@@ -104,7 +104,7 @@ public sealed class RepositoryMicroBundleCatalogIntegrationTests
         }
     }
 
-    public sealed class RootTestBundle : IMicroBundle
+    public sealed class RootTestBundle : IMicroBundle, IMicroBundleResolvedConfiguration
     {
         public MicroBundleDescriptor Descriptor { get; } =
             new(RootBundleId, BundleVersion, [new MicroBundleDependency(DependencyBundleId)]);
@@ -112,12 +112,14 @@ public sealed class RepositoryMicroBundleCatalogIntegrationTests
         public IReadOnlyList<MicroBundleDependencyRequest> Dependencies { get; } =
             [MicroBundleDependencyRequest.Unconfigured(DependencyBundleId)];
 
+        public ReadOnlyMemory<byte> ExportResolvedConfiguration() => ReadOnlyMemory<byte>.Empty;
+
         public void Load(IMicroBundleLoadContext context) { }
 
         public bool Arbitrate(IMicroBundleArbitrationContext context, int roundIndex) => false;
     }
 
-    public sealed class DependencyTestBundle : IMicroBundle
+    public sealed class DependencyTestBundle : IMicroBundle, IMicroBundleResolvedConfiguration
     {
         public MicroBundleDescriptor Descriptor { get; } = new(DependencyBundleId, BundleVersion);
 
