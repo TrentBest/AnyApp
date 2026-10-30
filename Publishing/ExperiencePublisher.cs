@@ -87,6 +87,7 @@ public sealed class ExperiencePublisher
         var rootIds = authoredRootIds.ToHashSet();
         var requestsByRootId = new Dictionary<ulong, ExperienceBundleRequest>();
         var artifactCatalogue = new List<ExperienceArtifactIdentity>(runtimeAssembly.Bundles.Count);
+        var configurationCatalogue = new List<ExperienceResolvedConfigurationIdentity>(runtimeAssembly.Bundles.Count);
         var bundleArtifacts = new List<MicroBundleArtifact>(runtimeAssembly.Bundles.Count);
         var configurationArtifacts = new List<MicroBundleArtifact>(runtimeAssembly.Bundles.Count);
         var bundleAddresses = new List<MicroBundleArtifactAddress>(runtimeAssembly.Bundles.Count);
@@ -141,6 +142,8 @@ public sealed class ExperiencePublisher
             configurationAddresses.Add(configurationAddress);
 
             var configurationRelativePath = $"configuration/{bundle.Id}.bin";
+            configurationCatalogue.Add(new ExperienceResolvedConfigurationIdentity(
+                bundle.Id, bundle.Descriptor.Version, configurationVersion, configurationHash, configurationRelativePath));
             var configurationPath = Path.Combine(configurationDirectory, $"{bundle.Id}.bin");
             if (File.Exists(configurationPath))
                 throw new IOException(
@@ -177,6 +180,7 @@ public sealed class ExperiencePublisher
         {
             Bundles = requests,
             ArtifactCatalogue = artifactCatalogue,
+            ResolvedConfigurationCatalogue = configurationCatalogue,
             ResolvedPlan = resolvedPlan,
             ConfigurationRoot = outputDirectory
         };
