@@ -37,6 +37,10 @@ public sealed class ExperiencePublisherTests
             Assert.True(result.Manifest.UsesResolvedRepositoryConfigurations);
             Assert.Single(result.Manifest.Bundles);
             Assert.Single(result.Manifest.ArtifactCatalogue!);
+            var publishedConfiguration = Assert.Single(result.Manifest.ResolvedConfigurationCatalogue!);
+            Assert.Equal(9001UL, publishedConfiguration.BundleId);
+            Assert.Equal("1.0.0", publishedConfiguration.BundleVersion);
+            Assert.Equal("configuration/9001.bin", publishedConfiguration.ConfigurationPath);
 
             var loaded = ExperienceManifest.LoadFile(result.ManifestPath);
             var runtimeManifest = loaded.ToRuntimeManifest();
