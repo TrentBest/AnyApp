@@ -34,6 +34,18 @@ public sealed record ExperienceManifest(
     /// </summary>
     public IReadOnlyList<ExperienceArtifactIdentity>? ArtifactCatalogue { get; init; }
 
+    /// <summary>Resolved configuration artifact identities for every bundle in the published closure.</summary>
+    public IReadOnlyList<ExperienceResolvedConfigurationIdentity>? ResolvedConfigurationCatalogue { get; init; }
+
+    public IReadOnlyList<ExperienceResolvedConfigurationIdentity> GetResolvedConfigurationCatalogue() =>
+        ResolvedConfigurationCatalogue is not null
+            ? ResolvedConfigurationCatalogue
+            : Bundles.Where(bundle => bundle.HasConfigurationArtifactIdentity)
+                .Select(bundle => new ExperienceResolvedConfigurationIdentity(
+                    bundle.BundleId, ResolveBundleVersion(bundle), bundle.ConfigurationArtifactVersion!,
+                    bundle.ConfigurationContentHash!, bundle.ConfigurationPath))
+                .ToArray();
+
     public IReadOnlyList<ExperienceArtifactIdentity> GetArtifactCatalogue() =>
         ArtifactCatalogue is not null
             ? ArtifactCatalogue
@@ -163,9 +175,13 @@ public sealed record ExperienceManifest(
         if (!UsesRepositoryArtifacts)
             throw new InvalidOperationException(
                 "A pre-resolved Experience manifest must identify immutable artifacts for every MicroBundle.");
-        if (!UsesResolvedRepositoryConfigurations)
-            throw new InvalidOperationException(
-                "A pre-resolved Experience manifest must identify immutable resolved-configuration artifacts for every MicroBundle.");
+        var configurationsById = GetResolvedConfigurationCatalogue().ToDictionary(configuration => configuration.BundleId);
+        foreach (var bundleId in ResolvedPlan.LoadOrder)
+        {
+            if (!configurationsById.TryGetValue(bundleId, out var configuration) || !configuration.HasConfigurationIdentity)
+                throw new InvalidOperationException(
+                    $"Resolved MicroBundle {bundleId} has no immutable resolved-configuration artifact identity in the Experience configuration catalogue.");
+        }
 
         var artifactsById = GetArtifactCatalogue().ToDictionary(artifact => artifact.BundleId);
         var loadPlan = ResolvedPlan.LoadOrder.Select(bundleId =>
@@ -209,7 +225,7 @@ public sealed record ExperienceManifest(
     /// Configuration remains separate from the versioned bundle manifest.
     /// </summary>
     public IMicroBundleConfigurationSource CreateConfigurationSource() =>
-        new ExperienceConfigurationSource(RuntimeId, Bundles, ConfigurationRoot);
+        new ExperienceConfigurationSource(RuntimeId, Bundles, GetResolvedConfigurationCatalogue(), ConfigurationRoot);
 
     public static ExperienceManifest Parse(ReadOnlyMemory<byte> content) =>
         JsonSerializer.Deserialize<ExperienceManifest>(content.Span, JsonOptions)
@@ -237,12 +253,22 @@ public sealed record ExperienceManifest(
         public ExperienceConfigurationSource(
             ulong runtimeId,
             IReadOnlyList<ExperienceBundleRequest> bundles,
+            IReadOnlyList<ExperienceResolvedConfigurationIdentity> configurationCatalogue,
             string? configurationRoot)
         {
             _runtimeId = runtimeId;
             var values = new Dictionary<(ulong BundleId, string Version), ReadOnlyMemory<byte>>();
 
-            foreach (var bundle in bundles)
+            var entries = configurationCatalogue.Select(identity => new ExperienceBundleRequest(
+                identity.BundleId,
+                BundleVersion: identity.BundleVersion,
+                ConfigurationPath: identity.ConfigurationPath,
+                ConfigurationArtifactVersion: identity.ConfigurationArtifactVersion,
+                ConfigurationContentHash: identity.ConfigurationContentHash)).ToDictionary(entry => entry.BundleId);
+            foreach (var bundle in bundles.Where(entry => !entries.ContainsKey(entry.BundleId)))
+                entries.Add(bundle.BundleId, bundle);
+
+            foreach (var bundle in entries.Values)
             {
                 var hasInlineConfiguration = !string.IsNullOrWhiteSpace(bundle.ConfigurationBase64);
                 var hasFileConfiguration = !string.IsNullOrWhiteSpace(bundle.ConfigurationPath);
@@ -347,6 +373,20 @@ public sealed record ExperienceResolvedPlan(
 
 /// <summary>A directed MicroBundle dependency edge in a resolved Experience plan.</summary>
 public sealed record ExperienceResolvedDependency(ulong BundleId, ulong DependencyId);
+
+/// <summary>An immutable address identity for one artifact in a published dependency closure.</summary>
+public sealed record ExperienceResolvedConfigurationIdentity(
+    ulong BundleId,
+    string BundleVersion,
+    string ConfigurationArtifactVersion,
+    string ConfigurationContentHash,
+    string? ConfigurationPath = null)
+{
+    public bool HasConfigurationIdentity =>
+        !string.IsNullOrWhiteSpace(BundleVersion) &&
+        !string.IsNullOrWhiteSpace(ConfigurationArtifactVersion) &&
+        !string.IsNullOrWhiteSpace(ConfigurationContentHash);
+}
 
 /// <summary>An immutable address identity for one artifact in a published dependency closure.</summary>
 public sealed record ExperienceArtifactIdentity(
