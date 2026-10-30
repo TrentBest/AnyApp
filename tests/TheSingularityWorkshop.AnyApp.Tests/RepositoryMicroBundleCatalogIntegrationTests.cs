@@ -125,6 +125,8 @@ public sealed class RepositoryMicroBundleCatalogIntegrationTests
 
         public IReadOnlyList<MicroBundleDependencyRequest> Dependencies { get; } = [];
 
+        public ReadOnlyMemory<byte> ExportResolvedConfiguration() => ReadOnlyMemory<byte>.Empty;
+
         public void Load(IMicroBundleLoadContext context) { }
 
         public bool Arbitrate(IMicroBundleArbitrationContext context, int roundIndex) => false;
