@@ -151,6 +151,9 @@ public sealed record ExperienceManifest(
             {
                 Bundles = Bundles.Where(bundle => startupIds.Contains(bundle.BundleId)).ToArray(),
                 ArtifactCatalogue = loadOrder.Select(bundleId => artifactsById[bundleId]).ToArray(),
+                ResolvedConfigurationCatalogue = GetResolvedConfigurationCatalogue()
+                    .Where(configuration => closure.Contains(configuration.BundleId))
+                    .ToArray(),
                 StartupMonikerBundleIds = monikerIds,
                 Intent = null,
                 ResolvedPlan = startupPlan
@@ -188,6 +191,14 @@ public sealed record ExperienceManifest(
         if (!UsesRepositoryArtifacts)
             throw new InvalidOperationException(
                 "A pre-resolved Experience manifest must identify immutable artifacts for every MicroBundle.");
+        var artifactsById = GetArtifactCatalogue().ToDictionary(artifact => artifact.BundleId);
+        foreach (var bundleId in ResolvedPlan.LoadOrder)
+        {
+            if (!artifactsById.TryGetValue(bundleId, out var artifact) || !artifact.HasArtifactIdentity)
+                throw new InvalidOperationException(
+                    $"Resolved load order references MicroBundle {bundleId}, which is absent from the Experience artifact catalogue or has no immutable artifact identity.");
+        }
+
         var configurationsById = GetResolvedConfigurationCatalogue().ToDictionary(configuration => configuration.BundleId);
         foreach (var bundleId in ResolvedPlan.LoadOrder)
         {
@@ -195,8 +206,6 @@ public sealed record ExperienceManifest(
                 throw new InvalidOperationException(
                     $"Resolved MicroBundle {bundleId} has no immutable resolved-configuration artifact identity in the Experience configuration catalogue.");
         }
-
-        var artifactsById = GetArtifactCatalogue().ToDictionary(artifact => artifact.BundleId);
         var loadPlan = ResolvedPlan.LoadOrder.Select(bundleId =>
         {
             if (!artifactsById.TryGetValue(bundleId, out var artifact))
