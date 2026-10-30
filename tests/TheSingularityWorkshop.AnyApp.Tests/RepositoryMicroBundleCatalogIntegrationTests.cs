@@ -56,6 +56,13 @@ public sealed class RepositoryMicroBundleCatalogIntegrationTests
                 [
                     new ExperienceArtifactIdentity(RootBundleId, BundleVersion, assemblyHash),
                     new ExperienceArtifactIdentity(DependencyBundleId, BundleVersion, assemblyHash)
+                ],
+                ResolvedConfigurationCatalogue =
+                [
+                    new ExperienceResolvedConfigurationIdentity(
+                        RootBundleId, BundleVersion, "configuration-1.0.0", configurationHash),
+                    new ExperienceResolvedConfigurationIdentity(
+                        DependencyBundleId, BundleVersion, "configuration-1.0.0", configurationHash)
                 ]
             };
 
