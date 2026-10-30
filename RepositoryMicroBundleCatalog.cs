@@ -146,45 +146,42 @@ public sealed class RepositoryMicroBundleCatalog : IMicroBundleCatalog
         ArgumentNullException.ThrowIfNull(manifest);
         var values = new Dictionary<(ulong BundleId, string Version), ReadOnlyMemory<byte>>();
 
-        foreach (var request in manifest.Bundles)
+        foreach (var identity in manifest.GetResolvedConfigurationCatalogue())
         {
-            if (!request.HasConfigurationArtifactIdentity)
-                continue;
+            if (!identity.HasConfigurationIdentity)
+                throw new InvalidOperationException(
+                    $"Resolved configuration catalogue entry for MicroBundle {identity.BundleId} must pin bundle version, artifact version, and SHA-256 hash.");
 
             var address = new MicroBundleArtifactAddress(
-                request.BundleId,
-                request.ConfigurationArtifactVersion!,
-                request.ConfigurationContentHash!);
+                identity.BundleId,
+                identity.ConfigurationArtifactVersion,
+                identity.ConfigurationContentHash);
             var artifact = await GetArtifactWithCacheAsync(address, cancellationToken);
-            var version = string.IsNullOrWhiteSpace(request.BundleVersion)
-                ? string.IsNullOrWhiteSpace(request.ArtifactVersion) ? "1.0.0" : request.ArtifactVersion
-                : request.BundleVersion;
-
             byte[] bytes;
             if (artifact is not null)
             {
                 bytes = artifact.Content.ToArray();
             }
             else if (localOverrides is not null &&
-                     localOverrides.TryGetConfiguration(manifest.RuntimeId, request.BundleId, version!, out var localConfiguration))
+                     localOverrides.TryGetConfiguration(manifest.RuntimeId, identity.BundleId, identity.BundleVersion, out var localConfiguration))
             {
                 // Local sidecars/overrides are accepted as a cache only when their bytes
                 // match the immutable identity recorded in the manifest.
                 bytes = localConfiguration.ToArray();
                 var actualHash = Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
-                if (!string.Equals(actualHash, request.ConfigurationContentHash, StringComparison.OrdinalIgnoreCase))
+                if (!string.Equals(actualHash, identity.ConfigurationContentHash, StringComparison.OrdinalIgnoreCase))
                     throw new InvalidOperationException(
-                        $"Local resolved configuration for MicroBundle {request.BundleId} does not match its published SHA-256 identity.");
+                        $"Local resolved configuration for MicroBundle {identity.BundleId} does not match its published SHA-256 identity.");
             }
             else
             {
                 throw new InvalidOperationException(
-                    $"Resolved configuration artifact {address} for MicroBundle {request.BundleId} was not found.");
+                    $"Resolved configuration artifact {address} for MicroBundle {identity.BundleId} was not found.");
             }
 
-            if (!values.TryAdd((request.BundleId, version!), bytes))
+            if (!values.TryAdd((identity.BundleId, identity.BundleVersion), bytes))
                 throw new InvalidOperationException(
-                    $"Experience manifest declares resolved configuration more than once for MicroBundle {request.BundleId}.");
+                    $"Experience manifest declares resolved configuration more than once for MicroBundle {identity.BundleId}.");
         }
 
         return new RepositoryConfigurationSource(manifest.RuntimeId, values, localOverrides);
