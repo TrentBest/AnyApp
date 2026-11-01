@@ -250,18 +250,19 @@ AnyApp validates that intent against its host grammar before composition. This i
 
 ## Physical baseline
 
-AnyApp remains a proving ground rather than a finished product. Its current physical measurements are therefore baselines, not promises of final distribution size:
+AnyApp remains a proving ground rather than a finished product. Physical measurements are tied to the exact CI artifact and commit; they are not estimates or promises of final distribution size.
 
-| Publish form | Directory | EXE |
+The latest combined source-mode build and Windows publish gate measured the following candidate before PR #41 was merged:
+
+| Measurement | Exact size | Binary size |
 |---|---:|---:|
-| Framework-dependent | 0.33 MB | 0.15 MB |
-| Self-contained | 160.10 MB | 0.15 MB |
-| Single-file self-contained | 154.33 MB | 146.48 MB |
-| Blank WPF Release milestone | — | ~149 KB |
+| Self-contained, single-file `AnyApp.exe` | 162,844,055 bytes | 155.30 MiB |
+| Publish directory | 163,857,259 bytes | 156.27 MiB |
 
-The deployment-mode distinction matters: self-contained and single-file deployments carry the .NET runtime, while the small application executable is a different measurement.
+Evidence: [workflow run #491](https://github.com/TrentBest/AnyApp/actions/runs/41333568522), source commit `9271fe459e383a99258989ed969afa46365dd664`. The executable includes the .NET 8 Windows runtime and WPF payload. The application and Workshop assemblies were only a small fraction of the measured binary; see [issue #42](https://github.com/TrentBest/AnyApp/issues/42) for the bundle inventory and category breakdown.
 
-The reproducible CI measurement path lives in `.github/workflows/baseline.yml`. The deeper runtime/performance discussion belongs with FSM_COS rather than the native host.
+The reproducible controlled comparison is [Windows publish-size experiment](docs/PUBLISH-SIZE-EXPERIMENT.md), implemented by `.github/workflows/publish-size-matrix.yml`. It measures compression and satellite-resource language filtering independently and together. It does not change the default publish configuration. The older `.github/workflows/baseline.yml` remains the public-package compatibility baseline and is intentionally separate from development source integration.
+
 
 ## Native host boundary
 
