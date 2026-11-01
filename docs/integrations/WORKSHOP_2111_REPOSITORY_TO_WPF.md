@@ -83,7 +83,7 @@ Run the source integration test from an AnyApp checkout when The is available as
 dotnet test tests/TheSingularityWorkshop.AnyApp.Tests/TheSingularityWorkshop.AnyApp.Tests.csproj --configuration Release -p:WorkshopUseRepositorySources=true
 ~~~
 
-The test project detects either ../The or _dependencies/The. CI checks out The into _dependencies/The so the actual MicroBundle source participates in the automated proof. Without that checkout, the optional test is excluded rather than replaced by a synthetic 2111 implementation.
+The test project detects either ../The or _dependencies/The. The source integration test detects either a local sibling checkout or _dependencies/The. AnyApp's CI attempts the private The checkout only when the GITHUB_PAT repository secret is configured with read access; without that credential, the optional test is excluded rather than replaced by a synthetic 2111 implementation. A green CI run without that secret therefore does not claim to have executed the real 2111 test.
 
 The automated test creates no cloud resources, uploads no artifact, and publishes no package.
 
