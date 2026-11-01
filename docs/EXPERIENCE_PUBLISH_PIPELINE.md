@@ -1,3 +1,6 @@
+<!-- The Singularity Workshop animated moniker -->
+<p align="center"><a href="https://github.com/TrentBest"><img src="https://raw.githubusercontent.com/TrentBest/TheSingularityWorkshop.Visualize/development/docs/assets/moniker.svg" alt="The Singularity Workshop animated moniker" width="720" /></a></p>
+
 # Experience Manifest Publishing and Runtime Contract
 
 ## Purpose
@@ -116,3 +119,7 @@ Remaining release gates:
 3. End-to-end verification is still required for a real multi-bundle Experience and two distinct manifests using the same AnyApp executable.
 
 A successful ordinary FsmCos.Execute is not evidence that publish-time/runtime separation is complete; only a manifest carrying a verified resolved plan takes the new fast path.
+
+---
+
+<p align="center"><img src="https://raw.githubusercontent.com/TrentBest/FSM_API/master/Documentation/Branding/TheSingularityWorkshop.png" alt="The Singularity Workshop avatar" width="200" /></p>
