@@ -197,7 +197,7 @@ jobs:
       run: |
         $sourceRoot = "$env:GITHUB_WORKSPACE/_dependencies"
         $guiCoreProject = Join-Path $sourceRoot "TheSingularityWorkshop.GUI/src/Core/TheSingularityWorkshop.GUI.Core.csproj"
-        dotnet publish AnyApp.csproj --configuration Release --runtime win-x64 --self-contained true --no-restore -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:WorkshopUseRepositorySources=true -p:WorkshopSourceRoot="$sourceRoot" "-p:WorkshopGuiCoreProject=$guiCoreProject" -p:AssemblyName=AnyApp --output artifacts/windows-x64
+        dotnet publish AnyApp.csproj --configuration Release --runtime win-x64 --self-contained true --no-restore -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:WorkshopUseRepositorySources=true -p:WorkshopSourceRoot="$sourceRoot" "-p:WorkshopGuiCoreProject=$guiCoreProject" --output artifacts/windows-x64
 
     - name: Measure Windows executable
       id: measure-windows-exe
