@@ -1,3 +1,6 @@
+<!-- The Singularity Workshop animated moniker -->
+<p align="center"><a href="https://github.com/TrentBest"><img src="https://raw.githubusercontent.com/TrentBest/TheSingularityWorkshop.Visualize/development/docs/assets/moniker.svg" alt="The Singularity Workshop animated moniker" width="720" /></a></p>
+
 # ExperiencePublisher UML
 
 ## Class diagram
@@ -57,3 +60,7 @@ classDiagram
 5. It writes the flat dependency-first plan, dependency edges, artifact identities, and convergence round into the manifest.
 6. The manifest file is written last, only after artifact uploads succeed.
 7. At runtime, AnyApp retrieves or uses cached artifacts; FSM_COS validates the flat plan and restores the saved configuration without rerunning arbitration.
+
+---
+
+<p align="center"><img src="https://raw.githubusercontent.com/TrentBest/FSM_API/master/Documentation/Branding/TheSingularityWorkshop.png" alt="The Singularity Workshop avatar" width="200" /></p>
