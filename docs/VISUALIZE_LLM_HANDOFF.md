@@ -1,3 +1,6 @@
+<!-- The Singularity Workshop animated moniker -->
+<p align="center"><a href="https://github.com/TrentBest"><img src="https://raw.githubusercontent.com/TrentBest/TheSingularityWorkshop.Visualize/development/docs/assets/moniker.svg" alt="The Singularity Workshop animated moniker" width="720" /></a></p>
+
 # VisualizeLLM handoff — AnyApp renderer-adapter build
 
 **Status:** historical integration investigation; the immediate AnyApp source-mode failure is resolved. The separately packaged adapter/distribution boundary remains open.  
@@ -63,3 +66,7 @@ The same AnyApp test graph has also reported unresolved Renderer dependencies in
 ## Coordination boundary
 
 This document is the cross-repository request. VisualizeLLM should make any code change in the Visualize repository and return the commit/verification details to AnyApp. AnyApp will then validate the complete consumer graph. No release, package publication, merge to `master`, or unrelated repository edits are implied.
+
+---
+
+<p align="center"><img src="https://raw.githubusercontent.com/TrentBest/FSM_API/master/Documentation/Branding/TheSingularityWorkshop.png" alt="The Singularity Workshop avatar" width="200" /></p>
