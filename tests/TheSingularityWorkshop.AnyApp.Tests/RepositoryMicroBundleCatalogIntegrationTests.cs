@@ -68,6 +68,7 @@ public sealed class RepositoryMicroBundleCatalogIntegrationTests
 
             var runtimeManifest = manifest.ToRuntimeManifest();
             Assert.Single(runtimeManifest.Bundles);
+            Assert.True(runtimeManifest.Bundles[0].IsPinned);
             Assert.Equal(RootBundleId, runtimeManifest.Bundles[0].BundleId);
             Assert.Equal(
                 new[] { DependencyBundleId, RootBundleId },
