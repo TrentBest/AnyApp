@@ -174,6 +174,7 @@ jobs:
         dotnet build AnyApp.csproj --configuration Release --no-restore -p:WorkshopUseRepositorySources=true -p:WorkshopSourceRoot="$sourceRoot" "-p:WorkshopGuiCoreProject=$guiCoreProject"
 
     - name: Test AnyApp in the same repository-source mode used for restore
+      id: test-anyapp
       shell: pwsh
       run: |
         $sourceRoot = "$env:GITHUB_WORKSPACE/_dependencies"
@@ -181,6 +182,8 @@ jobs:
         dotnet test tests/TheSingularityWorkshop.AnyApp.Tests/TheSingularityWorkshop.AnyApp.Tests.csproj --configuration Release --no-restore --verbosity normal -p:WorkshopUseRepositorySources=true -p:WorkshopSourceRoot="$sourceRoot" "-p:WorkshopGuiCoreProject=$guiCoreProject"
 
     - name: Restore AnyApp Windows self-contained publish graph
+      id: restore-windows-publish
+      if: success() || steps.test-anyapp.outcome == 'failure'
       shell: pwsh
       run: |
         $sourceRoot = "$env:GITHUB_WORKSPACE/_dependencies"
@@ -188,6 +191,8 @@ jobs:
         dotnet restore AnyApp.csproj --runtime win-x64 -p:WorkshopUseRepositorySources=true -p:WorkshopSourceRoot="$sourceRoot" "-p:WorkshopGuiCoreProject=$guiCoreProject"
 
     - name: Publish Windows x64 single-file executable
+      id: publish-windows-exe
+      if: success() || (steps.test-anyapp.outcome == 'failure' && steps.restore-windows-publish.outcome == 'success')
       shell: pwsh
       run: |
         $sourceRoot = "$env:GITHUB_WORKSPACE/_dependencies"
@@ -195,6 +200,8 @@ jobs:
         dotnet publish AnyApp.csproj --configuration Release --runtime win-x64 --self-contained true --no-restore -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:WorkshopUseRepositorySources=true -p:WorkshopSourceRoot="$sourceRoot" "-p:WorkshopGuiCoreProject=$guiCoreProject" -p:AssemblyName=AnyApp --output artifacts/windows-x64
 
     - name: Measure Windows executable
+      id: measure-windows-exe
+      if: success() || (steps.test-anyapp.outcome == 'failure' && steps.publish-windows-exe.outcome == 'success')
       shell: pwsh
       run: |
         $exe = Get-Item "artifacts/windows-x64/AnyApp.exe" -ErrorAction Stop
@@ -218,6 +225,7 @@ jobs:
         Get-Content anyapp-artifact-size.md
 
     - name: Upload Windows executable artifact
+      if: success() || (steps.test-anyapp.outcome == 'failure' && steps.measure-windows-exe.outcome == 'success')
       uses: actions/upload-artifact@v5
       with:
         name: AnyApp-win-x64-${{ github.sha }}
