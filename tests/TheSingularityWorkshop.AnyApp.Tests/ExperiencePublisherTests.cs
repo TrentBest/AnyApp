@@ -45,6 +45,7 @@ public sealed class ExperiencePublisherTests
             var loaded = ExperienceManifest.LoadFile(result.ManifestPath);
             var runtimeManifest = loaded.ToRuntimeManifest();
             Assert.True(runtimeManifest.ArbitrationResolved);
+            Assert.True(runtimeManifest.Bundles[0].IsPinned);
             Assert.Equal(new ulong[] { 9001 }, runtimeManifest.LoadPlan!.Select(entry => entry.Reference.BundleId));
 
             var source = loaded.CreateConfigurationSource();
