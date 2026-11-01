@@ -1,0 +1,131 @@
+name: CiAi AnyApp Evidence
+
+on:
+  push:
+    branches: [development]
+  workflow_dispatch:
+    inputs:
+      commit_sha:
+        description: "Full 40-character AnyApp commit SHA to observe"
+        required: true
+        type: string
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: ciai-anyapp-evidence-${{ github.event.inputs.commit_sha || github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  observe:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Resolve target commit
+        id: target
+        env:
+          INPUT_SHA: ${{ inputs.commit_sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          target="${INPUT_SHA:-$GITHUB_SHA}"
+          if ! [[ "$target" =~ ^[0-9a-fA-F]{40}$ ]]; then
+            echo "::error::Target must be a full 40-character commit SHA."
+            exit 1
+          fi
+          echo "sha=${target,,}" >> "$GITHUB_OUTPUT"
+
+      - name: Wait for the authoritative AnyApp .NET workflow
+        id: source-run
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGET_SHA: ${{ steps.target.outputs.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          response=""
+          for attempt in $(seq 1 90); do
+            response="$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/dotnet.yml/runs?head_sha=$TARGET_SHA&per_page=100")"
+            matching="$(jq '[.workflow_runs[] | select(.path == ".github/workflows/dotnet.yml" and .event == "push" and .head_branch == "development")]' <<< "$response")"
+            count="$(jq 'length' <<< "$matching")"
+            if [ "$count" -gt 0 ] && [ "$(jq '[.[] | select(.status != "completed")] | length' <<< "$matching")" -eq 0 ]; then
+              break
+            fi
+            sleep 20
+          done
+
+          count="$(jq 'length' <<< "$matching")"
+          if [ "$count" -eq 1 ]; then
+            run_id="$(jq -r '.[0].id' <<< "$matching")"
+            run_attempt="$(jq -r '.[0].run_attempt' <<< "$matching")"
+            conclusion="$(jq -r '.[0].conclusion // "unknown"' <<< "$matching")"
+            echo "required_workflow=.github/workflows/dotnet.yml#$run_id#$run_attempt" >> "$GITHUB_OUTPUT"
+            echo "source_run_url=$(jq -r '.[0].html_url' <<< "$matching")" >> "$GITHUB_OUTPUT"
+            echo "source_run_conclusion=$conclusion" >> "$GITHUB_OUTPUT"
+            echo "Resolved exact AnyApp run $run_id attempt $run_attempt ($conclusion)."
+          else
+            echo "required_workflow=.github/workflows/dotnet.yml" >> "$GITHUB_OUTPUT"
+            echo "source_run_url=" >> "$GITHUB_OUTPUT"
+            echo "source_run_conclusion=ambiguous-or-missing" >> "$GITHUB_OUTPUT"
+            echo "::warning::Expected one completed AnyApp .NET run for $TARGET_SHA; found $count. CiAi will preserve this as incomplete/ambiguous evidence."
+          fi
+
+      - name: Check out pinned CiAi observer
+        uses: actions/checkout@v5
+        with:
+          repository: TrentBest/TheSingularityWorkshop.CiAi
+          ref: 94e0a13ae171de4fce7eb5989e1dea4fe72cc16c
+          path: _tools/CiAi
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Observe AnyApp commit with CiAi
+        id: observe
+        env:
+          CIAI_GITHUB_TOKEN: ${{ github.token }}
+          CIAI_REQUIRED_WORKFLOW_PATHS: ${{ steps.source-run.outputs.required_workflow }}
+          TARGET_SHA: ${{ steps.target.outputs.sha }}
+        shell: bash
+        run: |
+          set +e
+          dotnet run --project _tools/CiAi/samples/TheSingularityWorkshop.CiAi.ObserveRun --configuration Release -- TrentBest/AnyApp "$TARGET_SHA" artifacts/ciai-anyapp-evidence.json
+          result=$?
+          set -e
+          echo "observer_exit_code=$result" >> "$GITHUB_OUTPUT"
+          echo "CiAi observer exit code: $result (advisory; does not change the AnyApp build verdict)."
+
+      - name: Publish advisory evidence summary
+        if: always()
+        env:
+          TARGET_SHA: ${{ steps.target.outputs.sha }}
+          SOURCE_RUN_URL: ${{ steps.source-run.outputs.source_run_url }}
+          SOURCE_RUN_CONCLUSION: ${{ steps.source-run.outputs.source_run_conclusion }}
+          OBSERVER_EXIT_CODE: ${{ steps.observe.outputs.observer_exit_code }}
+        shell: bash
+        run: |
+          {
+            echo "## CiAi — AnyApp commit evidence"
+            echo
+            echo "- Repository: `TrentBest/AnyApp`"
+            echo "- Exact source commit: `$TARGET_SHA`"
+            echo "- Authoritative .NET run: ${SOURCE_RUN_URL:-not uniquely resolved}"
+            echo "- Provider conclusion: $SOURCE_RUN_CONCLUSION"
+            echo "- CiAi observer exit code: ${OBSERVER_EXIT_CODE:-not run}"
+            echo
+            echo "This is read-only, advisory evidence. It does not block AnyApp CI, merge code, publish NuGet packages, create releases, or deploy."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload CiAi evidence reports
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: CiAi-AnyApp-evidence-${{ steps.target.outputs.sha }}
+          path: |
+            artifacts/ciai-anyapp-evidence.json
+            artifacts/ciai-anyapp-evidence.md
+          if-no-files-found: warn
+          retention-days: 30
