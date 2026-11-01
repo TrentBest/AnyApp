@@ -6,7 +6,7 @@
     <UseWPF>true</UseWPF>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <AssemblyName>TheSingularityWorkshop.AnyApp</AssemblyName>
+    <AssemblyName>AnyApp</AssemblyName>
     <RootNamespace>TheSingularityWorkshop.AnyApp</RootNamespace>
     <PackageId>TheSingularityWorkshop.AnyApp</PackageId>
     <Version>0.1.0-alpha.1</Version>
