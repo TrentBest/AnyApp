@@ -1,3 +1,6 @@
+<!-- The Singularity Workshop animated moniker -->
+<p align="center"><a href="https://github.com/TrentBest"><img src="https://raw.githubusercontent.com/TrentBest/TheSingularityWorkshop.Visualize/development/docs/assets/moniker.svg" alt="The Singularity Workshop animated moniker" width="720" /></a></p>
+
 # ExperiencePublisher
 
 **Moniker:** The Singularity Workshop
@@ -29,3 +32,7 @@
 - Assembly bytes and resolved configuration bytes are independently SHA-256 addressed.
 - This service publishes MicroBundle/configuration artifacts and writes the Experience manifest locally. It does not publish that manifest to a hosted Experience catalog; the current catalog API is read-only.
 - It never publishes NuGet packages.
+
+---
+
+<p align="center"><img src="https://raw.githubusercontent.com/TrentBest/FSM_API/master/Documentation/Branding/TheSingularityWorkshop.png" alt="The Singularity Workshop avatar" width="200" /></p>
