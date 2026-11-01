@@ -82,8 +82,6 @@ This command is source-checked against the repository's documented workflow. A s
 - [CI dependency modes](../CI-DEPENDENCY-MODES.md) — source versus package validation.
 - [Foundry host-boundary issue #27](https://github.com/TrentBest/AnyApp/issues/27) — current integration work and acceptance criteria.
 
-<text></text>
-
 
 ---
 
