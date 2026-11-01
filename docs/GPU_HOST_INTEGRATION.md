@@ -1,3 +1,6 @@
+<!-- The Singularity Workshop animated moniker -->
+<p align="center"><a href="https://github.com/TrentBest"><img src="https://raw.githubusercontent.com/TrentBest/TheSingularityWorkshop.Visualize/development/docs/assets/moniker.svg" alt="The Singularity Workshop animated moniker" width="720" /></a></p>
+
 # AnyApp — Native GPU Host Integration
 
 **Status:** host-integration plan; no graphics API selected and no GPU pixels claimed  
@@ -105,3 +108,7 @@ Keep the current `--renderer-proof` path as the CPU/WPF comparison. Add a separa
 - [Current WPF diagnostic view](../RendererDesktopProofView.cs)
 - [Visualize GPU surface lifecycle plan](https://github.com/TrentBest/TheSingularityWorkshop.Visualize/blob/work/gpu-foundation/docs/GPU_SURFACE_LIFECYCLE_PLAN.md)
 - [Visualize GPU backend implementation plan](https://github.com/TrentBest/TheSingularityWorkshop.Visualize/blob/work/gpu-foundation/docs/GPU_BACKEND_IMPLEMENTATION.md)
+
+---
+
+<p align="center"><img src="https://raw.githubusercontent.com/TrentBest/FSM_API/master/Documentation/Branding/TheSingularityWorkshop.png" alt="The Singularity Workshop avatar" width="200" /></p>
