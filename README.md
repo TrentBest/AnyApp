@@ -49,7 +49,7 @@ This launches the local development Moniker Experience path described below. It 
 
 - [Documentation index](docs/DOCUMENTATION_INDEX.md) — focused subsystem guides, contracts, and verification.
 - [Theory and learning path](docs/theory/README.md) — learn the native-host domain from first principles.
-- [Agent onboarding](AGENTS.md) — repository-specific contributor instructions (review the open [PR #35](https://github.com/TrentBest/AnyApp/pull/35); it is not yet merged).
+- [Agent onboarding PR #35](https://github.com/TrentBest/AnyApp/pull/35) — proposed repository-specific contributor instructions; not merged yet.
 - [CI dependency modes](docs/CI-DEPENDENCY-MODES.md) — distinguish source integration from public-package compatibility.
 
 ## Startup is now the common Workshop Moniker
