@@ -1,0 +1,40 @@
+name: AnyApp Windows Release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-attach:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout release source
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.release.tag_name }}
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore
+        run: dotnet restore AnyApp.csproj --source https://api.nuget.org/v3/index.json
+
+      - name: Publish self-contained single-file executable
+        run: >-
+          dotnet publish AnyApp.csproj
+          --configuration Release
+          --runtime win-x64
+          --self-contained true
+          -p:PublishSingleFile=true
+          -p:AssemblyName=AnyApp
+          --output artifacts/windows-x64
+
+      - name: Attach AnyApp.exe to the GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/windows-x64/AnyApp.exe
