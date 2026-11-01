@@ -36,31 +36,42 @@ All four profiles remain self-contained, single-file, Release, `win-x64` publish
 
 ## First measured results (2026-11-01)
 
-Workflow [#504](https://github.com/TrentBest/AnyApp/actions/runs/41360140100) passed the four-profile publish matrix. Its embedded manifests were inspected locally from the uploaded CI artifact using the same parser now being added to CI:
+Workflow [#505](https://github.com/TrentBest/AnyApp/actions/runs/41363428455) passed the four-profile publish matrix and the embedded-manifest audit. The uploaded artifact includes the raw executable profiles, per-file output-directory inventories, embedded-entry CSVs, JSON summaries, and standalone HTML treemaps.
 
 | Profile | Executable | Embedded entries | Compressed entries | Stored embedded payload |
 |---|---:|---:|---:|---:|
-| baseline | 162,844,055 bytes (155.30 MiB) | 468 | 0 | 152,299,036 bytes |
-| compression-only | 72,058,634 bytes (68.72 MiB) | 468 | 466 | 62,386,440 bytes |
-| satellite-language-only | 146,162,962 bytes (139.39 MiB) | 247 | 0 | 136,035,468 bytes |
-| compression-and-satellite-language | 66,300,040 bytes (63.23 MiB) | 247 | 245 | 56,642,315 bytes |
+| baseline | 162,844,055 bytes (155.30 MiB) | 468 | 0 | 152,298,236 bytes |
+| compression-only | 72,058,950 bytes (68.72 MiB) | 468 | 466 | 62,386,244 bytes |
+| satellite-language-only | 146,162,962 bytes (139.39 MiB) | 247 | 0 | 136,035,628 bytes |
+| compression-and-satellite-language | 66,300,228 bytes (63.23 MiB) | 247 | 245 | 56,641,991 bytes |
 
-The baseline contains 221 satellite resource assemblies (17 in each of 13 cultures: `cs`, `de`, `es`, `fr`, `it`, `ja`, `ko`, `pl`, `pt-BR`, `ru`, `tr`, `zh-Hans`, and `zh-Hant`). Together they occupy 16,263,568 bytes (15.51 MiB). No English satellite assemblies were present in this bundle, so `SatelliteResourceLanguages=en` removed all 221 satellite entries in this build. This is a measured result for this dependency graph, not proof that English is the only culture AnyApp or its dependencies may require.
+Compression alone reduced the executable by 90,785,105 bytes (55.75%). The satellite filter alone reduced it by 16,681,093 bytes (10.24%). Combined, the reduction was 96,543,827 bytes (59.29%).
+
+The baseline contains 221 satellite resource assemblies (17 in each of 13 cultures: `cs`, `de`, `es`, `fr`, `it`, `ja`, `ko`, `pl`, `pt-BR`, `ru`, `tr`, `zh-Hans`, and `zh-Hant`). Together they occupy 16,262,608 bytes (15.51 MiB). No English satellite assemblies were present in this build, so `SatelliteResourceLanguages=en` removed all 221 satellite entries. This is a measured result for this dependency graph, not proof that English is the only culture AnyApp or its dependencies may require.
 
 The embedded manifest groups the baseline payload as follows. Categories are heuristic groupings based on bundle file type and assembly names; the CSV preserves each exact path and size.
 
 | Category | Entries | Uncompressed bytes |
 |---|---:|---:|
-| .NET runtime | 198 | 70,677,112 |
-| WPF | 17 | 33,856,032 |
-| Windows Forms | 4 | 22,156,528 |
-| Satellite resources | 221 | 16,263,568 |
+| .NET runtime | 198 | 70,677,272 |
+| WPF core | 17 | 33,856,112 |
+| Windows Forms | 4 | 22,156,448 |
+| Satellite resources | 221 | 16,262,608 |
 | Native runtime libraries | 5 | 8,214,968 |
 | Workshop/application assemblies | 21 | 1,084,416 |
 | Configuration | 2 | 46,412 |
 
 The bundle contains 466 compressible entries in the compression profiles. The two entries not compressed are `AnyApp.deps.json` and `AnyApp.runtimeconfig.json`. The residual between executable size and stored embedded payload includes the native apphost, alignment padding, and bundle manifest/metadata; it is not all application code.
 
+### Reproducing a comparison
+
+The CI workflow intentionally checks out active dependency branches at `development`. Each run now records the exact AnyApp source-head SHA, PR merge/check-out SHA, and commit SHA for every source dependency in `dependency-revisions.json` and `dependency-revisions.md`, included in the artifact. Four profiles within a run use the same checked-out graph. For cross-run comparisons, compare the recorded dependency revisions before attributing small byte-level differences to the publish settings.
+
 ## Guardrails
 
 This is an experiment, not a production configuration change. It does not enable trimming, manually delete framework assemblies, alter the normal publish profile, publish NuGet packages, create a release, or deploy an executable. Keep a self-contained distribution option available. Any recommended default must be supported by startup, rendering, accessibility, serialization, and offline-startup evidence.
+
+---
+
+<!-- The Singularity Workshop canonical footer -->
+<p align="center"><img src="https://raw.githubusercontent.com/TrentBest/FSM_API/master/Documentation/Branding/TheSingularityWorkshop.png" alt="The Singularity Workshop" width="200" /></p>

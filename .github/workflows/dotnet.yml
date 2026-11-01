@@ -10,6 +10,8 @@ jobs:
   build:
     if: ${{ (github.event_name == 'pull_request' && github.base_ref == 'development') || github.ref == 'refs/heads/development' }}
     runs-on: windows-latest
+    env:
+      SOURCE_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
 
     steps:
     - name: Checkout
@@ -124,6 +126,54 @@ jobs:
         ref: development
         path: _dependencies/MicroBundleRepository
 
+    - name: Record source dependency revisions
+      shell: pwsh
+      run: |
+        $dependencies = @(
+          @{ Name = "Experiences"; Path = "_dependencies/Experiences" },
+          @{ Name = "FSM_UserIO"; Path = "_dependencies/FSM_UserIO" },
+          @{ Name = "FSM_REST"; Path = "_dependencies/TheSingularityWorkshop.FSM_REST" },
+          @{ Name = "GrammarAi"; Path = "_dependencies/TheSingularityWorkshop.GrammarAi" },
+          @{ Name = "GUI"; Path = "_dependencies/TheSingularityWorkshop.GUI" },
+          @{ Name = "StoryBuilder"; Path = "_dependencies/StoryBuilder" },
+          @{ Name = "FSM_API"; Path = "_dependencies/FSM_API" },
+          @{ Name = "ProtocolAi"; Path = "_dependencies/TheSingularityWorkshop.ProtocolAi" },
+          @{ Name = "MicroBundleDomain.Renderer"; Path = "_dependencies/TheSingularityWorkshop.MicroBundleDomain" },
+          @{ Name = "Renderer"; Path = "_dependencies/TheSingularityWorkshop.Renderer" },
+          @{ Name = "Visualize"; Path = "_dependencies/TheSingularityWorkshop.Visualize" },
+          @{ Name = "MicroBundleDomain.FSM_COS"; Path = "_dependencies/MicroBundleDomain" },
+          @{ Name = "FSM_COS"; Path = "_dependencies/TheSingularityWorkshop.FSM_COS" },
+          @{ Name = "MicroBundleRepository"; Path = "_dependencies/MicroBundleRepository" }
+        )
+
+        $revisions = @()
+        foreach ($dependency in $dependencies) {
+          $revision = (& git -C $dependency.Path rev-parse HEAD).Trim()
+          if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($revision)) {
+            throw "Could not resolve dependency revision for '$($dependency.Name)' at '$($dependency.Path)'."
+          }
+          $revisions += [pscustomobject]@{
+            Name = $dependency.Name
+            Path = $dependency.Path
+            Commit = $revision
+          }
+        }
+
+        $revisions | ConvertTo-Json -Depth 4 | Set-Content -Path "dependency-revisions.json" -Encoding utf8
+        $revisionReport = @(
+          "# AnyApp source dependency revisions",
+          "",
+          "AnyApp source head: $env:SOURCE_HEAD_SHA",
+          "CI checkout (PR merge) commit: $env:GITHUB_SHA",
+          "",
+          "| Dependency checkout | Path | Commit |",
+          "|---|---|---|"
+        )
+        foreach ($revision in $revisions) {
+          $revisionReport += "| $($revision.Name) | $($revision.Path) | $($revision.Commit) |"
+        }
+        $revisionReport | Set-Content -Path "dependency-revisions.md" -Encoding utf8
+
     - name: Restore Renderer source dependency graph
       shell: pwsh
       run: dotnet restore _dependencies/TheSingularityWorkshop.Renderer/TheSingularityWorkshop.Renderer.csproj -p:WorkshopUseRepositorySources=true -p:WorkshopSourceRoot="$env:GITHUB_WORKSPACE/_dependencies"
@@ -222,7 +272,8 @@ jobs:
           "| Executable | $exeMb MB ($($exe.Length) bytes) |"
           "| Publish directory | $directoryMb MB ($directoryBytes bytes) |"
           ""
-          "Commit: $env:GITHUB_SHA"
+          "CI checkout commit: $env:GITHUB_SHA"
+          "Source head commit: $env:SOURCE_HEAD_SHA"
           "Runtime: win-x64"
           "Deployment: self-contained, single-file"
           "Configuration: Release"
@@ -312,7 +363,8 @@ jobs:
         $report = @(
           "# AnyApp publish size experiment",
           "",
-          "Commit: $env:GITHUB_SHA",
+          "CI checkout commit: $env:GITHUB_SHA",
+          "Source head commit: $env:SOURCE_HEAD_SHA",
           "Runtime: win-x64",
           "Deployment: Release, self-contained, single-file",
           "Compression: EnableCompressionInSingleFile",
@@ -335,6 +387,8 @@ jobs:
           $report += $fileInventories[$name]
         }
 
+        $report += ""
+        $report += Get-Content "dependency-revisions.md"
         $report | Set-Content -Path "publish-size-report.md" -Encoding utf8
         Get-Content "publish-size-report.md"
         Get-Content "publish-size-report.md" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8
@@ -375,6 +429,8 @@ jobs:
           }
         }
 
+        $lines += ""
+        $lines += Get-Content "dependency-revisions.md"
         $lines | Set-Content -Path "bundle-audit-report.md" -Encoding utf8
         $lines | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
 
@@ -388,6 +444,8 @@ jobs:
           artifacts/bundle-audit/
           publish-size-report.md
           bundle-audit-report.md
+          dependency-revisions.json
+          dependency-revisions.md
         if-no-files-found: error
         retention-days: 30
 
