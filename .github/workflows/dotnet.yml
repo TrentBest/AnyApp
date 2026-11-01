@@ -179,3 +179,50 @@ jobs:
         $sourceRoot = "$env:GITHUB_WORKSPACE/_dependencies"
         $guiCoreProject = Join-Path $sourceRoot "TheSingularityWorkshop.GUI/src/Core/TheSingularityWorkshop.GUI.Core.csproj"
         dotnet test tests/TheSingularityWorkshop.AnyApp.Tests/TheSingularityWorkshop.AnyApp.Tests.csproj --configuration Release --no-restore --verbosity normal -p:WorkshopUseRepositorySources=true -p:WorkshopSourceRoot="$sourceRoot" "-p:WorkshopGuiCoreProject=$guiCoreProject"
+
+    - name: Restore AnyApp Windows self-contained publish graph
+      shell: pwsh
+      run: |
+        $sourceRoot = "$env:GITHUB_WORKSPACE/_dependencies"
+        $guiCoreProject = Join-Path $sourceRoot "TheSingularityWorkshop.GUI/src/Core/TheSingularityWorkshop.GUI.Core.csproj"
+        dotnet restore AnyApp.csproj --runtime win-x64 -p:WorkshopUseRepositorySources=true -p:WorkshopSourceRoot="$sourceRoot" "-p:WorkshopGuiCoreProject=$guiCoreProject"
+
+    - name: Publish Windows x64 single-file executable
+      shell: pwsh
+      run: |
+        $sourceRoot = "$env:GITHUB_WORKSPACE/_dependencies"
+        $guiCoreProject = Join-Path $sourceRoot "TheSingularityWorkshop.GUI/src/Core/TheSingularityWorkshop.GUI.Core.csproj"
+        dotnet publish AnyApp.csproj --configuration Release --runtime win-x64 --self-contained true --no-restore -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:WorkshopUseRepositorySources=true -p:WorkshopSourceRoot="$sourceRoot" "-p:WorkshopGuiCoreProject=$guiCoreProject" -p:AssemblyName=AnyApp --output artifacts/windows-x64
+
+    - name: Measure Windows executable
+      shell: pwsh
+      run: |
+        $exe = Get-Item "artifacts/windows-x64/AnyApp.exe" -ErrorAction Stop
+        $directoryBytes = (Get-ChildItem "artifacts/windows-x64" -Recurse -File | Measure-Object -Property Length -Sum).Sum
+        $exeMb = [math]::Round($exe.Length / 1MB, 2)
+        $directoryMb = [math]::Round($directoryBytes / 1MB, 2)
+        $summary = @(
+          "# AnyApp Windows x64 development artifact"
+          ""
+          "| Measurement | Size |"
+          "|---|---:|"
+          "| Executable | $exeMb MB ($($exe.Length) bytes) |"
+          "| Publish directory | $directoryMb MB ($directoryBytes bytes) |"
+          ""
+          "Commit: $env:GITHUB_SHA"
+          "Runtime: win-x64"
+          "Deployment: self-contained, single-file"
+          "Configuration: Release"
+        )
+        $summary | Tee-Object -FilePath anyapp-artifact-size.md | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8
+        Get-Content anyapp-artifact-size.md
+
+    - name: Upload Windows executable artifact
+      uses: actions/upload-artifact@v5
+      with:
+        name: AnyApp-win-x64-${{ github.sha }}
+        path: |
+          artifacts/windows-x64/AnyApp.exe
+          anyapp-artifact-size.md
+        if-no-files-found: error
+        retention-days: 30
