@@ -20,6 +20,11 @@ jobs:
       with:
         dotnet-version: 8.0.x
 
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+
     - name: Checkout Experiences dependency
       uses: actions/checkout@v5
       with:
@@ -333,6 +338,45 @@ jobs:
         Get-Content "publish-size-report.md"
         Get-Content "publish-size-report.md" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8
 
+    - name: Inspect embedded bundle manifests
+      if: success()
+      shell: pwsh
+      run: |
+        $profiles = @("baseline", "compression-only", "satellite-language-only", "compression-and-satellite-language")
+        $lines = @(
+          "# AnyApp embedded bundle audit",
+          "",
+          "| Profile | Entries | Compressed entries | Stored payload bytes | Executable overhead bytes |",
+          "|---|---:|---:|---:|---:|"
+        )
+
+        foreach ($profile in $profiles) {
+          $exe = "artifacts/size-matrix/$profile/AnyApp.exe"
+          $output = "artifacts/bundle-audit/$profile"
+          python scripts/inspect_single_file_bundle.py $exe --output-directory $output --profile $profile
+          if ($LASTEXITCODE -ne 0) {
+            throw "Bundle inspection failed for '$profile' with exit code $LASTEXITCODE."
+          }
+
+          $summary = Get-Content (Join-Path $output "bundle-summary.json") -Raw | ConvertFrom-Json
+          $lines += "| $profile | $($summary.EntryCount) | $($summary.CompressedEntryCount) | $($summary.StoredPayloadBytes) | $($summary.ExecutableOverheadBytes) |"
+        }
+
+        foreach ($profile in $profiles) {
+          $summary = Get-Content "artifacts/bundle-audit/$profile/bundle-summary.json" -Raw | ConvertFrom-Json
+          $lines += ""
+          $lines += "## $profile category breakdown"
+          $lines += ""
+          $lines += "| Category | Entries | Uncompressed bytes | Stored bytes | Saved bytes |"
+          $lines += "|---|---:|---:|---:|---:|"
+          foreach ($category in $summary.Categories) {
+            $lines += "| $($category.Category) | $($category.Count) | $($category.UncompressedBytes) | $($category.StoredBytes) | $($category.SavedBytes) |"
+          }
+        }
+
+        $lines | Set-Content -Path "bundle-audit-report.md" -Encoding utf8
+        $lines | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+
     - name: Upload controlled size profiles
       if: success()
       uses: actions/upload-artifact@v5
@@ -340,7 +384,9 @@ jobs:
         name: AnyApp-publish-size-matrix-${{ github.sha }}
         path: |
           artifacts/size-matrix/
+          artifacts/bundle-audit/
           publish-size-report.md
+          bundle-audit-report.md
         if-no-files-found: error
         retention-days: 30
 
