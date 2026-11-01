@@ -91,6 +91,7 @@ jobs:
           TARGET_SHA: ${{ steps.target.outputs.sha }}
         shell: bash
         run: |
+          mkdir -p artifacts
           set +e
           dotnet run --project _tools/CiAi/samples/TheSingularityWorkshop.CiAi.ObserveRun --configuration Release -- TrentBest/AnyApp "$TARGET_SHA" artifacts/ciai-anyapp-evidence.json
           result=$?
