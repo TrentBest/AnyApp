@@ -166,7 +166,29 @@ jobs:
         run: |
           $names = @("baseline", "compression-only", "satellite-language-only", "compression-and-satellite-language")
           $measurements = @()
-          $inventory = @(
+          $fileInventories = @{}
+
+          foreach ($name in $names) {
+            $directory = "artifacts/$name"
+            $files = @(Get-ChildItem $directory -Recurse -File | Sort-Object FullName)
+            $exe = Get-Item (Join-Path $directory "AnyApp.exe") -ErrorAction Stop
+            $directoryBytes = [long](($files | Measure-Object -Property Length -Sum).Sum)
+            $measurements += [pscustomobject]@{
+              Profile = $name
+              ExeBytes = [long]$exe.Length
+              DirectoryBytes = $directoryBytes
+            }
+
+            $rows = @("## $name", "", "| File | Bytes |", "|---|---:|")
+            foreach ($file in $files) {
+              $relative = $file.FullName.Substring((Resolve-Path $directory).Path.Length).TrimStart('\','/')
+              $rows += "| $relative | $($file.Length) |"
+            }
+            $fileInventories[$name] = $rows
+          }
+
+          $baseline = $measurements | Where-Object Profile -eq "baseline" | Select-Object -First 1
+          $report = @(
             "# AnyApp publish size experiment",
             "",
             "Commit: $env:GITHUB_SHA",
@@ -179,38 +201,20 @@ jobs:
             "|---|---:|---:|---:|---:|---:|---:|"
           )
 
-          foreach ($name in $names) {
-            $directory = "artifacts/$name"
-            $files = @(Get-ChildItem $directory -Recurse -File | Sort-Object FullName)
-            $exe = Get-Item (Join-Path $directory "AnyApp.exe") -ErrorAction Stop
-            $directoryBytes = [long](($files | Measure-Object -Property Length -Sum).Sum)
-            $measurements += [pscustomobject]@{
-              Profile = $name
-              ExeBytes = [long]$exe.Length
-              DirectoryBytes = $directoryBytes
-            }
-            $inventory += ""
-            $inventory += "## $name"
-            $inventory += ""
-            $inventory += "| File | Bytes |"
-            $inventory += "|---|---:|"
-            foreach ($file in $files) {
-              $relative = $file.FullName.Substring((Resolve-Path $directory).Path.Length).TrimStart('\','/')
-              $inventory += "| $relative | $($file.Length) |"
-            }
-          }
-
-          $baseline = $measurements | Where-Object Profile -eq "baseline" | Select-Object -First 1
           foreach ($item in $measurements) {
             $exeMiB = [math]::Round($item.ExeBytes / 1MB, 2)
             $dirMiB = [math]::Round($item.DirectoryBytes / 1MB, 2)
             $exeDelta = $item.ExeBytes - $baseline.ExeBytes
             $dirDelta = $item.DirectoryBytes - $baseline.DirectoryBytes
-            $inventory = @($inventory[0..($inventory.Count - 1)])
-            $inventory += "| $($item.Profile) | $($item.ExeBytes) | $exeMiB | $($item.DirectoryBytes) | $dirMiB | $exeDelta | $dirDelta |"
+            $report += "| $($item.Profile) | $($item.ExeBytes) | $exeMiB | $($item.DirectoryBytes) | $dirMiB | $exeDelta | $dirDelta |"
           }
 
-          $inventory | Set-Content -Path "publish-size-report.md" -Encoding utf8
+          foreach ($name in $names) {
+            $report += ""
+            $report += $fileInventories[$name]
+          }
+
+          $report | Set-Content -Path "publish-size-report.md" -Encoding utf8
           Get-Content "publish-size-report.md"
           Get-Content "publish-size-report.md" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8
 
