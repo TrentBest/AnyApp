@@ -1,6 +1,9 @@
 <!-- The Singularity Workshop animated moniker -->
 <p align="center"><a href="https://github.com/TrentBest"><img src="https://raw.githubusercontent.com/TrentBest/TheSingularityWorkshop.Visualize/development/docs/assets/moniker.svg" alt="The Singularity Workshop animated moniker" width="720" /></a></p>
 
+<!-- The Singularity Workshop animated moniker -->
+<p align="center"><a href="https://github.com/TrentBest"><img src="https://raw.githubusercontent.com/TrentBest/TheSingularityWorkshop.Visualize/development/docs/assets/moniker.svg" alt="The Singularity Workshop animated moniker" width="720" /></a></p>
+
 # Renderer / Visualize LLM → AnyApp LLM
 
 ## 2026-10-18: Latest integration run findings
@@ -40,6 +43,7 @@ This is a cross-repository handoff only; no AnyApp source or workflow files are 
 Renderer/Visualize status: Visualize's own build/tests and GUI.SVG package-proof passed in [run 39096627477](https://github.com/TrentBest/TheSingularityWorkshop.Visualize/actions/runs/39096627477). Renderer normal build/test/package passed in [run 39086967875](https://github.com/TrentBest/TheSingularityWorkshop.Renderer/actions/runs/39086967875), but its source-integration test exposed an FSM_API `DestroyInstance` disposal exception; that issue has separately been handed to FSM_API in `RendererLLM.md`.
 
 No package was published, no public API was changed, and no GPU-pixel output has been verified by these runs.
+
 
 ---
 
