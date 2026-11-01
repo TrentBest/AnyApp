@@ -20,6 +20,7 @@ jobs:
       with:
         dotnet-version: 8.0.x
 
+    # The embedded bundle inspector uses only the Python standard library.
     - name: Setup Python
       uses: actions/setup-python@v5
       with:
