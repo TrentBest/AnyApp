@@ -192,6 +192,20 @@ public sealed record ExperienceManifest(
             throw new InvalidOperationException(
                 "A pre-resolved Experience manifest must identify immutable artifacts for every MicroBundle.");
         var artifactsById = GetArtifactCatalogue().ToDictionary(artifact => artifact.BundleId);
+
+        // Published roots must carry the same immutable artifact identity as their load-plan
+        // entries. A version-only root would let the request and its pinned plan disagree.
+        requests = Bundles.Select(bundle =>
+        {
+            if (!artifactsById.TryGetValue(bundle.BundleId, out var artifact) || !artifact.HasArtifactIdentity)
+                throw new InvalidOperationException(
+                    $"Published composition root {bundle.BundleId} has no immutable artifact identity.");
+            return new MicroBundleManifestEntry(
+                bundle.BundleId,
+                ResolveBundleVersion(bundle),
+                artifact.ContentHash);
+        }).ToArray();
+
         foreach (var bundleId in ResolvedPlan.LoadOrder)
         {
             if (!artifactsById.TryGetValue(bundleId, out var artifact) || !artifact.HasArtifactIdentity)
