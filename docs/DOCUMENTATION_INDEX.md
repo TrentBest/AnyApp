@@ -19,7 +19,7 @@ This is the navigation map for AnyApp, the native Windows host in The Singularit
 | Native host and platform boundary | [Theory chapter 01](theory/01-native-host-boundary.md) | Why AnyApp exists and what belongs in the host |
 | Startup and offline recovery | [Experience startup and offline recovery](EXPERIENCE-STARTUP-AND-OFFLINE-RECOVERY.md) | Cached manifest reconciliation and fallback decisions |
 | Experience publication | [Experience publish pipeline](EXPERIENCE_PUBLISH_PIPELINE.md) and [publisher reference](../Publishing/ExperiencePublisher.md) | Host-side publishing flow and implementation |
-| Repository-backed MicroBundles | [README: repository-backed composition](../README.md#repository-backed-composition) | Artifact identity, delivery, materialization, and FSM_COS handoff |
+| Repository-backed MicroBundles | [Workshop Landing 2111 integration proof](integrations/WORKSHOP_2111_REPOSITORY_TO_WPF.md) and [README: repository-backed composition](../README.md#repository-backed-composition) | Real artifact envelope, repository delivery, materialization, FSM_COS composition, semantic root, and WPF handoff |
 | GPU/presentation boundary | [GPU host integration](GPU_HOST_INTEGRATION.md) | Native GPU direction and acceptance gates; not proof of a production backend |
 | WebApp bridge | [WebApp bridge protocol](WEBAPP_BRIDGE_PROTOCOL.md) | Local bridge contract and trust boundary |
 | Trusted Windows distribution | [Trusted distribution](TRUSTED-DISTRIBUTION.md) | Signing and safe distribution constraints |
