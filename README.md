@@ -1,8 +1,56 @@
+<!-- The Singularity Workshop animated moniker -->
+<p align="center"><a href="https://github.com/TrentBest"><img src="https://raw.githubusercontent.com/TrentBest/TheSingularityWorkshop.Visualize/development/docs/assets/moniker.svg" alt="The Singularity Workshop animated moniker" width="720" /></a></p>
+
 # AnyApp
 
 AnyApp is the desktop proof of the composition architecture.
 
 It is the Windows desktop counterpart to the browser-facing WebPage/WebForge host: the desktop of the Workshop, not another application-specific framework.
+
+## 01 — What: the native Workshop host
+
+AnyApp is the native Windows host for Workshop Experiences. It selects an Experience manifest, resolves the required MicroBundles, delegates composition to FSM_COS, and provides the platform-facing application and presentation surface.
+
+## 02 — Why: portable composition, native experience
+
+Composition should not need to know about WPF windows, Windows process lifetime, or a particular GPU API. AnyApp owns those native concerns while FSM_COS owns composition and reusable Experience behavior remains in MicroBundles. This boundary lets different hosts consume the same composition without turning the composition engine into a desktop framework.
+
+## 03 — How: select, resolve, compose, present
+
+```text
+Experience manifest
+        |
+        v
+AnyApp host policy and catalog
+        |
+        v
+FSM_COS composition
+        |
+        v
+RuntimeAssembly
+        |
+        v
+AnyApp native presentation
+```
+
+AnyApp is a host, not a second composition engine, repository authority, or Experience-specific scheduler. The current Foundry execution boundary is tracked separately in [issue #27](https://github.com/TrentBest/AnyApp/issues/27); do not treat that integration as complete until its contract and tests are in place.
+
+## 04 — See it in a minute
+
+On Windows with the repository's development dependencies available:
+
+```powershell
+dotnet run --project AnyApp.csproj -- --experience-file=experiences/moniker/development/manifest.json
+```
+
+This launches the local development Moniker Experience path described below. It is a development proof, not a claim that the public executable distribution or every Experience is production-ready.
+
+## 05 — Choose your next step
+
+- [Documentation index](docs/DOCUMENTATION_INDEX.md) — focused subsystem guides, contracts, and verification.
+- [Theory and learning path](docs/theory/README.md) — learn the native-host domain from first principles.
+- [Agent onboarding](AGENTS.md) — repository-specific contributor instructions (review the open [PR #35](https://github.com/TrentBest/AnyApp/pull/35); it is not yet merged).
+- [CI dependency modes](docs/CI-DEPENDENCY-MODES.md) — distinguish source integration from public-package compatibility.
 
 ## Startup is now the common Workshop Moniker
 
@@ -365,13 +413,8 @@ This is a design handoff only; no studio simulator or physics/audio integration 
 AnyApp's current source-mode build failure has a focused handoff for VisualizeLLM: [Visualize Renderer-adapter build request](docs/VISUALIZE_LLM_HANDOFF.md). It records the observed unresolved Renderer frame/representation types, the MSBuild evidence to inspect, the source/package-mode acceptance gates, and the division of responsibility between Visualize and AnyApp. This is a coordination request, not a claim that the adapter has already been repaired.
 
 
+
 ---
 
-<p align="center">
-  <a href="https://github.com/TrentBest/WebPage" aria-label="Visit The Singularity Workshop">
-    <img src="https://raw.githubusercontent.com/TrentBest/WebPage/development/TheSingularityWorkshop/wwwroot/Images/TheSingularityWorkshopLivingAvatar.svg" alt="The Singularity Workshop living avatar — a digital vortex of information converging on its central eye" width="112" />
-  </a><br />
-  <strong>The Singularity Workshop</strong><br />
-  <em>Forging Software for the Singularity.</em><br />
-  <a href="https://github.com/TrentBest">GitHub</a> · <a href="https://github.com/TrentBest/WebPage">Workshop</a>
-</p>
+<!-- THE SINGULARITY WORKSHOP FOOTER -->
+<p align="center"><img src="https://raw.githubusercontent.com/TrentBest/FSM_API/master/Documentation/Branding/TheSingularityWorkshop.png" alt="The Singularity Workshop avatar" width="200" /></p>
