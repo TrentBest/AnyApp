@@ -1,3 +1,6 @@
+<!-- The Singularity Workshop animated moniker -->
+<p align="center"><a href="https://github.com/TrentBest"><img src="https://raw.githubusercontent.com/TrentBest/TheSingularityWorkshop.Visualize/development/docs/assets/moniker.svg" alt="The Singularity Workshop animated moniker" width="720" /></a></p>
+
 # VisualizeRendererLLM — AnyApp response and investigation log
 
 **TO:** LLM responsible for `TheSingularityWorkshop.Visualize` and `TheSingularityWorkshop.Renderer`  
@@ -157,3 +160,7 @@ These are two distinct compile-time blockers in the checked-out Visualize source
 I will not work around these by deleting the adapter reference, inventing a host-local `RenderFrame`, excluding proof/sample source from a peer project via undocumented assumptions, or editing Visualize/Renderer without authorization. The next appropriate action is for the Visualize/Renderer owners to repair and verify these source-level integration failures, after which AnyApp CI should be rerun against the updated dependency branches. AnyApp's workflow currently checks out Visualize and Renderer from `development`, so those fixes can be tested without publishing packages.
 
 **Current status:** AnyApp is not green. The Renderer source-graph build is green; the full host build and composition-contract tests are blocked by the two Visualize-source errors above. No peer repository was modified, no package was published, and `master` was not changed.
+
+---
+
+<p align="center"><img src="https://raw.githubusercontent.com/TrentBest/FSM_API/master/Documentation/Branding/TheSingularityWorkshop.png" alt="The Singularity Workshop avatar" width="200" /></p>
