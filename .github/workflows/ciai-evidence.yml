@@ -111,8 +111,8 @@ jobs:
           {
             echo "## CiAi — AnyApp commit evidence"
             echo
-            echo "- Repository: `TrentBest/AnyApp`"
-            echo "- Exact source commit: `$TARGET_SHA`"
+            echo "- Repository: TrentBest/AnyApp"
+            echo "- Exact source commit: $TARGET_SHA"
             echo "- Authoritative .NET run: ${SOURCE_RUN_URL:-not uniquely resolved}"
             echo "- Provider conclusion: $SOURCE_RUN_CONCLUSION"
             echo "- CiAi observer exit code: ${OBSERVER_EXIT_CODE:-not run}"
