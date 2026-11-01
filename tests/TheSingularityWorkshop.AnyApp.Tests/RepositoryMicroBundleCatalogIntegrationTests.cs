@@ -25,12 +25,16 @@ public sealed class RepositoryMicroBundleCatalogIntegrationTests
         try
         {
             var assemblyBytes = await File.ReadAllBytesAsync(typeof(RootTestBundle).Assembly.Location);
-            var assemblyHash = Hash(assemblyBytes);
+            var rootArtifactBytes = CreateEnvelope(RootBundleId, assemblyBytes);
+            var dependencyArtifactBytes = CreateEnvelope(DependencyBundleId, assemblyBytes);
+            var rootArtifactHash = Hash(rootArtifactBytes);
+            var dependencyArtifactHash = Hash(dependencyArtifactBytes);
             var emptyConfiguration = Array.Empty<byte>();
             var configurationHash = Hash(emptyConfiguration);
             using var client = new HttpClient(new ArtifactHandler(new Dictionary<string, byte[]>
             {
-                [assemblyHash] = assemblyBytes,
+                [rootArtifactHash] = rootArtifactBytes,
+                [dependencyArtifactHash] = dependencyArtifactBytes,
                 [configurationHash] = emptyConfiguration
             }));
 
@@ -42,7 +46,7 @@ public sealed class RepositoryMicroBundleCatalogIntegrationTests
                     new ExperienceBundleRequest(
                         RootBundleId,
                         ArtifactVersion: BundleVersion,
-                        ContentHash: assemblyHash,
+                        ContentHash: rootArtifactHash,
                         BundleVersion: BundleVersion,
                         ConfigurationArtifactVersion: "configuration-1.0.0",
                         ConfigurationContentHash: configurationHash)
@@ -54,8 +58,8 @@ public sealed class RepositoryMicroBundleCatalogIntegrationTests
             {
                 ArtifactCatalogue =
                 [
-                    new ExperienceArtifactIdentity(RootBundleId, BundleVersion, assemblyHash),
-                    new ExperienceArtifactIdentity(DependencyBundleId, BundleVersion, assemblyHash)
+                    new ExperienceArtifactIdentity(RootBundleId, BundleVersion, rootArtifactHash),
+                    new ExperienceArtifactIdentity(DependencyBundleId, BundleVersion, dependencyArtifactHash)
                 ],
                 ResolvedConfigurationCatalogue =
                 [
@@ -165,6 +169,22 @@ public sealed class RepositoryMicroBundleCatalogIntegrationTests
                 Content = new StringContent(JsonSerializer.Serialize(dto), System.Text.Encoding.UTF8, "application/json")
             });
         }
+    }
+
+    private static byte[] CreateEnvelope(ulong bundleId, byte[] assemblyBytes)
+    {
+        using var stream = new MemoryStream();
+        using (var writer = new BinaryWriter(stream, System.Text.Encoding.UTF8, leaveOpen: true))
+        {
+            writer.Write(new byte[] { 0x46, 0x53, 0x4D, 0x42 });
+            writer.Write((uint)1);
+            writer.Write(bundleId);
+            writer.Write((uint)assemblyBytes.Length);
+            writer.Write(assemblyBytes);
+            writer.Flush();
+        }
+
+        return stream.ToArray();
     }
 
     private static string Hash(byte[] content) =>
