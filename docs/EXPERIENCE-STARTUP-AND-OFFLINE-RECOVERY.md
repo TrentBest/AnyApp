@@ -1,6 +1,9 @@
 <!-- The Singularity Workshop animated moniker -->
 <p align="center"><a href="https://github.com/TrentBest"><img src="https://raw.githubusercontent.com/TrentBest/TheSingularityWorkshop.Visualize/development/docs/assets/moniker.svg" alt="The Singularity Workshop animated moniker" width="720" /></a></p>
 
+<!-- The Singularity Workshop animated moniker -->
+<p align="center"><a href="https://github.com/TrentBest"><img src="https://raw.githubusercontent.com/TrentBest/TheSingularityWorkshop.Visualize/development/docs/assets/moniker.svg" alt="The Singularity Workshop animated moniker" width="720" /></a></p>
+
 # The Singularity Workshop
 
 # AnyApp startup, offline recovery, and cached Experiences
@@ -58,6 +61,7 @@ Offline recovery does not bypass repository-source identity validation, change t
 The automated AnyApp test suite covers cache-generation promotion failure and catalog timeout recovery without a live catalog. The CI workflow builds the Renderer source graph, restores and builds AnyApp in repository-source mode, and runs the AnyApp tests on a Windows runner.
 
 For current verification, consult the [AnyApp CI workflow](https://github.com/TrentBest/AnyApp/actions/workflows/dotnet.yml) and the tracked [startup/cache recovery work](https://github.com/TrentBest/AnyApp/issues/30). This document describes intended observable behavior; it is not a claim that offline execution can succeed when required artifacts are absent.
+
 
 
 ---
