@@ -11,7 +11,7 @@ The current forensic starting point is recorded in [issue #42](https://github.co
 
 ## Controlled profiles
 
-The `.github/workflows/publish-size-matrix.yml` workflow publishes four variants from the same source commit, Windows runner, runtime identifier, configuration, and source dependency graph:
+The existing `.github/workflows/dotnet.yml` development workflow publishes four variants from the same source commit, Windows runner, runtime identifier, configuration, and source dependency graph:
 
 | Profile | `EnableCompressionInSingleFile` | `SatelliteResourceLanguages` |
 |---|---:|---|
