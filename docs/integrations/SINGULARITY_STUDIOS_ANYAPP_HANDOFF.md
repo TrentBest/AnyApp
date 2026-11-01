@@ -1,3 +1,6 @@
+<!-- The Singularity Workshop animated moniker -->
+<p align="center"><a href="https://github.com/TrentBest"><img src="https://raw.githubusercontent.com/TrentBest/TheSingularityWorkshop.Visualize/development/docs/assets/moniker.svg" alt="The Singularity Workshop animated moniker" width="720" /></a></p>
+
 # Singularity Studios — AnyApp Desktop Consumer Brief
 
 **Audience:** AnyApp and Workshop runtime contributors  
@@ -89,3 +92,7 @@ Keep authored dialogue/music/cinematic cues separate from physical sound. Physic
 6. Profile the vertical slice before scaling the population or stage complexity.
 
 The desktop and browser are two windows into the same reusable production—not two studios that happen to look alike.
+
+---
+
+<p align="center"><img src="https://raw.githubusercontent.com/TrentBest/FSM_API/master/Documentation/Branding/TheSingularityWorkshop.png" alt="The Singularity Workshop avatar" width="200" /></p>
