@@ -2,13 +2,13 @@ name: .NET
 
 on:
   push:
-    branches: [ "master", "development" ]
+    branches: [ "master", "development", "work/**" ]
   pull_request:
     branches: [ "master", "development" ]
 
 jobs:
   build:
-    if: ${{ (github.event_name == 'pull_request' && github.base_ref == 'development') || github.ref == 'refs/heads/development' || github.ref == 'refs/heads/work/microbundle-2111-semantic-root-proof' }}
+    if: ${{ (github.event_name == 'pull_request' && github.base_ref == 'development') || github.event_name == 'push' }}
     runs-on: windows-latest
 
     steps:
