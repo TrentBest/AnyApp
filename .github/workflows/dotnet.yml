@@ -234,3 +234,113 @@ jobs:
           anyapp-artifact-size.md
         if-no-files-found: error
         retention-days: 30
+    
+    - name: Publish controlled size profiles
+      if: success()
+      shell: pwsh
+      run: |
+        $sourceRoot = "$env:GITHUB_WORKSPACE/_dependencies"
+        $guiCoreProject = Join-Path $sourceRoot "TheSingularityWorkshop.GUI/src/Core/TheSingularityWorkshop.GUI.Core.csproj"
+        $profiles = @(
+          @{ Name = "baseline"; Compression = $false; EnglishSatellitesOnly = $false },
+          @{ Name = "compression-only"; Compression = $true; EnglishSatellitesOnly = $false },
+          @{ Name = "satellite-language-only"; Compression = $false; EnglishSatellitesOnly = $true },
+          @{ Name = "compression-and-satellite-language"; Compression = $true; EnglishSatellitesOnly = $true }
+        )
+
+        foreach ($profile in $profiles) {
+          $output = "artifacts/size-matrix/$($profile.Name)"
+          $arguments = @(
+            "publish", "AnyApp.csproj",
+            "--configuration", "Release",
+            "--runtime", "win-x64",
+            "--self-contained", "true",
+            "--no-restore",
+            "-p:PublishSingleFile=true",
+            "-p:IncludeNativeLibrariesForSelfExtract=true",
+            "-p:EnableCompressionInSingleFile=$($profile.Compression.ToString().ToLowerInvariant())",
+            "-p:WorkshopUseRepositorySources=true",
+            "-p:WorkshopSourceRoot=$sourceRoot",
+            "-p:WorkshopGuiCoreProject=$guiCoreProject",
+            "--output", $output
+          )
+          if ($profile.EnglishSatellitesOnly) {
+            $arguments += "-p:SatelliteResourceLanguages=en"
+          }
+
+          Write-Host "Publishing profile: $($profile.Name)"
+          & dotnet @arguments
+          if ($LASTEXITCODE -ne 0) {
+            throw "Publish failed for profile '$($profile.Name)' with exit code $LASTEXITCODE."
+          }
+        }
+
+    - name: Measure controlled size profiles
+      if: success()
+      shell: pwsh
+      run: |
+        $names = @("baseline", "compression-only", "satellite-language-only", "compression-and-satellite-language")
+        $measurements = @()
+        $fileInventories = @{}
+
+        foreach ($name in $names) {
+          $directory = "artifacts/size-matrix/$name"
+          $files = @(Get-ChildItem $directory -Recurse -File | Sort-Object FullName)
+          $exe = Get-Item (Join-Path $directory "AnyApp.exe") -ErrorAction Stop
+          $directoryBytes = [long](($files | Measure-Object -Property Length -Sum).Sum)
+          $measurements += [pscustomobject]@{
+            Profile = $name
+            ExeBytes = [long]$exe.Length
+            DirectoryBytes = $directoryBytes
+          }
+
+          $rows = @("## $name", "", "| File | Bytes |", "|---|---:|")
+          foreach ($file in $files) {
+            $relative = $file.FullName.Substring((Resolve-Path $directory).Path.Length).TrimStart('\','/')
+            $rows += "| $relative | $($file.Length) |"
+          }
+          $fileInventories[$name] = $rows
+        }
+
+        $baseline = $measurements | Where-Object Profile -eq "baseline" | Select-Object -First 1
+        $report = @(
+          "# AnyApp publish size experiment",
+          "",
+          "Commit: $env:GITHUB_SHA",
+          "Runtime: win-x64",
+          "Deployment: Release, self-contained, single-file",
+          "Compression: EnableCompressionInSingleFile",
+          "Language filter: SatelliteResourceLanguages=en (satellite assemblies only)",
+          "",
+          "| Profile | EXE bytes | EXE MiB | Directory bytes | Directory MiB | EXE delta bytes | Directory delta bytes |",
+          "|---|---:|---:|---:|---:|---:|---:|"
+        )
+
+        foreach ($item in $measurements) {
+          $exeMiB = [math]::Round($item.ExeBytes / 1MB, 2)
+          $dirMiB = [math]::Round($item.DirectoryBytes / 1MB, 2)
+          $exeDelta = $item.ExeBytes - $baseline.ExeBytes
+          $dirDelta = $item.DirectoryBytes - $baseline.DirectoryBytes
+          $report += "| $($item.Profile) | $($item.ExeBytes) | $exeMiB | $($item.DirectoryBytes) | $dirMiB | $exeDelta | $dirDelta |"
+        }
+
+        foreach ($name in $names) {
+          $report += ""
+          $report += $fileInventories[$name]
+        }
+
+        $report | Set-Content -Path "publish-size-report.md" -Encoding utf8
+        Get-Content "publish-size-report.md"
+        Get-Content "publish-size-report.md" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8
+
+    - name: Upload controlled size profiles
+      if: success()
+      uses: actions/upload-artifact@v5
+      with:
+        name: AnyApp-publish-size-matrix-${{ github.sha }}
+        path: |
+          artifacts/size-matrix/
+          publish-size-report.md
+        if-no-files-found: error
+        retention-days: 30
+
