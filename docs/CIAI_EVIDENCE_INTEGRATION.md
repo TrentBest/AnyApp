@@ -20,7 +20,7 @@ On each push to development, the [CiAi evidence workflow](../.github/workflows/c
 5. Runs CiAi's existing ObserveRun sample against TrentBest/AnyApp and the exact commit SHA.
 6. Uploads the JSON and Markdown evidence reports as a 30-day GitHub Actions artifact.
 
-The observer uses the workflow's read-only GITHUB_TOKEN permissions (actions: read, contents: read). It does not receive write permissions or secrets beyond the token required to read this repository's Actions evidence.
+The observer uses the workflow's read-only GITHUB_TOKEN permissions (actions: read, contents: read). It does not receive write permissions or secrets beyond the token required to read this repository's Actions evidence. The .NET workflow also attempts a diagnostic executable publish after a test failure, when the source build and publish restore succeed; this does not turn the failed test lane green.
 
 ## Evidence lanes
 
@@ -40,6 +40,18 @@ Open **Actions → CiAi AnyApp Evidence** and select the run for the commit. Dow
 - ciai-anyapp-evidence.md — human-readable rendering of the same observation.
 
 The report links to authoritative GitHub Actions run/job evidence. Compare its source SHA to the AnyApp commit being investigated. A report for another SHA is not evidence for this build.
+
+## First observed result
+
+The first complete CiAi observation was produced for AnyApp commit `4d40f584fa4011179a731962afdd755fa85e8063`:
+
+- [CiAi observer run](https://github.com/TrentBest/AnyApp/actions/runs/41281306728)
+- [Authoritative AnyApp .NET run](https://github.com/TrentBest/AnyApp/actions/runs/41281306660), attempt 1
+- Evidence artifact: `CiAi-AnyApp-evidence-4d40f584fa4011179a731962afdd755fa85e8063`
+
+CiAi reported discovery complete, required evidence complete, workflow terminal, and workflow unsuccessful. Its required-workflow state was `failed`, with `complete: false`. It preserved the exact source SHA, run ID/attempt, job ID, job conclusion, step outcomes, and authoritative run/job links. This is a successful observation of a failed build lane—not a successful AnyApp build.
+
+That .NET run compiled AnyApp but failed two integration tests with the manifest content-hash exception. The original run stopped before executable publishing, so it produced no EXE. Subsequent workflow revisions now attempt a diagnostic EXE publish after test failure, while retaining the overall failed CI verdict; that behavior still requires a completed run to verify.
 
 ## Trust and failure semantics
 
