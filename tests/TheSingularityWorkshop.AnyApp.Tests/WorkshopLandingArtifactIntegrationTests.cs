@@ -90,7 +90,7 @@ public sealed class WorkshopLandingArtifactIntegrationTests
             Assert.True(catalog.TryResolve(BundleId, BundleVersion, out var materialized));
             Assert.NotNull(materialized);
             Assert.Equal(BundleId, materialized!.Id);
-            Assert.IsType<WorkshopLandingMicroBundle>(materialized);
+            Assert.Equal(typeof(WorkshopLandingMicroBundle).FullName, materialized.GetType().FullName);
 
             var runtimeAssembly = new FsmCos(catalog).Execute(runtimeManifest, configurationSource);
             var composed = Assert.Single(runtimeAssembly.Bundles);
