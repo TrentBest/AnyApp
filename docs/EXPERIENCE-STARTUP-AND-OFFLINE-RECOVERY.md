@@ -1,3 +1,6 @@
+<!-- The Singularity Workshop animated moniker -->
+<p align="center"><a href="https://github.com/TrentBest"><img src="https://raw.githubusercontent.com/TrentBest/TheSingularityWorkshop.Visualize/development/docs/assets/moniker.svg" alt="The Singularity Workshop animated moniker" width="720" /></a></p>
+
 # The Singularity Workshop
 
 # AnyApp startup, offline recovery, and cached Experiences
@@ -56,11 +59,7 @@ The automated AnyApp test suite covers cache-generation promotion failure and ca
 
 For current verification, consult the [AnyApp CI workflow](https://github.com/TrentBest/AnyApp/actions/workflows/dotnet.yml) and the tracked [startup/cache recovery work](https://github.com/TrentBest/AnyApp/issues/30). This document describes intended observable behavior; it is not a claim that offline execution can succeed when required artifacts are absent.
 
+
 ---
 
-<p align="center">
-  <img src="https://raw.githubusercontent.com/TrentBest/WebPage/development/TheSingularityWorkshop/wwwroot/Images/TheSingularityWorkshopLivingAvatar.svg" alt="The Singularity Workshop living avatar" width="112" />
-  <br />
-  <strong>The Singularity Workshop</strong><br />
-  <em>Forging Software for the Singularity.</em>
-</p>
+<p align="center"><img src="https://raw.githubusercontent.com/TrentBest/FSM_API/master/Documentation/Branding/TheSingularityWorkshop.png" alt="The Singularity Workshop avatar" width="200" /></p>
