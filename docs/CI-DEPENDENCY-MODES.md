@@ -1,3 +1,6 @@
+<!-- The Singularity Workshop animated moniker -->
+<p align="center"><a href="https://github.com/TrentBest"><img src="https://raw.githubusercontent.com/TrentBest/TheSingularityWorkshop.Visualize/development/docs/assets/moniker.svg" alt="The Singularity Workshop animated moniker" width="720" /></a></p>
+
 # CI dependency modes
 
 AnyApp follows the Workshop's two-mode dependency rule.
@@ -40,3 +43,7 @@ This exception is intentionally visible rather than masked by locally packing de
 - Publishing remains behind each repository's explicit manual Boolean gate and required compatibility checks.
 - A successful source-integration build is not evidence that public packages are compatible; both paths must pass.
 - CI changes do not publish packages or merge branches.
+
+---
+
+<p align="center"><img src="https://raw.githubusercontent.com/TrentBest/FSM_API/master/Documentation/Branding/TheSingularityWorkshop.png" alt="The Singularity Workshop avatar" width="200" /></p>
