@@ -39,10 +39,31 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        if (!string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("ANYAPP_STARTUP_RENDER_MARKER")))
+            ContentRendered += OnStartupContentRendered;
         AnyAppProtocolRegistration.Register();
         Loaded += OnLoaded;
         Closed += (_, _) => { _livingDemo?.Dispose(); _webBridge.Dispose(); };
         _webBridge.CommandReceived += HandleBridgeCommand;
+    }
+
+    private void OnStartupContentRendered(object? sender, EventArgs e)
+    {
+        ContentRendered -= OnStartupContentRendered;
+        var markerPath = Environment.GetEnvironmentVariable("ANYAPP_STARTUP_RENDER_MARKER");
+        if (string.IsNullOrWhiteSpace(markerPath))
+            return;
+
+        try
+        {
+            var fullPath = Path.GetFullPath(markerPath);
+            Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
+            File.WriteAllText(fullPath, DateTimeOffset.UtcNow.ToString("O"));
+        }
+        catch (Exception exception)
+        {
+            System.Diagnostics.Trace.TraceError($"Could not write startup render marker: {exception}");
+        }
     }
 
     private async void OnLoaded(object sender, RoutedEventArgs e)
