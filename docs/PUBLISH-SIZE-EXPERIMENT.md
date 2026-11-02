@@ -63,6 +63,20 @@ The embedded manifest groups the baseline payload as follows. Categories are heu
 
 The bundle contains 466 compressible entries in the compression profiles. The two entries not compressed are `AnyApp.deps.json` and `AnyApp.runtimeconfig.json`. The residual between executable size and stored embedded payload includes the native apphost, alignment padding, and bundle manifest/metadata; it is not all application code.
 
+### Windows Forms payload provenance — initial source inspection (2026-11-02)
+
+The AnyApp host project and its direct GUI.WPF project both declare `UseWPF=true`; neither project declares `UseWindowsForms`. The #513 embedded bundle nevertheless contains these Windows Forms framework assemblies:
+
+| Assembly | Uncompressed bytes |
+|---|---:|
+| `System.Windows.Forms.dll` | 13,563,728 |
+| `System.Windows.Forms.Design.dll` | 5,564,200 |
+| `System.Windows.Forms.Primitives.dll` | 3,012,392 |
+| `System.Windows.Forms.Design.Editors.dll` | 16,208 |
+| **Total** | **22,156,528** |
+
+The bundle also contains WinForms satellite resources within the 221 localized resource entries. This is a measured inventory, not proof that AnyApp calls these APIs or that removing the assemblies is safe. The source-project declarations rule out an explicit `UseWindowsForms` setting in these two projects, but do not by themselves establish the full SDK/runtime-pack or transitive-reference provenance. Keep the assemblies intact until that provenance and runtime requirements are demonstrated with a reproducible publish and launch test.
+
 
 ### Reproducibility validation (2026-11-01, workflow #507)
 
