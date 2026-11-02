@@ -70,6 +70,34 @@ Workflow [#507](https://github.com/TrentBest/AnyApp/actions/runs/41363849664) pa
 
 The #507 executable measurements were 162,844,055 bytes (baseline), 72,058,647 bytes (compression only), 146,162,962 bytes (satellite filter only), and 66,300,053 bytes (combined). The combined profile remains approximately 59.29% smaller than baseline. Small differences from #505 are expected because active dependency branches are checked out at their current `development` heads; compare the per-run dependency SHAs before attributing cross-run differences to publish settings. The four profiles within each run share one captured dependency graph.
 
+### Latest validation and startup measurements (2026-11-02, workflow #513)
+
+Workflow [#513](https://github.com/TrentBest/AnyApp/actions/runs/41389077013) passed the source-mode Renderer and AnyApp builds, AnyApp tests, Windows x64 self-contained publish, four-profile matrix, clean-extraction startup benchmark, and embedded bundle audit. Its artifact includes all four profile executables and inventories, bundle CSV/JSON/HTML audits, exact source dependency revisions for all 14 checkouts, and the startup raw CSV/report.
+
+The #513 executable measurements were:
+
+| Profile | Executable | Publish directory | Executable reduction vs baseline |
+|---|---:|---:|---:|
+| baseline | 162,844,055 bytes (155.30 MiB) | 163,857,399 bytes | — |
+| compression-only | 72,058,935 bytes (68.72 MiB) | 73,072,279 bytes | 55.75% |
+| satellite-language-only | 146,162,962 bytes (139.39 MiB) | 147,176,306 bytes | 10.24% |
+| compression-and-satellite-language | 66,300,341 bytes (63.23 MiB) | 67,313,685 bytes | 59.29% |
+
+The combined profile is 96,543,714 bytes smaller than baseline. These byte-level values are specific to the exact dependency revisions recorded in this run's artifact.
+
+The #513 first-render benchmark results (five samples per profile) were:
+
+| Profile | Median ms | Minimum ms | Maximum ms |
+|---|---:|---:|---:|
+| baseline | 571.76 | 538.43 | 636.56 |
+| compression-only | 894.96 | 858.97 | 995.59 |
+| satellite-language-only | 500.75 | 484.09 | 519.32 |
+| compression-and-satellite-language | 780.85 | 766.53 | 803.49 |
+
+In this run, compression-only increased median startup-to-first-render by 323.20 ms (56.5%) versus baseline. The combined profile increased it by 209.09 ms (36.6%). Satellite filtering alone was 71.01 ms (12.4%) faster than baseline in this sample, but five launches on one hosted runner are preliminary evidence and do not establish a general performance guarantee. The data demonstrates a meaningful size/startup trade-off: compression substantially reduces executable size but increases first-render time in this measurement. Keep compression optional pending broader startup and compatibility evidence; do not change the default publish profile based on these results alone.
+
+As described below, this benchmark forces a fresh bundle extraction directory for each launch but does not clear the OS file cache. It measures the local `--renderer-proof` surface through the first WPF `ContentRendered` event, not full Experience readiness, cold OS boot, later rendering, accessibility, serialization, or offline Experience behavior.
+
 ### Reproducing a comparison
 
 The CI workflow intentionally checks out active dependency branches at `development`. Each run now records the exact AnyApp source-head SHA, PR merge/check-out SHA, and commit SHA for every source dependency in `dependency-revisions.json` and `dependency-revisions.md`, included in the artifact. Four profiles within a run use the same checked-out graph. For cross-run comparisons, compare the recorded dependency revisions before attributing small byte-level differences to the publish settings.
