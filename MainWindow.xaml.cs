@@ -56,8 +56,8 @@ public partial class MainWindow : Window
 
         try
         {
-            var fullPath = Path.GetFullPath(markerPath);
-            Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
+            var fullPath = System.IO.Path.GetFullPath(markerPath);
+            Directory.CreateDirectory(System.IO.Path.GetDirectoryName(fullPath)!);
             File.WriteAllText(fullPath, DateTimeOffset.UtcNow.ToString("O"));
         }
         catch (Exception exception)
