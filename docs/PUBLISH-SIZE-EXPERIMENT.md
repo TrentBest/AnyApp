@@ -63,6 +63,13 @@ The embedded manifest groups the baseline payload as follows. Categories are heu
 
 The bundle contains 466 compressible entries in the compression profiles. The two entries not compressed are `AnyApp.deps.json` and `AnyApp.runtimeconfig.json`. The residual between executable size and stored embedded payload includes the native apphost, alignment padding, and bundle manifest/metadata; it is not all application code.
 
+
+### Reproducibility validation (2026-11-01, workflow #507)
+
+Workflow [#507](https://github.com/TrentBest/AnyApp/actions/runs/41363849664) passed the same source-mode build/test, Windows publish, four-profile matrix, and embedded-manifest audit. Its artifact records the AnyApp source head and CI merge checkout plus all 14 source dependency commit SHAs in both `dependency-revisions.json` and `dependency-revisions.md`. This confirms that the dependency-revision capture is present in the uploaded evidence, not merely in the runner workspace.
+
+The #507 executable measurements were 162,844,055 bytes (baseline), 72,058,647 bytes (compression only), 146,162,962 bytes (satellite filter only), and 66,300,053 bytes (combined). The combined profile remains approximately 59.29% smaller than baseline. Small differences from #505 are expected because active dependency branches are checked out at their current `development` heads; compare the per-run dependency SHAs before attributing cross-run differences to publish settings. The four profiles within each run share one captured dependency graph.
+
 ### Reproducing a comparison
 
 The CI workflow intentionally checks out active dependency branches at `development`. Each run now records the exact AnyApp source-head SHA, PR merge/check-out SHA, and commit SHA for every source dependency in `dependency-revisions.json` and `dependency-revisions.md`, included in the artifact. Four profiles within a run use the same checked-out graph. For cross-run comparisons, compare the recorded dependency revisions before attributing small byte-level differences to the publish settings.
