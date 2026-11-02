@@ -74,6 +74,15 @@ The #507 executable measurements were 162,844,055 bytes (baseline), 72,058,647 b
 
 The CI workflow intentionally checks out active dependency branches at `development`. Each run now records the exact AnyApp source-head SHA, PR merge/check-out SHA, and commit SHA for every source dependency in `dependency-revisions.json` and `dependency-revisions.md`, included in the artifact. Four profiles within a run use the same checked-out graph. For cross-run comparisons, compare the recorded dependency revisions before attributing small byte-level differences to the publish settings.
 
+
+## Clean-extraction startup-to-first-render benchmark
+
+The Windows CI matrix also launches each of the four published executables five times with `--renderer-proof`. Each process receives a unique `DOTNET_BUNDLE_EXTRACT_BASE_DIR`, ensuring that the single-file bundle is extracted into a fresh directory for every sample. An opt-in `ANYAPP_STARTUP_RENDER_MARKER` environment variable causes the WPF host to write a UTC marker at its first `ContentRendered` event; the benchmark measures elapsed time from process launch until that marker appears.
+
+The benchmark emits raw samples in `startup-measurements.csv` and per-profile median, minimum, and maximum in `startup-report.md`. It deliberately uses a local proof surface and does not contact the repository or compose an Experience, isolating host startup/rendering from network and Experience variability.
+
+Interpret this as **clean-extraction startup-to-first-render with a potentially warm OS file cache**. A unique extraction directory forces bundle extraction but does not clear the operating-system file cache, so this is not a true cold-boot measurement. The first `ContentRendered` event is not proof that a full Experience is ready, nor does it measure later rendering, accessibility, serialization, or offline Experience behavior. The marker is opt-in and has no effect when the environment variable is absent.
+
 ## Guardrails
 
 This is an experiment, not a production configuration change. It does not enable trimming, manually delete framework assemblies, alter the normal publish profile, publish NuGet packages, create a release, or deploy an executable. Keep a self-contained distribution option available. Any recommended default must be supported by startup, rendering, accessibility, serialization, and offline-startup evidence.
