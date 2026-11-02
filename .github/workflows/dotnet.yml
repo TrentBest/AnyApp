@@ -332,6 +332,94 @@ jobs:
           }
         }
 
+    - name: Publish alternate deployment profiles
+      if: success()
+      shell: pwsh
+      run: |
+        $sourceRoot = "$env:GITHUB_WORKSPACE/_dependencies"
+        $guiCoreProject = Join-Path $sourceRoot "TheSingularityWorkshop.GUI/src/Core/TheSingularityWorkshop.GUI.Core.csproj"
+        $profiles = @(
+          @{ Name = "framework-dependent-single-file"; SelfContained = $false; SingleFile = $true },
+          @{ Name = "self-contained-directory"; SelfContained = $true; SingleFile = $false }
+        )
+
+        foreach ($profile in $profiles) {
+          $output = "artifacts/deployment-matrix/$($profile.Name)"
+          $arguments = @(
+            "publish", "AnyApp.csproj",
+            "--configuration", "Release",
+            "--runtime", "win-x64",
+            "--self-contained", $profile.SelfContained.ToString().ToLowerInvariant(),
+            "--no-restore",
+            "-p:PublishSingleFile=$($profile.SingleFile.ToString().ToLowerInvariant())",
+            "-p:IncludeNativeLibrariesForSelfExtract=true",
+            "-p:WorkshopUseRepositorySources=true",
+            "-p:WorkshopSourceRoot=$sourceRoot",
+            "-p:WorkshopGuiCoreProject=$guiCoreProject",
+            "--output", $output
+          )
+
+          Write-Host "Publishing deployment profile: $($profile.Name)"
+          & dotnet @arguments
+          if ($LASTEXITCODE -ne 0) {
+            throw "Publish failed for deployment profile '$($profile.Name)' with exit code $LASTEXITCODE."
+          }
+        }
+
+    - name: Measure alternate deployment profiles
+      if: success()
+      shell: pwsh
+      run: |
+        $profiles = @(
+          @{ Name = "framework-dependent-single-file"; Directory = "artifacts/deployment-matrix/framework-dependent-single-file" },
+          @{ Name = "self-contained-directory"; Directory = "artifacts/deployment-matrix/self-contained-directory" }
+        )
+        $measurements = @()
+        $report = @(
+          "# AnyApp alternate deployment profile measurements",
+          "",
+          "Runtime identifier: win-x64. Configuration: Release. Source dependency revisions are recorded in dependency-revisions.md.",
+          "",
+          "| Profile | EXE bytes | EXE MiB | Publish directory bytes | Directory MiB | File count |",
+          "|---|---:|---:|---:|---:|---:|"
+        )
+
+        foreach ($profile in $profiles) {
+          $files = @(Get-ChildItem $profile.Directory -Recurse -File | Sort-Object FullName)
+          $exe = Get-Item (Join-Path $profile.Directory "AnyApp.exe") -ErrorAction Stop
+          $directoryBytes = [long](($files | Measure-Object -Property Length -Sum).Sum)
+          $measurements += [pscustomobject]@{
+            Profile = $profile.Name
+            ExeBytes = [long]$exe.Length
+            DirectoryBytes = $directoryBytes
+            FileCount = $files.Count
+          }
+          $report += "| $($profile.Name) | $($exe.Length) | $([math]::Round($exe.Length / 1MB, 2)) | $directoryBytes | $([math]::Round($directoryBytes / 1MB, 2)) | $($files.Count) |"
+        }
+
+        foreach ($profile in $profiles) {
+          $report += ""
+          $report += "## $($profile.Name) file inventory"
+          $report += ""
+          $report += "| File | Bytes |"
+          $report += "|---|---:|"
+          foreach ($file in Get-ChildItem $profile.Directory -Recurse -File | Sort-Object FullName) {
+            $relative = $file.FullName.Substring((Resolve-Path $profile.Directory).Path.Length).TrimStart('\','/')
+            $report += "| $relative | $($file.Length) |"
+          }
+        }
+
+        $report += ""
+        $report += "## Deployment requirements"
+        $report += ""
+        $report += "- framework-dependent single-file: the target machine must already have a compatible .NET 8 Windows Desktop Runtime installed; this artifact does not carry the .NET runtime."
+        $report += "- self-contained directory: carries the .NET runtime as loose files and does not require a separately installed .NET runtime, but the complete directory must be distributed."
+        $report += ""
+        $report += Get-Content "dependency-revisions.md"
+        $report | Set-Content -Path "deployment-profile-report.md" -Encoding utf8
+        Get-Content "deployment-profile-report.md"
+        $report | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+
     - name: Measure controlled size profiles
       if: success()
       shell: pwsh
@@ -397,7 +485,7 @@ jobs:
       if: success()
       shell: pwsh
       run: |
-        $profiles = @("baseline", "compression-only", "satellite-language-only", "compression-and-satellite-language")
+        $profiles = @("baseline", "compression-only", "satellite-language-only", "compression-and-satellite-language", "framework-dependent-single-file", "self-contained-directory")
         $samplesPerProfile = 5
         $timeoutSeconds = 60
         $root = Join-Path $env:RUNNER_TEMP "anyapp-first-render-benchmark"
@@ -405,7 +493,8 @@ jobs:
         $measurements = @()
 
         foreach ($profile in $profiles) {
-          $exe = (Resolve-Path "artifacts/size-matrix/$profile/AnyApp.exe").Path
+          $profileDirectory = if ($profile -in @("framework-dependent-single-file", "self-contained-directory")) { "artifacts/deployment-matrix/$profile" } else { "artifacts/size-matrix/$profile" }
+          $exe = (Resolve-Path (Join-Path $profileDirectory "AnyApp.exe")).Path
           for ($sample = 1; $sample -le $samplesPerProfile; $sample++) {
             $sampleRoot = Join-Path $root "$profile-$sample"
             $extractRoot = Join-Path $sampleRoot "bundle-extract"
@@ -456,7 +545,7 @@ jobs:
         $report = @(
           "# AnyApp clean-extraction startup-to-first-render benchmark",
           "",
-          "Five process launches per profile. Each launch uses a unique DOTNET_BUNDLE_EXTRACT_BASE_DIR to force a fresh single-file bundle extraction.",
+          "Five process launches per profile. Single-file profiles use a unique DOTNET_BUNDLE_EXTRACT_BASE_DIR to force fresh bundle extraction. The self-contained-directory profile has no bundle extraction; it is included to compare its launch path.",
           "",
           "This measures process launch through the first WPF ContentRendered event for the local --renderer-proof surface. It is not full Experience readiness or a cold operating-system boot; the OS file cache may be warm between samples.",
           "",
@@ -534,6 +623,8 @@ jobs:
           bundle-audit-report.md
           dependency-revisions.json
           dependency-revisions.md
+          artifacts/deployment-matrix/
+          deployment-profile-report.md
         if-no-files-found: error
         retention-days: 30
 
