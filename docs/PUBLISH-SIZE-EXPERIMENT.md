@@ -125,6 +125,21 @@ The benchmark emits raw samples in `startup-measurements.csv` and per-profile me
 
 Interpret this as **clean-extraction startup-to-first-render with a potentially warm OS file cache**. A unique extraction directory forces bundle extraction but does not clear the operating-system file cache, so this is not a true cold-boot measurement. The first `ContentRendered` event is not proof that a full Experience is ready, nor does it measure later rendering, accessibility, serialization, or offline Experience behavior. The marker is opt-in and has no effect when the environment variable is absent.
 
+## Alternate deployment shapes
+
+The CI workflow also publishes two additional Windows x64 deployment shapes from the same source checkout and dependency graph:
+
+| Profile | Runtime included? | Single-file? | Distribution requirement |
+|---|---|---|---|
+| framework-dependent-single-file | No | Yes | Target machine needs a compatible .NET 8 Windows Desktop Runtime installed |
+| self-contained-directory | Yes | No | Distribute the complete publish directory, not only `AnyApp.exe` |
+
+The framework-dependent profile isolates the smaller host/application bundle from the separately installed .NET Desktop Runtime. Its executable size must not be compared to a self-contained executable as though both were complete standalone distributions. The self-contained-directory profile carries runtime files alongside the application; compare its total directory size, file count, and launch measurement rather than only its apphost executable.
+
+The workflow records exact executable bytes, total publish-directory bytes, file count, and a complete file inventory for each profile. It also runs five `--renderer-proof` first-render launches per profile using the same opt-in render marker. The single-file profiles use fresh bundle-extraction directories; the directory deployment has no single-file bundle extraction. All profiles run on the same Windows CI host and dependency graph for the run.
+
+These measurements are comparative evidence, not a claim that one deployment is universally preferable. The framework-dependent profile trades distribution size for a runtime prerequisite; the self-contained directory trades a single executable for a larger multi-file distribution. The existing self-contained single-file profiles remain available as the original baseline experiment.
+
 ## Guardrails
 
 This is an experiment, not a production configuration change. It does not enable trimming, manually delete framework assemblies, alter the normal publish profile, publish NuGet packages, create a release, or deploy an executable. Keep a self-contained distribution option available. Any recommended default must be supported by startup, rendering, accessibility, serialization, and offline-startup evidence.
