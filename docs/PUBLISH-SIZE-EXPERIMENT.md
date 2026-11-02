@@ -140,6 +140,32 @@ The workflow records exact executable bytes, total publish-directory bytes, file
 
 These measurements are comparative evidence, not a claim that one deployment is universally preferable. The framework-dependent profile trades distribution size for a runtime prerequisite; the self-contained directory trades a single executable for a larger multi-file distribution. The existing self-contained single-file profiles remain available as the original baseline experiment.
 
+### Alternate deployment measurements (2026-11-02, workflow #517)
+
+Workflow [#517](https://github.com/TrentBest/AnyApp/actions/runs/41390665755) passed on source head `00e174d8aa4eaeea68a2fda8fb8889dc0badd2e0`. Both alternate deployment profiles published successfully, produced inventories, and completed all five first-render launches. The run also passed the existing source-mode builds/tests, four controlled size profiles, and embedded bundle audit.
+
+| Profile | Executable | Total publish directory | Files | Runtime prerequisite |
+|---|---:|---:|---:|---|
+| Framework-dependent single-file | 1,294,722 bytes (1.23 MiB) | 2,308,066 bytes (2.20 MiB) | 43 | Compatible .NET 8 Windows Desktop Runtime installed on target |
+| Self-contained directory | 152,064 bytes (0.15 MiB) | 169,874,297 bytes (162.00 MiB) | 525 | No separate .NET runtime; distribute the complete directory |
+
+The 1.23 MiB framework-dependent executable is not a complete standalone distribution: the machine-provided .NET Desktop Runtime is outside the measured 2.20 MiB publish folder. The self-contained directory's apphost is only 0.15 MiB, but its 162 MiB directory carries the runtime and WPF payload. These are different deployment contracts, so comparing only their executable sizes would be misleading.
+
+The six-profile first-render benchmark (five launches each) reported:
+
+| Profile | Median ms | Minimum ms | Maximum ms |
+|---|---:|---:|---:|
+| Self-contained single-file baseline | 515.99 | 470.22 | 581.88 |
+| Compression only | 793.69 | 760.18 | 830.10 |
+| Satellite-language filter only | 536.47 | 513.86 | 592.35 |
+| Compression and satellite-language filter | 873.92 | 775.40 | 898.45 |
+| Framework-dependent single-file | 516.06 | 447.89 | 548.56 |
+| Self-contained directory | 556.94 | 482.62 | 586.97 |
+
+The framework-dependent single-file profile's median was effectively the same as the self-contained baseline in this run (516.06 vs. 515.99 ms). The self-contained directory median was 40.95 ms slower (556.94 vs. 515.99 ms). Five launches on one hosted runner are preliminary evidence, not a general performance guarantee. As elsewhere in this document, this measures process launch to the first WPF `ContentRendered` event for `--renderer-proof`, not full Experience readiness or a cold OS boot; OS file cache may be warm.
+
+The complete artifact includes `deployment-profile-report.md`, per-profile file inventories, all six profile binaries/publish outputs, raw startup CSV and summary, bundle audit, and all 14 source dependency revisions. Artifact IDs: size matrix `13117985204`; startup benchmark `13117467126`. The artifact expires 2026-12-02.
+
 ## Guardrails
 
 This is an experiment, not a production configuration change. It does not enable trimming, manually delete framework assemblies, alter the normal publish profile, publish NuGet packages, create a release, or deploy an executable. Keep a self-contained distribution option available. Any recommended default must be supported by startup, rendering, accessibility, serialization, and offline-startup evidence.
