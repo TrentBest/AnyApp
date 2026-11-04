@@ -20,7 +20,9 @@ concurrency:
 
 jobs:
   observe:
+    name: Observe exact AnyApp CI evidence
     runs-on: ubuntu-24.04
+    timeout-minutes: 40
     steps:
       - name: Resolve target commit
         id: target
@@ -36,7 +38,7 @@ jobs:
           fi
           echo "sha=${target,,}" >> "$GITHUB_OUTPUT"
 
-      - name: Wait for the authoritative AnyApp .NET workflow
+      - name: Resolve the exact authoritative AnyApp .NET run and attempt
         id: source-run
         env:
           GH_TOKEN: ${{ github.token }}
@@ -45,13 +47,25 @@ jobs:
         run: |
           set -euo pipefail
           response=""
-          for attempt in $(seq 1 90); do
-            response="$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/dotnet.yml/runs?head_sha=$TARGET_SHA&per_page=100")"
-            matching="$(jq '[.workflow_runs[] | select(.path == ".github/workflows/dotnet.yml" and .event == "push" and .head_branch == "development")]' <<< "$response")"
+          matching="[]"
+          for poll in $(seq 1 90); do
+            response="$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/dotnet.yml/runs?head_sha=$TARGET_SHA&branch=development&event=push&per_page=100")"
+            matching="$(jq --arg repo "$GITHUB_REPOSITORY" --arg sha "$TARGET_SHA" '
+              [.workflow_runs[]
+                | select(.head_sha == $sha)
+                | select(.path | split("@")[0] == ".github/workflows/dotnet.yml")
+                | select(.event == "push" and .head_branch == "development")
+                | select(.head_repository.full_name == $repo)]
+            ' <<< "$response")"
             count="$(jq 'length' <<< "$matching")"
-            if [ "$count" -gt 0 ] && [ "$(jq '[.[] | select(.status != "completed")] | length' <<< "$matching")" -eq 0 ]; then
+            if [ "$count" -gt 1 ]; then
+              echo "::warning::Multiple matching .NET runs exist for this SHA; preserving ambiguity rather than choosing one."
               break
             fi
+            if [ "$count" -eq 1 ] && [ "$(jq -r '.[0].status' <<< "$matching")" = "completed" ]; then
+              break
+            fi
+            echo "Waiting for exact AnyApp .NET run (poll $poll/90; matches=$count)."
             sleep 20
           done
 
@@ -59,74 +73,136 @@ jobs:
           if [ "$count" -eq 1 ]; then
             run_id="$(jq -r '.[0].id' <<< "$matching")"
             run_attempt="$(jq -r '.[0].run_attempt' <<< "$matching")"
-            conclusion="$(jq -r '.[0].conclusion // "unknown"' <<< "$matching")"
+            status="$(jq -r '.[0].status' <<< "$matching")"
+            conclusion="$(jq -r '.[0].conclusion // "none"' <<< "$matching")"
+            run_url="$(jq -r '.[0].html_url' <<< "$matching")"
+            [[ "$run_id" =~ ^[1-9][0-9]*$ ]]
+            [[ "$run_attempt" =~ ^[1-9][0-9]*$ ]]
             echo "required_workflow=.github/workflows/dotnet.yml#$run_id#$run_attempt" >> "$GITHUB_OUTPUT"
-            echo "source_run_url=$(jq -r '.[0].html_url' <<< "$matching")" >> "$GITHUB_OUTPUT"
+            echo "source_run_id=$run_id" >> "$GITHUB_OUTPUT"
+            echo "source_run_attempt=$run_attempt" >> "$GITHUB_OUTPUT"
+            echo "source_run_status=$status" >> "$GITHUB_OUTPUT"
             echo "source_run_conclusion=$conclusion" >> "$GITHUB_OUTPUT"
-            echo "Resolved exact AnyApp run $run_id attempt $run_attempt ($conclusion)."
+            echo "source_run_url=$run_url" >> "$GITHUB_OUTPUT"
+            echo "Resolved exact AnyApp run $run_id attempt $run_attempt ($status/$conclusion)."
           else
+            if [ "$count" -gt 1 ]; then
+              state="ambiguous"
+            else
+              state="missing-or-not-yet-created"
+            fi
             echo "required_workflow=.github/workflows/dotnet.yml" >> "$GITHUB_OUTPUT"
+            echo "source_run_id=" >> "$GITHUB_OUTPUT"
+            echo "source_run_attempt=" >> "$GITHUB_OUTPUT"
+            echo "source_run_status=$state" >> "$GITHUB_OUTPUT"
+            echo "source_run_conclusion=$state" >> "$GITHUB_OUTPUT"
             echo "source_run_url=" >> "$GITHUB_OUTPUT"
-            echo "source_run_conclusion=ambiguous-or-missing" >> "$GITHUB_OUTPUT"
-            echo "::warning::Expected one completed AnyApp .NET run for $TARGET_SHA; found $count. CiAi will preserve this as incomplete/ambiguous evidence."
+            echo "::warning::CiAi will evaluate the workflow identity without inventing a run ID or attempt."
           fi
 
-      - name: Check out pinned CiAi observer
-        uses: actions/checkout@v5
+      - name: Check out pinned CiAi observer source
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
         with:
           repository: TrentBest/TheSingularityWorkshop.CiAi
-          ref: 94e0a13ae171de4fce7eb5989e1dea4fe72cc16c
+          ref: 49a802fcab60fa7411b01892072d7e2c8a2c72a9
           path: _tools/CiAi
+          submodules: recursive
+          persist-credentials: false
 
       - name: Set up .NET
-        uses: actions/setup-dotnet@v5
+        uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1
         with:
           dotnet-version: 8.0.x
 
+      - name: Restore pinned CiAi observer
+        working-directory: _tools/CiAi
+        run: dotnet restore samples/TheSingularityWorkshop.CiAi.ObserveRun/TheSingularityWorkshop.CiAi.ObserveRun.csproj
+
+      - name: Build pinned CiAi observer
+        working-directory: _tools/CiAi
+        run: dotnet build samples/TheSingularityWorkshop.CiAi.ObserveRun/TheSingularityWorkshop.CiAi.ObserveRun.csproj --configuration Release --no-restore
+
       - name: Observe AnyApp commit with CiAi
         id: observe
+        working-directory: _tools/CiAi
         env:
           CIAI_GITHUB_TOKEN: ${{ github.token }}
           CIAI_REQUIRED_WORKFLOW_PATHS: ${{ steps.source-run.outputs.required_workflow }}
           TARGET_SHA: ${{ steps.target.outputs.sha }}
+          OBSERVER_REPOSITORY: TrentBest/AnyApp
         shell: bash
         run: |
+          set -euo pipefail
           mkdir -p artifacts
           set +e
-          dotnet run --project _tools/CiAi/samples/TheSingularityWorkshop.CiAi.ObserveRun --configuration Release -- TrentBest/AnyApp "$TARGET_SHA" artifacts/ciai-anyapp-evidence.json
+          dotnet run --project samples/TheSingularityWorkshop.CiAi.ObserveRun --configuration Release --no-build -- \
+            "$OBSERVER_REPOSITORY" "$TARGET_SHA" artifacts/ciai-anyapp-evidence.json
           result=$?
           set -e
           echo "observer_exit_code=$result" >> "$GITHUB_OUTPUT"
-          echo "CiAi observer exit code: $result (advisory; does not change the AnyApp build verdict)."
+          echo "CiAi observer exit code: $result (advisory; the authoritative AnyApp workflow remains responsible for its own verdict)."
 
-      - name: Publish advisory evidence summary
+      - name: Validate report identity and schema
+        working-directory: _tools/CiAi
+        env:
+          TARGET_SHA: ${{ steps.target.outputs.sha }}
+          REQUIRED_WORKFLOW: ${{ steps.source-run.outputs.required_workflow }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          report="artifacts/ciai-anyapp-evidence.json"
+          test -s "$report"
+          jq -e --arg sha "$TARGET_SHA" --arg workflow "$REQUIRED_WORKFLOW" '
+            .schema == "ciai.commit-observation.v2" and
+            .reportType == "read-only-workflow-observation" and
+            .repository == "TrentBest/AnyApp" and
+            .headSha == $sha and
+            .requiredWorkflowPolicy.configured == true and
+            (.requiredWorkflowResults | length) == 1 and
+            .requiredWorkflowResults[0].WorkflowPath == $workflow
+          ' "$report" >/dev/null
+
+      - name: Publish evidence summary
         if: always()
+        working-directory: _tools/CiAi
         env:
           TARGET_SHA: ${{ steps.target.outputs.sha }}
           SOURCE_RUN_URL: ${{ steps.source-run.outputs.source_run_url }}
+          SOURCE_RUN_ID: ${{ steps.source-run.outputs.source_run_id }}
+          SOURCE_RUN_ATTEMPT: ${{ steps.source-run.outputs.source_run_attempt }}
+          SOURCE_RUN_STATUS: ${{ steps.source-run.outputs.source_run_status }}
           SOURCE_RUN_CONCLUSION: ${{ steps.source-run.outputs.source_run_conclusion }}
+          REQUIRED_WORKFLOW: ${{ steps.source-run.outputs.required_workflow }}
           OBSERVER_EXIT_CODE: ${{ steps.observe.outputs.observer_exit_code }}
         shell: bash
         run: |
+          report="artifacts/ciai-anyapp-evidence.json"
+          policy_state="not-produced"
+          if [ -s "$report" ]; then
+            policy_state="$(jq -r '.requiredWorkflowResults[0].State // "unknown"' "$report")"
+          fi
           {
-            echo "## CiAi — AnyApp commit evidence"
+            echo "## CiAi — AnyApp exact commit evidence"
             echo
             echo "- Repository: TrentBest/AnyApp"
-            echo "- Exact source commit: $TARGET_SHA"
+            echo "- Exact source commit: `$TARGET_SHA`"
+            echo "- Required workflow selector: `$REQUIRED_WORKFLOW`"
             echo "- Authoritative .NET run: ${SOURCE_RUN_URL:-not uniquely resolved}"
-            echo "- Provider conclusion: $SOURCE_RUN_CONCLUSION"
+            echo "- Run ID / attempt: ${SOURCE_RUN_ID:-unknown} / ${SOURCE_RUN_ATTEMPT:-unknown}"
+            echo "- Provider status / conclusion: $SOURCE_RUN_STATUS / $SOURCE_RUN_CONCLUSION"
+            echo "- CiAi policy state: $policy_state"
             echo "- CiAi observer exit code: ${OBSERVER_EXIT_CODE:-not run}"
             echo
-            echo "This is read-only, advisory evidence. It does not block AnyApp CI, merge code, publish NuGet packages, create releases, or deploy."
+            echo "This is read-only evidence. The .NET workflow remains authoritative; this lane does not merge, publish NuGet packages, create releases, or deploy."
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload CiAi evidence reports
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4
         with:
           name: CiAi-AnyApp-evidence-${{ steps.target.outputs.sha }}
           path: |
-            artifacts/ciai-anyapp-evidence.json
-            artifacts/ciai-anyapp-evidence.md
+            _tools/CiAi/artifacts/ciai-anyapp-evidence.json
+            _tools/CiAi/artifacts/ciai-anyapp-evidence.md
           if-no-files-found: warn
           retention-days: 30
