@@ -1,0 +1,38 @@
+name: Sith Branch Policy
+
+on:
+  push:
+    branches: [master, development]
+  pull_request:
+    branches: [master, development]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  canonical-branches-only:
+    name: Require only master and development
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify repository branch inventory
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          actual="$(gh api --paginate "repos/$GH_REPO/branches?per_page=100" --jq '.[].name' | LC_ALL=C sort)"
+          expected="$(printf '%s\\n' development master | LC_ALL=C sort)"
+
+          if [[ "$actual" != "$expected" ]]; then
+            echo "::error::Sith policy violation: the repository must contain exactly master and development."
+            echo "Expected branches:"
+            printf '%s\\n' "$expected"
+            echo "Actual branches:"
+            printf '%s\\n' "$actual"
+            exit 1
+          fi
+
+          echo "Sith policy satisfied: only master and development exist."
