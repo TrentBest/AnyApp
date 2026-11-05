@@ -79,6 +79,15 @@ public partial class MainWindow : Window
 #endif
 
         if (Environment.GetCommandLineArgs().Any(argument =>
+                string.Equals(argument, "--environment-builder", StringComparison.OrdinalIgnoreCase)))
+        {
+            Title = "AnyApp — Environment Builder (native proof)";
+            RootHost.Children.Clear();
+            RootHost.Children.Add(new TheSingularityWorkshop.AnyApp.Environment.EnvironmentAuthoringSurface());
+            return;
+        }
+
+        if (Environment.GetCommandLineArgs().Any(argument =>
                 string.Equals(argument, "--renderer-proof", StringComparison.OrdinalIgnoreCase)))
         {
             RootHost.Children.Clear();
