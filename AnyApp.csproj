@@ -63,7 +63,7 @@
 
     <ProjectReference Include="_dependencies/StoryBuilder/src/StoryBuilder.MicroBundle/StoryBuilder.MicroBundle.csproj"
                       Condition="'$(WorkshopUseRepositorySources)' == 'true' and Exists('$(MSBuildThisFileDirectory)_dependencies/StoryBuilder/src/StoryBuilder.MicroBundle/StoryBuilder.MicroBundle.csproj')"
-                      AdditionalProperties="WorkshopGuiCoreProject=$(MSBuildThisFileDirectory)_dependencies/TheSingularityWorkshop.GUI/src/Core/TheSingularityWorkshop.GUI.Core.csproj" />
+                      AdditionalProperties="WorkshopGuiCoreProject=$(MSBuildThisFileDirectory)_dependencies\\TheSingularityWorkshop.GUI\\src\\Core\\TheSingularityWorkshop.GUI.Core.csproj" />
     <ProjectReference Include="_dependencies/StoryBuilder/src/StoryBuilder.Persistence/StoryBuilder.Persistence.csproj"
                       Condition="'$(WorkshopUseRepositorySources)' == 'true' and Exists('$(MSBuildThisFileDirectory)_dependencies/StoryBuilder/src/StoryBuilder.Persistence/StoryBuilder.Persistence.csproj')" />
     <ProjectReference Include="$(WorkshopExperiencesRoot)/src/Moniker/TheSingularityWorkshop.Experiences.Moniker.csproj" Condition="'$(WorkshopExperiencesRoot)' != '' and Exists('$(WorkshopExperiencesRoot)/src/Moniker/TheSingularityWorkshop.Experiences.Moniker.csproj')" />
