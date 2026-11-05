@@ -3,6 +3,7 @@
 
 # AnyApp
 
+[![Sith Policy](assets/sith-policy.svg)](https://github.com/TrentBest/AnyApp/actions/workflows/sith-policy.yml)
 AnyApp is the desktop proof of the composition architecture.
 
 It is the Windows desktop counterpart to the browser-facing WebPage/WebForge host: the desktop of the Workshop, not another application-specific framework.
