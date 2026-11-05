@@ -7,10 +7,11 @@
 
 # ✳️ 00 AnyApp
 
+[![Sith Policy](assets/sith-policy.svg)](https://github.com/TrentBest/AnyApp/actions/workflows/sith-policy.yml)
+
 AnyApp is the desktop proof of the composition architecture.
 
 It is the Windows desktop counterpart to the browser-facing WebPage/WebForge host: the desktop of the Workshop, not another application-specific framework.
-
 
 This README follows the Workshop's shared [Documentation Standard](https://github.com/TrentBest/TheSingularityWorkshop.FSM_COS/blob/master/DOCUMENTATION_STANDARD.md), while keeping this repository's own purpose and implementation authoritative.
 
@@ -204,9 +205,7 @@ dotnet test tests/TheSingularityWorkshop.AnyApp.Tests/TheSingularityWorkshop.Any
 
 The CI workflow uses a Windows runner because WPF is Windows-specific.
 
-
 ## ProtocolAi source and contract
-
 
 ![ProtocolAi's three outcomes: known values become references, unknown values remain literals, and invalid references fail validation.](https://raw.githubusercontent.com/TrentBest/TheSingularityWorkshop.ProtocolAi/development/docs/images/protocol-ai-three-outcomes.svg)
 
