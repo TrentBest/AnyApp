@@ -15,6 +15,18 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v5
 
+    - name: Checkout private Workshop source for the real 2111 integration test
+      if: ${{ env.GITHUB_PAT != '' }}
+      uses: actions/checkout@v5
+      env:
+        GITHUB_PAT: ${{ secrets.GITHUB_PAT }}
+      with:
+        repository: TrentBest/The
+        token: ${{ env.GITHUB_PAT }}
+        ref: development
+        path: _dependencies/The
+        persist-credentials: false
+
     - name: Setup .NET
       uses: actions/setup-dotnet@v5
       with:
