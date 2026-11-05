@@ -1,4 +1,4 @@
-namespace TheSingularityWorkshop.AnyApp.Environment;
+namespace TheSingularityWorkshop.AnyApp.Environments;
 
 /// <summary>
 /// Versioned, declarative environment composition. This document contains authored intent,
