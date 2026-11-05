@@ -147,6 +147,7 @@ public sealed class EnvironmentAuthoringSurface : UserControl
             Appearance = kind == "floor" ? "stone" : "default"
         });
         _selectedId = id;
+        SyncDocument();
         RefreshWorld();
         RefreshInspector();
         SetStatus($"Added {kind}. Object identity is {id}.");
@@ -155,7 +156,7 @@ public sealed class EnvironmentAuthoringSurface : UserControl
     private void RefreshWorld()
     {
         _world.Children.Clear();
-        foreach (var item in _objects)
+        foreach (var item in _document.Objects)
         {
             var color = item.Kind switch
             {
@@ -234,6 +235,8 @@ public sealed class EnvironmentAuthoringSurface : UserControl
         if (id is not null)
         {
             ReplaceSelected(id, item => item with { X = x, Y = y });
+            SyncDocument();
+            RefreshWorld();
             RefreshInspector();
             SetStatus($"Moved {id} to ({x.ToString("0.##", CultureInfo.InvariantCulture)}, {y.ToString("0.##", CultureInfo.InvariantCulture)}).");
         }
@@ -266,7 +269,8 @@ public sealed class EnvironmentAuthoringSurface : UserControl
             Appearance = string.IsNullOrWhiteSpace(_appearance.Text) ? item.Appearance : _appearance.Text.Trim()
         });
         _document = _document with { Name = string.IsNullOrWhiteSpace(_name.Text) ? _document.Name : _name.Text.Trim() };
-        var validation = ValidateCurrent();
+        SyncDocument();
+        var validation = EnvironmentDocumentValidator.Validate(_document);
         if (!validation.IsValid)
         {
             SetStatus(string.Join(" ", validation.Diagnostics.Select(item => item.Message)));
@@ -292,6 +296,7 @@ public sealed class EnvironmentAuthoringSurface : UserControl
         _objects.RemoveAll(item => item.Id == _selectedId);
         _connections.RemoveAll(item => item.SourceObjectId == _selectedId || item.TargetObjectId == _selectedId);
         _selectedId = null;
+        SyncDocument();
         RefreshWorld();
         RefreshInspector();
         SetStatus("Selected object and its dependent connections were removed.");
@@ -299,6 +304,16 @@ public sealed class EnvironmentAuthoringSurface : UserControl
 
     private void SetMode(bool preview)
     {
+        SyncDocument();
+        if (preview)
+        {
+            var validation = EnvironmentDocumentValidator.Validate(_document);
+            if (!validation.IsValid)
+            {
+                SetStatus(string.Join(" ", validation.Diagnostics.Select(item => item.Message)));
+                return;
+            }
+        }
         _previewMode = preview;
         _palette.IsEnabled = !preview;
         RefreshWorld();
@@ -322,9 +337,18 @@ public sealed class EnvironmentAuthoringSurface : UserControl
         _hermit.Text = $"Read-only local inspection\nObject: {item.Id}\nKind: {item.Kind}\nPosition: ({item.X:0.##}, {item.Y:0.##})\nSize: {item.Width:0.##} × {item.Height:0.##}\nAppearance: {item.Appearance}\nNo external model, registry capability, or physical simulation is connected.";
     }
 
+    private void SyncDocument()
+    {
+        _document = _document with
+        {
+            Objects = _objects.ToArray(),
+            Connections = _connections.ToArray()
+        };
+    }
+
     private EnvironmentValidationResult ValidateCurrent()
     {
-        _document = _document with { Objects = _objects.ToArray(), Connections = _connections.ToArray() };
+        SyncDocument();
         return EnvironmentDocumentValidator.Validate(_document);
     }
 
