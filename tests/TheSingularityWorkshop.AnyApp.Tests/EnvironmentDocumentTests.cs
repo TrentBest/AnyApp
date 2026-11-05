@@ -113,6 +113,27 @@ public sealed class EnvironmentDocumentTests
     }
 
     [Fact]
+    public void RejectsInvalidWorldBoundsAndObjectsOutsideThem()
+    {
+        var document = new EnvironmentDocument
+        {
+            Bounds = new EnvironmentBounds { Width = 10, Height = 10 },
+            Objects =
+            [
+                new EnvironmentObject { Id = "outside", Kind = "cube", X = 9, Y = 1, Width = 2, Height = 2 }
+            ]
+        };
+
+        var result = EnvironmentDocumentValidator.Validate(document);
+
+        Assert.Contains(result.Diagnostics, item => item.Code == "environment.object.bounds.exceeded");
+
+        var invalidBounds = EnvironmentDocumentValidator.Validate(
+            new EnvironmentDocument { Bounds = new EnvironmentBounds { Width = double.PositiveInfinity, Height = 0 } });
+        Assert.Contains(invalidBounds.Diagnostics, item => item.Code == "environment.bounds.invalid");
+    }
+
+    [Fact]
     public void RejectsUnsupportedSchemaVersion()
     {
         var result = EnvironmentDocumentValidator.Validate(new EnvironmentDocument { SchemaVersion = 2 });
