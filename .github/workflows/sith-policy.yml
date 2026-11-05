@@ -157,14 +157,19 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           event_deleted="$(jq -r '.deleted // false' "$GITHUB_EVENT_PATH")"
+          publish_branch="$DEFAULT_BRANCH"
+          if [[ "$GITHUB_REF" == "refs/heads/development" ]]; then
+            publish_branch="development"
+          fi
+
           if [[ "$GITHUB_REF" == "refs/heads/$DEFAULT_BRANCH" || "$GITHUB_REF" == "refs/heads/development" || "$GITHUB_EVENT_NAME" == "delete" || "$event_deleted" == "true" ]]; then
             git add assets/sith-policy.svg assets/sith-policy.json
             if ! git diff --cached --quiet; then
               git commit -m "chore: refresh Sith policy evidence"
-              git push origin "HEAD:$DEFAULT_BRANCH"
+              git push origin "HEAD:$publish_branch"
             fi
           else
-            echo "Badge publication is reserved for default-branch evaluations."
+            echo "Badge publication is reserved for master/development evaluations and branch deletion."
           fi
 
           {
