@@ -16,11 +16,12 @@
     "master",
     "work/ciai-evidence-hardening",
     "work/microbundle-2111-semantic-root-proof",
-    "work/publish-size-matrix"
+    "work/publish-size-matrix",
+    "work/sith-badge-earned-evidence"
   ],
-  "branch_count": 11,
+  "branch_count": 12,
   "status": "NON-COMPLIANT",
-  "evaluated_at": "2026-11-05T07:18:11Z",
-  "workflow_run": "https://github.com/TrentBest/AnyApp/actions/runs/41986254897",
-  "triggering_commit": "5729aca7d77f8bfa30b1f72580fa34e93568e651"
+  "evaluated_at": "2026-11-05T09:42:41Z",
+  "workflow_run": "https://github.com/TrentBest/AnyApp/actions/runs/42004596043",
+  "triggering_commit": "d59dbcb2d6c570b02893505c7a79d6997a8d66cb"
 }
