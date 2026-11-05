@@ -102,6 +102,13 @@ public static class EnvironmentDocumentValidator
         if (string.IsNullOrWhiteSpace(document.Name))
             diagnostics.Add(Error("environment.name.empty", "The environment name must not be empty."));
 
+        var bounds = document.Bounds;
+        if (bounds is null)
+            diagnostics.Add(Error("environment.bounds.null", "Environment world bounds must be defined."));
+        else if (!double.IsFinite(bounds.Width) || !double.IsFinite(bounds.Height) ||
+                 bounds.Width <= 0 || bounds.Height <= 0)
+            diagnostics.Add(Error("environment.bounds.invalid", "Environment world bounds must be finite and greater than zero."));
+
         if (document.Objects is null)
         {
             diagnostics.Add(Error("environment.objects.null", "The object collection must not be null."));
@@ -134,6 +141,12 @@ public static class EnvironmentDocumentValidator
                 item.Width <= 0 || item.Height <= 0)
                 diagnostics.Add(Error("environment.object.size.invalid",
                     "Object width and height must be finite and greater than zero.", item.Id));
+
+            if (bounds is not null && double.IsFinite(bounds.Width) && double.IsFinite(bounds.Height) &&
+                bounds.Width > 0 && bounds.Height > 0 &&
+                (item.X < 0 || item.Y < 0 || item.X + item.Width > bounds.Width || item.Y + item.Height > bounds.Height))
+                diagnostics.Add(Error("environment.object.bounds.exceeded",
+                    "Object geometry must remain inside the declared environment bounds.", item.Id));
 
             if (string.IsNullOrWhiteSpace(item.Appearance))
                 diagnostics.Add(Error("environment.object.appearance.empty",
