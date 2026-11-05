@@ -155,6 +155,8 @@ public sealed class EnvironmentAuthoringSurface : UserControl
 
     private void RefreshWorld()
     {
+        _world.Width = _document.Bounds.Width * UnitsToPixels;
+        _world.Height = _document.Bounds.Height * UnitsToPixels;
         _world.Children.Clear();
         foreach (var item in _document.Objects)
         {
