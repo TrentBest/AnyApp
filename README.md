@@ -419,3 +419,16 @@ AnyApp's current source-mode build failure has a focused handoff for VisualizeLL
 
 <!-- THE SINGULARITY WORKSHOP FOOTER -->
 <p align="center"><img src="https://raw.githubusercontent.com/TrentBest/FSM_API/master/Documentation/Branding/TheSingularityWorkshop.png" alt="The Singularity Workshop" width="200" /></p>
+
+## Environment Builder native proof
+
+The first bounded environment-authoring surface is available with:
+
+```powershell
+dotnet run --project AnyApp.csproj -- --environment-builder
+```
+
+This proof adds a small declarative object palette, a 2D WPF workspace, stable object IDs, selection and drag placement, a property inspector, removal, JSON save/load, structural validation, and a read-only Environment mode with a deterministic local Hermit inspection placeholder.
+
+The WPF canvas and pointer handling are deliberately host-local proof code. They are not presented as the reusable GUI spatial-interaction contract or as Visualize scene rendering. Those upstream requirements are tracked in [GUI #75](https://github.com/TrentBest/TheSingularityWorkshop.GUI/issues/75) and [Visualize #43](https://github.com/TrentBest/TheSingularityWorkshop.Visualize/issues/43). No model provider, registered capability execution, physical simulation, or Hermit runtime is connected yet. The document and validator are the authoritative artifact for this first slice; preview mode reads that same in-memory composition.
+
