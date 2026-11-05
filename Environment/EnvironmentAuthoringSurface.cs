@@ -8,7 +8,7 @@ using System.Windows.Media;
 using System.Windows.Shapes;
 using Microsoft.Win32;
 
-namespace TheSingularityWorkshop.AnyApp.Environment;
+namespace TheSingularityWorkshop.AnyApp.Environments;
 
 /// <summary>
 /// Bounded WPF host proof for the environment document. Pointer handling and the canvas
