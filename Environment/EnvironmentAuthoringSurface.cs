@@ -31,6 +31,7 @@ public sealed class EnvironmentAuthoringSurface : UserControl
     private readonly TextBlock _status = new() { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(8) };
     private readonly TextBlock _hermit = new() { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(8) };
     private readonly TextBox _name = new() { Margin = new Thickness(0, 2, 0, 8) };
+    private readonly TextBlock _identity = new() { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 2, 0, 8) };
     private readonly TextBox _x = new() { Margin = new Thickness(0, 2, 0, 8) };
     private readonly TextBox _y = new() { Margin = new Thickness(0, 2, 0, 8) };
     private readonly TextBox _width = new() { Margin = new Thickness(0, 2, 0, 8) };
@@ -110,7 +111,7 @@ public sealed class EnvironmentAuthoringSurface : UserControl
         _inspector.Children.Add(new TextBlock { Text = "Environment name" });
         _inspector.Children.Add(_name);
         _inspector.Children.Add(new TextBlock { Text = "Stable object ID" });
-        _inspector.Children.Add(new TextBlock { Text = "(identity is not position)", Foreground = Brushes.Gray, Margin = new Thickness(0, 0, 0, 6) });
+        _inspector.Children.Add(_identity);
         AddProperty("X", _x);
         AddProperty("Y", _y);
         AddProperty("Width", _width);
@@ -248,6 +249,7 @@ public sealed class EnvironmentAuthoringSurface : UserControl
     {
         _name.Text = _document.Name;
         var selected = _objects.FirstOrDefault(item => item.Id == _selectedId);
+        _identity.Text = selected?.Id ?? "(none)";
         _x.Text = selected?.X.ToString(CultureInfo.InvariantCulture) ?? "";
         _y.Text = selected?.Y.ToString(CultureInfo.InvariantCulture) ?? "";
         _width.Text = selected?.Width.ToString(CultureInfo.InvariantCulture) ?? "";
