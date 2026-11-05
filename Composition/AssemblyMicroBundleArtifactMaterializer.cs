@@ -1,6 +1,7 @@
-using TheSingularityWorkshop.MicroBundleDomain;
+using System.Buffers.Binary;
 using System.Reflection;
 using TheSingularityWorkshop.FSM_COS;
+using TheSingularityWorkshop.MicroBundleDomain;
 using TheSingularityWorkshop.MicroBundleRepository.Core;
 
 namespace TheSingularityWorkshop.AnyApp;
@@ -17,18 +18,24 @@ public interface IMicroBundleArtifactMaterializer
 /// <summary>
 /// Loads verified .NET assembly bytes and discovers their public parameterless
 /// MicroBundle by the identity carried by the repository artifact address.
+/// Accepts raw assembly bytes and the Workshop FSMB v1 assembly envelope.
 /// </summary>
 public sealed class AssemblyMicroBundleArtifactMaterializer : IMicroBundleArtifactMaterializer
 {
+    private static ReadOnlySpan<byte> EnvelopeMagic => "FSMB"u8;
+    private const int EnvelopeHeaderLength = 20;
+    private const uint EnvelopeFormatVersion = 1;
+
     public IMicroBundle Materialize(MicroBundleArtifact artifact)
     {
         ArgumentNullException.ThrowIfNull(artifact);
 
-        if (artifact.Content.IsEmpty)
+        var assemblyBytes = GetAssemblyBytes(artifact);
+        if (assemblyBytes.IsEmpty)
             throw new InvalidOperationException(
                 $"MicroBundle artifact {artifact.Address} contains no assembly bytes.");
 
-        var assembly = Assembly.Load(artifact.Content.ToArray());
+        var assembly = Assembly.Load(assemblyBytes.ToArray());
         var candidates = assembly
             .GetTypes()
             .Where(type =>
@@ -49,5 +56,39 @@ public sealed class AssemblyMicroBundleArtifactMaterializer : IMicroBundleArtifa
             _ => throw new InvalidOperationException(
                 $"Assembly artifact {artifact.Address} contains multiple MicroBundles with ID {artifact.Address.BundleId}.")
         };
+    }
+
+    private static ReadOnlyMemory<byte> GetAssemblyBytes(MicroBundleArtifact artifact)
+    {
+        var content = artifact.Content;
+        var bytes = content.Span;
+
+        // Raw assembly artifacts remain supported for compatibility with existing
+        // repository catalog tests and previously generated raw-assembly publications.
+        if (bytes.Length < EnvelopeMagic.Length ||
+            !bytes[..EnvelopeMagic.Length].SequenceEqual(EnvelopeMagic))
+            return content;
+
+        if (bytes.Length < EnvelopeHeaderLength)
+            throw new InvalidOperationException(
+                $"MicroBundle artifact {artifact.Address} contains a truncated FSMB envelope.");
+
+        var formatVersion = BinaryPrimitives.ReadUInt32LittleEndian(bytes[4..8]);
+        if (formatVersion != EnvelopeFormatVersion)
+            throw new InvalidOperationException(
+                $"MicroBundle artifact {artifact.Address} uses unsupported FSMB envelope version {formatVersion}.");
+
+        var envelopeBundleId = BinaryPrimitives.ReadUInt64LittleEndian(bytes[8..16]);
+        if (envelopeBundleId != artifact.Address.BundleId)
+            throw new InvalidOperationException(
+                $"FSMB envelope identifies MicroBundle {envelopeBundleId}, but its repository address identifies {artifact.Address.BundleId}.");
+
+        var assemblyLength = BinaryPrimitives.ReadUInt32LittleEndian(bytes[16..20]);
+        var actualAssemblyLength = bytes.Length - EnvelopeHeaderLength;
+        if (assemblyLength == 0 || assemblyLength != actualAssemblyLength)
+            throw new InvalidOperationException(
+                $"FSMB envelope for MicroBundle {artifact.Address.BundleId} declares {assemblyLength} assembly bytes but contains {actualAssemblyLength}.");
+
+        return content[EnvelopeHeaderLength..];
     }
 }
