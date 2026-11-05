@@ -15,14 +15,26 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v5
 
-    - name: Checkout private Workshop source for the real 2111 integration test
-      if: ${{ env.GITHUB_PAT != '' }}
-      uses: actions/checkout@v5
+    - name: Check whether private Workshop source access is configured
+      id: workshop-source
+      shell: pwsh
       env:
         GITHUB_PAT: ${{ secrets.GITHUB_PAT }}
+      run: |
+        if ([string]::IsNullOrWhiteSpace($env:GITHUB_PAT)) {
+          "available=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          Write-Host "Private Workshop source is not configured; the opt-in 2111 source test will be excluded."
+        }
+        else {
+          "available=true" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+        }
+
+    - name: Checkout private Workshop source for the real 2111 integration test
+      if: steps.workshop-source.outputs.available == 'true'
+      uses: actions/checkout@v5
       with:
         repository: TrentBest/The
-        token: ${{ env.GITHUB_PAT }}
+        token: ${{ secrets.GITHUB_PAT }}
         ref: development
         path: _dependencies/The
         persist-credentials: false
