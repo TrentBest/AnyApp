@@ -48,6 +48,7 @@ This launches the local development Moniker Experience path described below. It 
 ## 05 — Choose your next step
 
 - [Documentation index](docs/DOCUMENTATION_INDEX.md) — focused subsystem guides, contracts, and verification.
+- [Pages playground direction](docs/PAGES-PLAYGROUND.md) — interactive Experiences, paired Renderer/Visualize inspection, and the incremental sandbox plan.
 - [Theory and learning path](docs/theory/README.md) — learn the native-host domain from first principles.
 - [Agent onboarding PR #35](https://github.com/TrentBest/AnyApp/pull/35) — proposed repository-specific contributor instructions; not merged yet.
 - [CI dependency modes](docs/CI-DEPENDENCY-MODES.md) — distinguish source integration from public-package compatibility.
