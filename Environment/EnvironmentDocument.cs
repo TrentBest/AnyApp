@@ -10,8 +10,16 @@ public sealed record EnvironmentDocument
 
     public int SchemaVersion { get; init; } = CurrentSchemaVersion;
     public string Name { get; init; } = "Untitled environment";
+    public EnvironmentBounds Bounds { get; init; } = new();
     public IReadOnlyList<EnvironmentObject> Objects { get; init; } = Array.Empty<EnvironmentObject>();
     public IReadOnlyList<EnvironmentConnection> Connections { get; init; } = Array.Empty<EnvironmentConnection>();
+}
+
+/// <summary>Finite world-space extents for the authored 2D environment, measured in document units.</summary>
+public sealed record EnvironmentBounds
+{
+    public double Width { get; init; } = 40;
+    public double Height { get; init; } = 800d / 30d;
 }
 
 /// <summary>A placed visual/world object. Id is independent of position and appearance.</summary>
