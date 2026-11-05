@@ -16,10 +16,22 @@
   <PropertyGroup Condition="'$(WorkshopUseRepositorySources)' == 'true' and Exists('$(MSBuildThisFileDirectory)../../_dependencies/StoryBuilder/src/StoryBuilder.MicroBundle/StoryBuilder.MicroBundle.csproj')">
     <DefineConstants>$(DefineConstants);WORKSHOP_STORYBUILDER</DefineConstants>
   </PropertyGroup>
+  <!-- The real Workshop 2111 proof is enabled only when The's source checkout is present. -->
+  <PropertyGroup Condition="'$(WorkshopTheRoot)' == '' and Exists('$(MSBuildThisFileDirectory)../../_dependencies/The/Workshop/Workshop.MicroBundle/Workshop.MicroBundle.csproj')">
+    <WorkshopTheRoot>$(MSBuildThisFileDirectory)../../_dependencies/The</WorkshopTheRoot>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(WorkshopTheRoot)' == '' and Exists('$(MSBuildThisFileDirectory)../../../The/Workshop/Workshop.MicroBundle/Workshop.MicroBundle.csproj')">
+    <WorkshopTheRoot>$(MSBuildThisFileDirectory)../../../The</WorkshopTheRoot>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(WorkshopTheRoot)' != ''">
+    <DefineConstants>$(DefineConstants);WORKSHOP_THE_SOURCE</DefineConstants>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
     <PackageReference Include="xunit" Version="2.9.2" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
     <ProjectReference Include="../../AnyApp.csproj" />
+    <ProjectReference Include="$(WorkshopTheRoot)/Workshop/Workshop.MicroBundle/Workshop.MicroBundle.csproj" Condition="'$(WorkshopTheRoot)' != ''" />
   </ItemGroup>
 </Project>
