@@ -83,7 +83,7 @@ public partial class MainWindow : Window
         {
             Title = "AnyApp — Environment Builder (native proof)";
             RootHost.Children.Clear();
-            RootHost.Children.Add(new TheSingularityWorkshop.AnyApp.Environment.EnvironmentAuthoringSurface());
+            RootHost.Children.Add(new TheSingularityWorkshop.AnyApp.Environments.EnvironmentAuthoringSurface());
             return;
         }
 
