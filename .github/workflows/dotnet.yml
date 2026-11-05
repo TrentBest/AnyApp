@@ -15,6 +15,61 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v5
 
+    - name: Capture exact workflow and checkout provenance
+      id: provenance
+      env:
+        WORKFLOW_DEFINITION_REF: ${{ github.workflow_ref }}
+        WORKFLOW_DEFINITION_SHA: ${{ github.workflow_sha }}
+        EVENT_NAME: ${{ github.event_name }}
+        EVENT_REF: ${{ github.ref }}
+        EVENT_SHA: ${{ github.sha }}
+        PR_NUMBER: ${{ github.event.pull_request.number || '' }}
+        PR_HEAD_REF: ${{ github.event.pull_request.head.ref || '' }}
+        PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || '' }}
+        PR_BASE_REF: ${{ github.event.pull_request.base.ref || '' }}
+        PR_BASE_SHA: ${{ github.event.pull_request.base.sha || '' }}
+        REPOSITORY: ${{ github.repository }}
+      shell: pwsh
+      run: |
+        $actualSha = (git rev-parse HEAD).Trim()
+        if ($LASTEXITCODE -ne 0 -or $actualSha.Length -ne 40) {
+          throw "Unable to establish the exact checked-out commit SHA."
+        }
+        $event = @{
+          name = $env:EVENT_NAME
+          ref = $env:EVENT_REF
+          sha = $env:EVENT_SHA
+          pullRequest = $null
+        }
+        if ($env:PR_NUMBER) {
+          $event.pullRequest = @{
+            number = [int]$env:PR_NUMBER
+            head = @{ ref = $env:PR_HEAD_REF; sha = $env:PR_HEAD_SHA }
+            base = @{ ref = $env:PR_BASE_REF; sha = $env:PR_BASE_SHA }
+          }
+        }
+        $record = @{
+          schema = "ciai.workflow-provenance.v1"
+          repository = $env:REPOSITORY
+          runId = [long]$env:GITHUB_RUN_ID
+          runAttempt = [int]$env:GITHUB_RUN_ATTEMPT
+          workflow = @{ ref = $env:WORKFLOW_DEFINITION_REF; sha = $env:WORKFLOW_DEFINITION_SHA }
+          event = $event
+          checkout = @{ ref = $env:EVENT_REF; sha = $actualSha.ToLowerInvariant() }
+        }
+        New-Item -ItemType Directory -Force -Path "$env:RUNNER_TEMP/ciai" | Out-Null
+        $record | ConvertTo-Json -Depth 8 | Set-Content -Encoding utf8 "$env:RUNNER_TEMP/ciai/ciai-workflow-provenance.json"
+        Write-Host "Verified checkout: $env:REPOSITORY $actualSha"
+
+    - name: Upload verified workflow provenance
+      if: always()
+      uses: actions/upload-artifact@v5
+      with:
+        name: ciai-workflow-provenance-${{ github.run_id }}-${{ github.run_attempt }}
+        path: ${{ runner.temp }}/ciai/ciai-workflow-provenance.json
+        if-no-files-found: warn
+        retention-days: 30
+
     - name: Setup .NET
       uses: actions/setup-dotnet@v5
       with:
@@ -179,7 +234,16 @@ jobs:
       run: |
         $sourceRoot = "$env:GITHUB_WORKSPACE/_dependencies"
         $guiCoreProject = Join-Path $sourceRoot "TheSingularityWorkshop.GUI/src/Core/TheSingularityWorkshop.GUI.Core.csproj"
-        dotnet test tests/TheSingularityWorkshop.AnyApp.Tests/TheSingularityWorkshop.AnyApp.Tests.csproj --configuration Release --no-restore --verbosity normal -p:WorkshopUseRepositorySources=true -p:WorkshopSourceRoot="$sourceRoot" "-p:WorkshopGuiCoreProject=$guiCoreProject"
+        dotnet test tests/TheSingularityWorkshop.AnyApp.Tests/TheSingularityWorkshop.AnyApp.Tests.csproj --configuration Release --no-restore --verbosity normal --logger "trx;LogFileName=anyapp.trx" --results-directory artifacts/test-results -p:WorkshopUseRepositorySources=true -p:WorkshopSourceRoot="$sourceRoot" "-p:WorkshopGuiCoreProject=$guiCoreProject"
+
+    - name: Upload AnyApp test-result artifact for CiAi
+      if: always()
+      uses: actions/upload-artifact@v5
+      with:
+        name: ciai-test-results-${{ github.run_id }}-${{ github.run_attempt }}-build
+        path: artifacts/test-results/**/*.trx
+        if-no-files-found: warn
+        retention-days: 7
 
     - name: Restore AnyApp Windows self-contained publish graph
       id: restore-windows-publish
