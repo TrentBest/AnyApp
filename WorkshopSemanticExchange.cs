@@ -100,4 +100,19 @@ public static class WorkshopSemanticExchange
                 candidate.ProtocolId == reference.ProtocolId &&
                 candidate.SymbolId == reference.SymbolId);
     }
+
+    /// <summary>
+    /// Rejects an Experience manifest whose optional intent is not admitted by the host grammar.
+    /// This is a structural boundary check, not application-specific authorization.
+    /// </summary>
+    public static void ValidateManifestIntent(ExperienceManifest manifest)
+    {
+        ArgumentNullException.ThrowIfNull(manifest);
+
+        if (manifest.Intent is not null && !IsAllowed(manifest.Intent))
+        {
+            throw new InvalidOperationException(
+                $"Experience intent '{manifest.Intent.Name}' is not admitted by the host semantic grammar.");
+        }
+    }
 }
