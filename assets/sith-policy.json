@@ -19,7 +19,7 @@
   ],
   "branch_count": 10,
   "status": "NON-COMPLIANT",
-  "evaluated_at": "2026-11-07T02:05:51Z",
-  "workflow_run": "https://github.com/TrentBest/AnyApp/actions/runs/42327478472",
-  "triggering_commit": "31a862c6e50c0bad78588b185996ddd6af760242"
+  "evaluated_at": "2026-11-07T02:06:02Z",
+  "workflow_run": "https://github.com/TrentBest/AnyApp/actions/runs/42327480451",
+  "triggering_commit": "5b795467196061aabef0396e87a94f3d6e64397a"
 }
