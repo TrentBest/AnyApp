@@ -379,6 +379,43 @@ public sealed class AnyAppRuntimeTests
     }
 
     [Fact]
+    public void ExperienceManifest_RejectsProtocolKnownIntentNotAdmittedByHostGrammar()
+    {
+        var manifest = new ExperienceManifest(
+            ForgeMicroBundle.ExperienceId,
+            "1.0.0",
+            ForgeMicroBundle.RuntimeId,
+            [new ExperienceBundleRequest(ForgeMicroBundle.BundleId, "")],
+            new SemanticIntent("inspect.workshop", WorkshopSemanticExchange.IntentProtocolId));
+
+        var exception = Assert.Throws<InvalidOperationException>(
+            () => WorkshopSemanticExchange.ValidateManifestIntent(manifest));
+
+        Assert.Equal(
+            "Experience intent 'inspect.workshop' is not admitted by the host semantic grammar.",
+            exception.Message);
+    }
+
+    [Fact]
+    public void ExperienceManifest_AllowsMissingOrGrammarAdmittedIntent()
+    {
+        var withoutIntent = new ExperienceManifest(
+            ForgeMicroBundle.ExperienceId,
+            "1.0.0",
+            ForgeMicroBundle.RuntimeId,
+            [new ExperienceBundleRequest(ForgeMicroBundle.BundleId, "")]);
+        var admittedIntent = new ExperienceManifest(
+            ForgeMicroBundle.ExperienceId,
+            "1.0.0",
+            ForgeMicroBundle.RuntimeId,
+            [new ExperienceBundleRequest(ForgeMicroBundle.BundleId, "")],
+            WorkshopSemanticExchange.OpenForgeIntent);
+
+        WorkshopSemanticExchange.ValidateManifestIntent(withoutIntent);
+        WorkshopSemanticExchange.ValidateManifestIntent(admittedIntent);
+    }
+
+    [Fact]
     public void ExperienceManifest_CarriesSemanticIntent()
     {
         var manifest = new ExperienceManifest(
