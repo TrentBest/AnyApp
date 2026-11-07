@@ -17,6 +17,7 @@ public static class WorkshopSemanticExchange
     public const ulong IntentProtocolId = 4200;
     public const ulong OpenForgeSymbolId = 4201;
     public const ulong ExploreExperiencesSymbolId = 4202;
+    public const ulong InspectWorkshopSymbolId = 4203;
 
     public const ulong ExperienceIntentGrammarId = 4300;
     public const ulong ExperienceIntentStartSymbolId = 4301;
@@ -27,6 +28,8 @@ public static class WorkshopSemanticExchange
         new ProtocolBuilder(IntentProtocolId, "WorkshopExperienceIntents")
             .Define(OpenForgeSymbolId, "openForge", "open.forge")
             .Define(ExploreExperiencesSymbolId, "exploreExperiences", "explore.experiences")
+            // Known to the protocol, deliberately not admitted by the current host grammar.
+            .Define(InspectWorkshopSymbolId, "inspectWorkshop", "inspect.workshop")
             .Build();
 
     public static GrammarDefinition IntentGrammar { get; } =
