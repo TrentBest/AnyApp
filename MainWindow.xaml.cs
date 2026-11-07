@@ -514,15 +514,12 @@ public partial class MainWindow : Window
     {
         ArgumentNullException.ThrowIfNull(manifest);
 
+        // Reject structurally invalid host intents before starting or configuring host services.
+        WorkshopSemanticExchange.ValidateManifestIntent(manifest);
+
         _webBridge.ConfigureEndpoint(GetWebBridgeEndpoint());
         _webBridge.Start();
         _webBridge.SetState("composing", false);
-
-        if (manifest.Intent is not null && !WorkshopSemanticExchange.IsAllowed(manifest.Intent))
-        {
-            throw new InvalidOperationException(
-                $"Experience intent '{manifest.Intent.Name}' is not admitted by the host semantic grammar.");
-        }
 
         // Start the destination composition immediately. Compose a small startup
         // manifest in parallel so its Moniker can be presented while the destination
