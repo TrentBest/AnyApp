@@ -346,6 +346,19 @@ public sealed class AnyAppRuntimeTests
     }
 
     [Fact]
+    public void SemanticExchange_ResolvesProtocolKnownSymbolThatGrammarDoesNotAdmit()
+    {
+        var intent = new SemanticIntent("inspect.workshop", WorkshopSemanticExchange.IntentProtocolId);
+
+        var reference = WorkshopSemanticExchange.Resolve(intent);
+
+        Assert.Equal(WorkshopSemanticExchange.IntentProtocolId, reference.ProtocolId);
+        Assert.Equal(WorkshopSemanticExchange.InspectWorkshopSymbolId, reference.SymbolId);
+        Assert.Equal("inspect.workshop", WorkshopSemanticExchange.IntentProtocol.Decode(reference));
+        Assert.False(WorkshopSemanticExchange.IsAllowed(intent));
+    }
+
+    [Fact]
     public void SemanticExchange_IsAllowedReturnsFalseForUnknownOrForeignIntents()
     {
         Assert.False(WorkshopSemanticExchange.IsAllowed(
