@@ -12,12 +12,11 @@
     "integration/fsm-cos-alpha7-proof",
     "master",
     "work/ciai-evidence-hardening",
-    "work/microbundle-2111-semantic-root-proof",
     "work/publish-size-matrix"
   ],
-  "branch_count": 8,
+  "branch_count": 7,
   "status": "NON-COMPLIANT",
-  "evaluated_at": "2026-11-08T04:36:14Z",
-  "workflow_run": "https://github.com/TrentBest/AnyApp/actions/runs/42447476964",
-  "triggering_commit": "4700800b2f88806f6ed93576c19438312ef0676b"
+  "evaluated_at": "2026-11-08T04:36:26Z",
+  "workflow_run": "https://github.com/TrentBest/AnyApp/actions/runs/42447490722",
+  "triggering_commit": "d7547dd8f872a6f658d66cca26c38d0d28c22c03"
 }
