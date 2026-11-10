@@ -9,17 +9,14 @@
     "development",
     "docs/anyapp-agent-onboarding",
     "feature/ciai-trx-provenance-producer",
-    "fix/isolated-publish-assembly-name",
-    "fix/pin-resolved-runtime-roots",
     "integration/fsm-cos-alpha7-proof",
     "master",
     "work/ciai-evidence-hardening",
-    "work/microbundle-2111-semantic-root-proof",
     "work/publish-size-matrix"
   ],
-  "branch_count": 10,
+  "branch_count": 7,
   "status": "NON-COMPLIANT",
-  "evaluated_at": "2026-11-07T04:52:18Z",
-  "workflow_run": "https://github.com/TrentBest/AnyApp/actions/runs/42340292317",
-  "triggering_commit": "b4161fb29e004c47b92d34727f49887a254c106f"
+  "evaluated_at": "2026-11-10T01:35:43Z",
+  "workflow_run": "https://github.com/TrentBest/AnyApp/actions/runs/42736873603",
+  "triggering_commit": "5409526e96ffa1d21079bfc2a6f802ecc95b65ee"
 }
