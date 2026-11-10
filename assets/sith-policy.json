@@ -7,12 +7,11 @@
   ],
   "actual_branches": [
     "development",
-    "integration/fsm-cos-alpha7-proof",
     "master"
   ],
-  "branch_count": 3,
-  "status": "NON-COMPLIANT",
-  "evaluated_at": "2026-11-10T05:19:57Z",
-  "workflow_run": "https://github.com/TrentBest/AnyApp/actions/runs/42761445080",
+  "branch_count": 2,
+  "status": "COMPLIANT",
+  "evaluated_at": "2026-11-10T05:20:09Z",
+  "workflow_run": "https://github.com/TrentBest/AnyApp/actions/runs/42761461229",
   "triggering_commit": "00aac8316b18581de039a535ceb875162db354aa"
 }
