@@ -21,10 +21,10 @@ jobs:
     name: Evaluate permanent branch policy
     runs-on: ubuntu-24.04
     steps:
-      - name: Check out the canonical evidence branch
+      - name: Check out the default branch
         uses: actions/checkout@v7
         with:
-          ref: development
+          ref: ${{ github.event.repository.default_branch }}
           fetch-depth: 0
 
       - name: Evaluate every repository branch and update the living badge
@@ -32,6 +32,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
           set -euo pipefail
           mkdir -p assets
@@ -40,26 +42,14 @@ jobs:
           status="UNVERIFIED"
           branches=()
           branch_count="unknown"
-          inventory_ok=false
-          default_branch="unknown"
-          default_file="$(mktemp)"
-          trap 'rm -f "$branch_file" "$default_file"' EXIT
 
           if gh api --paginate "repos/$GH_REPO/branches?per_page=100" --jq '.[].name' > "$branch_file"; then
             mapfile -t branches < <(sort -u "$branch_file")
             branch_count="${#branches[@]}"
-            inventory_ok=true
-          fi
-
-          if gh api "repos/$GH_REPO" --jq '.default_branch' > "$default_file"; then
-            default_branch="$(cat "$default_file")"
-          fi
-
-          if [[ "$inventory_ok" == true && "$default_branch" != "unknown" ]]; then
             if [[ "$branch_count" -eq 2 &&
                   "${branches[0]}" == "development" &&
                   "${branches[1]}" == "master" &&
-                  "$default_branch" == "master" ]]; then
+                  "$DEFAULT_BRANCH" == "master" ]]; then
               status="COMPLIANT"
             else
               status="NON-COMPLIANT"
@@ -168,15 +158,15 @@ jobs:
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-          if [[ "$GITHUB_ACTOR" == "github-actions[bot]" ]]; then
-            echo "Skipping evidence publication for the bot's own push to prevent a refresh loop."
-          else
+          event_deleted="$(jq -r '.deleted // false' "$GITHUB_EVENT_PATH")"
+          if [[ "$GITHUB_REF" == "refs/heads/$DEFAULT_BRANCH" || "$GITHUB_EVENT_NAME" == "delete" || "$event_deleted" == "true" ]]; then
             git add assets/sith-policy.svg assets/sith-policy.json
             if ! git diff --cached --quiet; then
               git commit -m "chore: refresh Sith policy evidence"
-              git push origin HEAD:development
+              git push origin "HEAD:$DEFAULT_BRANCH"
             fi
+          else
+            echo "Badge publication is reserved for default-branch evaluations."
           fi
 
           {
