@@ -41,6 +41,8 @@ The initial UML inventory is incomplete: one explicit UML companion is present i
 ## 04 — Verification and evidence
 
 - [CI dependency modes](CI-DEPENDENCY-MODES.md) — what source-mode and public-package workflows prove, and what they do not.
+- [CiAi evidence integration](CIAI_EVIDENCE_INTEGRATION.md) — exact-run observation, provenance/TRX artifacts, and trusted-ingestion boundaries.
+- [Historical publish-size experiment](PUBLISH-SIZE-EXPERIMENT.md) — archived size/startup measurements and the bundle inspector.
 - [Startup/offline recovery tests](https://github.com/TrentBest/AnyApp/tree/development/tests/TheSingularityWorkshop.AnyApp.Tests) — test project for host startup, persistence, repository catalog, and runtime composition.
 - [GitHub Actions workflows](https://github.com/TrentBest/AnyApp/tree/development/.github/workflows) — CI, baseline measurements, and executable build workflow.
 - [Historical FSM_COS alpha.7 integration proof](FSM_COS_ALPHA7_INTEGRATION.md) — records the pinned source candidate and the explicit boundary that no alpha.7 package was published.
