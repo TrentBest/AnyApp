@@ -51,7 +51,7 @@ This launches the local development Moniker Experience path described below. It 
 - [Documentation index](docs/DOCUMENTATION_INDEX.md) — focused subsystem guides, contracts, and verification.
 - [Pages playground direction](docs/PAGES-PLAYGROUND.md) — interactive Experiences, paired Renderer/Visualize inspection, and the incremental sandbox plan.
 - [Theory and learning path](docs/theory/README.md) — learn the native-host domain from first principles.
-- [Agent onboarding PR #35](https://github.com/TrentBest/AnyApp/pull/35) — proposed repository-specific contributor instructions; not merged yet.
+- [Agent onboarding](docs/AGENT_ONBOARDING.md) — repository architecture, verification standards, and the two-branch Sith workflow.
 - [CI dependency modes](docs/CI-DEPENDENCY-MODES.md) — distinguish source integration from public-package compatibility.
 - [Historical publish-size experiment](docs/PUBLISH-SIZE-EXPERIMENT.md) — archived publish-size/startup measurements and the bundle-manifest inspection tool.
 - [CiAi evidence integration](docs/CIAI_EVIDENCE_INTEGRATION.md) — exact-run observation, provenance/TRX production, and the remaining trusted-ingestion boundary.
