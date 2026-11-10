@@ -8,7 +8,7 @@ This is the navigation map for AnyApp, the native Windows host in The Singularit
 ## 01 — Start here
 
 - [Repository README](../README.md) — purpose, architecture overview, quick verification, and current maturity limits.
-- [Agent onboarding PR #35](https://github.com/TrentBest/AnyApp/pull/35) — proposed repository-specific instructions for contributors and AI agents; not merged yet.
+- [Agent onboarding](AGENT_ONBOARDING.md) — repository-specific architecture, verification, and two-branch workflow guidance.
 - [Theory and learning path](theory/README.md) — progressive explanation of the native-host domain.
 - [CI dependency modes](CI-DEPENDENCY-MODES.md) — source integration versus public-package compatibility.
 
