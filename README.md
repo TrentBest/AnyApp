@@ -34,7 +34,7 @@ RuntimeAssembly
 AnyApp native presentation
 ```
 
-AnyApp is a host, not a second composition engine, repository authority, or Experience-specific scheduler. The current Foundry execution boundary is tracked separately in [issue #27](https://github.com/TrentBest/AnyApp/issues/27); do not treat that integration as complete until its contract and tests are in place.
+AnyApp is a host, not a second composition engine, repository authority, or Experience-specific scheduler. The host boundary is tracked in [issue #27](https://github.com/TrentBest/AnyApp/issues/27); the distinct `RuntimeAssembly` → FSM_Foundry execution handoff is tracked in [AnyApp issue #46](https://github.com/TrentBest/AnyApp/issues/46) and [FSM_Foundry issue #23](https://github.com/TrentBest/TheSingularityWorkshop.FSM_Foundry/issues/23). Neither integration is complete until its typed contract and lifecycle tests are in place.
 
 ## 04 — See it in a minute
 
