@@ -43,6 +43,7 @@ The initial UML inventory is incomplete: one explicit UML companion is present i
 - [CI dependency modes](CI-DEPENDENCY-MODES.md) — what source-mode and public-package workflows prove, and what they do not.
 - [Startup/offline recovery tests](https://github.com/TrentBest/AnyApp/tree/development/tests/TheSingularityWorkshop.AnyApp.Tests) — test project for host startup, persistence, repository catalog, and runtime composition.
 - [GitHub Actions workflows](https://github.com/TrentBest/AnyApp/tree/development/.github/workflows) — CI, baseline measurements, and executable build workflow.
+- [Historical FSM_COS alpha.7 integration proof](FSM_COS_ALPHA7_INTEGRATION.md) — records the pinned source candidate and the explicit boundary that no alpha.7 package was published.
 
 A green build is not proof of interactive runtime behavior, production GPU rendering, trusted code signing, or public-package compatibility unless the corresponding workflow actually exercises that claim.
 
