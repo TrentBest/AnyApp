@@ -54,6 +54,7 @@ This launches the local development Moniker Experience path described below. It 
 - [Agent onboarding PR #35](https://github.com/TrentBest/AnyApp/pull/35) — proposed repository-specific contributor instructions; not merged yet.
 - [CI dependency modes](docs/CI-DEPENDENCY-MODES.md) — distinguish source integration from public-package compatibility.
 - [Historical publish-size experiment](docs/PUBLISH-SIZE-EXPERIMENT.md) — archived publish-size/startup measurements and the bundle-manifest inspection tool.
+- [CiAi evidence integration](docs/CIAI_EVIDENCE_INTEGRATION.md) — exact-run observation, provenance/TRX production, and the remaining trusted-ingestion boundary.
 
 ## Startup is now the common Workshop Moniker
 
