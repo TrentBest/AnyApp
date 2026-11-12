@@ -157,13 +157,15 @@ public sealed class RendererDesktopProofView : Grid
             $"Observer: {envelope.ObserverId}  |  Observer revision: {envelope.ObserverRevision}  |  Source revision: {envelope.SourceRevision}  |  Frame: {envelope.FrameSequence}  |  Entities: {result.Metrics.EntitiesRepresented:N0}  |  Candidates: {result.Metrics.InputCommands:N0}  |  Selected: {result.Metrics.OutputCommands:N0}  |  Omitted: {result.Metrics.OmittedCommands:N0}");
     }
 
-    private sealed class RendererDesktopProofSurface(string panelName) : FrameworkElement
+    private sealed class RendererDesktopProofSurface : FrameworkElement
     {
+        private readonly string _panelName;
         private VisualizerFrame? _frame;
         private ObserverFrameEnvelope? _envelope;
 
-        public RendererDesktopProofSurface()
+        public RendererDesktopProofSurface(string panelName)
         {
+            _panelName = panelName;
             ClipToBounds = true;
         }
 
@@ -227,7 +229,7 @@ public sealed class RendererDesktopProofView : Grid
             }
 
             var note = new FormattedText(
-                $"{panelName} · {_envelope.ObserverId} · OBS {_envelope.ObserverRevision} · SRC {_envelope.SourceRevision} · FRAME {_envelope.FrameSequence} · {_frame.Commands.FirstOrDefault().Representation.ToString().ToUpperInvariant()}",
+                $"{_panelName} · {_envelope.ObserverId} · OBS {_envelope.ObserverRevision} · SRC {_envelope.SourceRevision} · FRAME {_envelope.FrameSequence} · {_frame.Commands.FirstOrDefault().Representation.ToString().ToUpperInvariant()}",
                 CultureInfo.InvariantCulture,
                 FlowDirection.LeftToRight,
                 new Typeface("Consolas"),
