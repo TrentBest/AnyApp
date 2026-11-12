@@ -2,7 +2,6 @@ using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using System.Windows.Shapes;
 using TheSingularityWorkshop.Renderer;
 using TheSingularityWorkshop.Renderer.Diagnostics;
 using TheSingularityWorkshop.Renderer.VisualizeAdapter;
@@ -16,8 +15,17 @@ namespace TheSingularityWorkshop.AnyApp;
 /// </summary>
 public sealed class RendererDesktopProofView : Grid
 {
-    private readonly RendererDesktopProofSurface _surface = new();
+    private const string ObserverId = "desktop-proof-observer";
+    private const long SourceRevision = 1;
+
+    private readonly IReadOnlyList<RenderDrawCommand> _candidates =
+        RendererDiagnosticScene.CreateCommands(1_000);
+    private readonly ObserverPanelFrameRouter _router = new();
+    private readonly RendererDesktopProofSurface _leftSurface = new("LEFT PANEL");
+    private readonly RendererDesktopProofSurface _rightSurface = new("RIGHT PANEL");
     private readonly TextBlock _metrics = new();
+    private long _observerRevision;
+    private long _frameSequence;
 
     public RendererDesktopProofView()
     {
@@ -38,7 +46,7 @@ public sealed class RendererDesktopProofView : Grid
         });
         heading.Children.Add(new TextBlock
         {
-            Text = "Shared deterministic command workload · WPF diagnostic projection · not a GPU/Visualize claim",
+            Text = "One completed observer frame · two WPF panels · CPU diagnostic projection · not a GPU claim",
             Foreground = new SolidColorBrush(Color.FromRgb(145, 170, 180)),
             FontFamily = new FontFamily("Consolas"),
             FontSize = 11,
@@ -67,14 +75,19 @@ public sealed class RendererDesktopProofView : Grid
                 FontFamily = new FontFamily("Consolas"),
                 Cursor = System.Windows.Input.Cursors.Hand
             };
-            button.Click += (_, _) => _surface.SetDetail((RendererRepresentation)button.Tag);
+            button.Click += (_, _) => SetDetail((RendererRepresentation)button.Tag);
             controls.Children.Add(button);
         }
         Children.Add(controls);
         SetRow(controls, 1);
 
-        Children.Add(_surface);
-        SetRow(_surface, 2);
+        var panels = new Grid { Margin = new Thickness(24, 0, 24, 0) };
+        panels.ColumnDefinitions.Add(new ColumnDefinition());
+        panels.ColumnDefinitions.Add(new ColumnDefinition());
+        panels.Children.Add(CreatePanel("PANEL A · SHARED FRAME", _leftSurface, 0));
+        panels.Children.Add(CreatePanel("PANEL B · SHARED FRAME", _rightSurface, 1));
+        Children.Add(panels);
+        SetRow(panels, 2);
 
         _metrics.Margin = new Thickness(24, 8, 24, 18);
         _metrics.Foreground = new SolidColorBrush(Color.FromRgb(0, 234, 255));
@@ -83,42 +96,82 @@ public sealed class RendererDesktopProofView : Grid
         Children.Add(_metrics);
         SetRow(_metrics, 3);
 
-        _surface.MetricsChanged += metrics =>
-        {
-            _metrics.Text = string.Create(
-                CultureInfo.InvariantCulture,
-                $"Entities represented: {metrics.EntitiesRepresented:N0}  |  Candidate commands: {metrics.InputCommands:N0}  |  Selected: {metrics.OutputCommands:N0}  |  Omitted: {metrics.OmittedCommands:N0}");
-        };
-        _surface.SetDetail(RendererRepresentation.Interactive);
+        SetDetail(RendererRepresentation.Interactive);
     }
 
-    private sealed class RendererDesktopProofSurface : FrameworkElement
+    private static Border CreatePanel(
+        string heading,
+        RendererDesktopProofSurface surface,
+        int column)
     {
-        private readonly IReadOnlyList<RenderDrawCommand> _candidates =
-            RendererDiagnosticScene.CreateCommands(1_000);
+        var panel = new Grid { Margin = new Thickness(column == 0 ? 0 : 8, 0, column == 0 ? 8 : 0, 0) };
+        panel.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        panel.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+        panel.Children.Add(new TextBlock
+        {
+            Text = heading,
+            Foreground = new SolidColorBrush(Color.FromRgb(145, 170, 180)),
+            FontFamily = new FontFamily("Consolas"),
+            FontSize = 10,
+            Margin = new Thickness(8, 0, 8, 8)
+        });
+        panel.Children.Add(surface);
+        Grid.SetRow(surface, 1);
 
-        private RenderCommandReductionResult _result = null!;
-        private VisualizerFrame _frame = null!;
+        var border = new Border
+        {
+            BorderBrush = new SolidColorBrush(Color.FromRgb(38, 68, 92)),
+            BorderThickness = new Thickness(1),
+            Child = panel
+        };
+        Grid.SetColumn(border, column);
+        return border;
+    }
 
-        public event Action<RenderCommandReductionMetrics>? MetricsChanged;
+    private void SetDetail(RendererRepresentation detail)
+    {
+        // Evaluate and construct exactly one frame for this observer revision.
+        var result = RenderCommandReducer.Reduce(_candidates, detail);
+        var frame = new RenderFrame(
+            new RenderView(
+                System.Numerics.Vector3.Zero,
+                System.Numerics.Matrix4x4.Identity,
+                System.Numerics.Matrix4x4.Identity),
+            result.Commands);
+        var envelope = new ObserverFrameEnvelope(
+            ObserverId,
+            ++_observerRevision,
+            SourceRevision,
+            ++_frameSequence,
+            frame);
+
+        // Fan out the same completed envelope; panels do not evaluate policy or build frames.
+        _router.Route(envelope, ["panel-left", "panel-right"]);
+        if (_router.TryGetFrame("panel-left", out var left) && left is not null)
+            _leftSurface.SetFrame(left);
+        if (_router.TryGetFrame("panel-right", out var right) && right is not null)
+            _rightSurface.SetFrame(right);
+
+        _metrics.Text = string.Create(
+            CultureInfo.InvariantCulture,
+            $"Observer: {envelope.ObserverId}  |  Observer revision: {envelope.ObserverRevision}  |  Source revision: {envelope.SourceRevision}  |  Frame: {envelope.FrameSequence}  |  Entities: {result.Metrics.EntitiesRepresented:N0}  |  Candidates: {result.Metrics.InputCommands:N0}  |  Selected: {result.Metrics.OutputCommands:N0}  |  Omitted: {result.Metrics.OmittedCommands:N0}");
+    }
+
+    private sealed class RendererDesktopProofSurface(string panelName) : FrameworkElement
+    {
+        private VisualizerFrame? _frame;
+        private ObserverFrameEnvelope? _envelope;
 
         public RendererDesktopProofSurface()
         {
             ClipToBounds = true;
-            SetDetail(RendererRepresentation.Interactive);
         }
 
-        public void SetDetail(RendererRepresentation detail)
+        public void SetFrame(ObserverFrameEnvelope envelope)
         {
-            _result = RenderCommandReducer.Reduce(_candidates, detail);
-            var sourceFrame = new RenderFrame(
-                new RenderView(
-                    System.Numerics.Vector3.Zero,
-                    System.Numerics.Matrix4x4.Identity,
-                    System.Numerics.Matrix4x4.Identity),
-                _result.Commands);
-            _frame = new RendererFrameAdapter().Adapt(sourceFrame);
-            MetricsChanged?.Invoke(_result.Metrics);
+            ArgumentNullException.ThrowIfNull(envelope);
+            _envelope = envelope;
+            _frame = new RendererFrameAdapter().Adapt(envelope.Frame);
             InvalidateVisual();
         }
 
@@ -134,6 +187,9 @@ public sealed class RendererDesktopProofView : Grid
                 new SolidColorBrush(Color.FromRgb(1, 5, 13)),
                 null,
                 new Rect(0, 0, width, height));
+
+            if (_frame is null || _envelope is null)
+                return;
 
             var step = Math.Max(1, (int)Math.Ceiling(_frame.Commands.Count / 2_500d));
             for (var index = 0; index < _frame.Commands.Count; index += step)
@@ -171,14 +227,14 @@ public sealed class RendererDesktopProofView : Grid
             }
 
             var note = new FormattedText(
-                $"DETAIL CEILING: {_frame.Commands.FirstOrDefault().Representation.ToString().ToUpperInvariant()}",
+                $"{panelName} · {_envelope.ObserverId} · OBS {_envelope.ObserverRevision} · SRC {_envelope.SourceRevision} · FRAME {_envelope.FrameSequence} · {_frame.Commands.FirstOrDefault().Representation.ToString().ToUpperInvariant()}",
                 CultureInfo.InvariantCulture,
                 FlowDirection.LeftToRight,
                 new Typeface("Consolas"),
-                10,
+                9,
                 new SolidColorBrush(Color.FromRgb(145, 170, 180)),
                 VisualTreeHelper.GetDpi(this).PixelsPerDip);
-            drawingContext.DrawText(note, new Point(12, 10));
+            drawingContext.DrawText(note, new Point(8, 8));
         }
     }
 }
