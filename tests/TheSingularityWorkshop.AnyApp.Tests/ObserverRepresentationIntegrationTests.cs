@@ -40,8 +40,8 @@ public sealed class ObserverRepresentationIntegrationTests
             Assert.False(distantUnchanged.RefreshRequired);
             Assert.True(distantUnchanged.CanReuseCachedRepresentation);
             Assert.Equal(1, distantUnchanged.Bucket.Metrics.ReuseCount);
-            Assert.Equal(12L, nearRevised.Bucket.SourceRevision);
-            Assert.Equal(12L, distantUnchanged.Bucket.SourceRevision);
+            Assert.Equal(12L, nearRevised.Bucket.CachedSourceRevision);
+            Assert.Equal(12L, distantUnchanged.Bucket.CachedSourceRevision);
         }
     }
 
