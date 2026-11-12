@@ -69,11 +69,12 @@ The host now has a deliberately narrow provenance envelope in `ObserverFrameEnve
 - `ObserverId`, `ObserverRevision`, and `SourceRevision` identify the observer evaluation and the authoritative source snapshot.
 - `FrameSequence` associates that evaluation with one immutable Renderer `RenderFrame`.
 - `ObserverPanelFrameRouter` fans the same completed envelope out to one or more named AnyApp panels. Panel routing does not evaluate observer policy or manufacture another frame.
+- The `--renderer-proof` WPF diagnostic now creates one completed envelope per selected representation, routes it to two named panels, and has both surfaces adapt and draw the same immutable Renderer `RenderFrame`. Both panels display matching observer/source/frame provenance. A panel does not evaluate policy or construct a second frame.
 - Observer and panel IDs remain host/test-layer concepts; no public Renderer or GUI API was added.
 
-Deterministic host tests cover two observers sharing one source revision without sharing frame provenance, one observer frame routed to two panels as the same envelope/frame instance, and replacement of one observer's panel frame without mutating another observer's panel.
+Deterministic host tests cover two observers sharing one source revision without sharing frame provenance, one observer frame routed to two panels as the same envelope/frame instance, and replacement of one observer's panel frame without mutating another observer's panel. The Renderer integration test also exercises two independent `ObserverRepresentationCoordinator` instances: changing one observer revision invalidates only that observer's bucket/cache while the other observer continues to reuse its valid cached representation.
 
-**Not yet proven by this host slice:** independent Renderer policy/cache decisions and observer-revision invalidation are owned by the Renderer `ObserverRepresentationCoordinator` contract. AnyApp is coordinating with Renderer issue #29 to confirm the supported consumer lifecycle and stability of those APIs before wiring them into the host test. This host envelope/router alone is not evidence that Renderer cache invalidation works. The WPF diagnostic remains CPU/WPF only.
+**Remaining proof boundary:** the WPF diagnostic demonstrates two-panel fan-out for one observer frame, while the independent observer/cache isolation is covered by deterministic integration tests. The visible WPF panels are still CPU/WPF diagnostic projections, not GPU output. Renderer issue #29 remains the place to confirm the supported consumer lifecycle and API stability; no public Renderer or GUI API was added.
 
 ## Backend audit checkpoint (candidate, not selected)
 
