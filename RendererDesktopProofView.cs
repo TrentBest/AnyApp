@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Numerics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -10,27 +11,34 @@ using TheSingularityWorkshop.Visualize;
 namespace TheSingularityWorkshop.AnyApp;
 
 /// <summary>
-/// Native desktop harness for the shared Renderer diagnostic workload.
+/// Native desktop harness for independent Renderer observer workloads.
 /// Its WPF marks are a diagnostic projection, not the Visualize backend or a GPU proof.
 /// </summary>
 public sealed class RendererDesktopProofView : Grid
 {
-    private const string ObserverId = "desktop-proof-observer";
+    private const string NearObserverId = "desktop-near-observer";
+    private const string DistantObserverId = "desktop-distant-observer";
     private const long SourceRevision = 1;
 
     private readonly IReadOnlyList<RenderDrawCommand> _candidates =
         RendererDiagnosticScene.CreateCommands(1_000);
     private readonly ObserverPanelFrameRouter _router = new();
-    private readonly RendererDesktopProofSurface _leftSurface = new("LEFT PANEL");
-    private readonly RendererDesktopProofSurface _rightSurface = new("RIGHT PANEL");
+    private readonly RendererDesktopProofSurface _nearLeft = new("NEAR / PANEL A");
+    private readonly RendererDesktopProofSurface _nearRight = new("NEAR / PANEL B");
+    private readonly RendererDesktopProofSurface _distantLeft = new("DISTANT / PANEL A");
+    private readonly RendererDesktopProofSurface _distantRight = new("DISTANT / PANEL B");
     private readonly TextBlock _metrics = new();
-    private long _observerRevision;
-    private long _frameSequence;
+    private long _nearObserverRevision;
+    private long _distantObserverRevision;
+    private long _nearFrameSequence;
+    private long _distantFrameSequence;
 
     public RendererDesktopProofView()
     {
         Background = new SolidColorBrush(Color.FromRgb(2, 7, 17));
         RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
         RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
         RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
@@ -46,7 +54,7 @@ public sealed class RendererDesktopProofView : Grid
         });
         heading.Children.Add(new TextBlock
         {
-            Text = "One completed observer frame · two WPF panels · CPU diagnostic projection · not a GPU claim",
+            Text = "Two independent observers · one source revision · two panels per observer · CPU/WPF diagnostic · not GPU",
             Foreground = new SolidColorBrush(Color.FromRgb(145, 170, 180)),
             FontFamily = new FontFamily("Consolas"),
             FontSize = 11,
@@ -55,106 +63,175 @@ public sealed class RendererDesktopProofView : Grid
         Children.Add(heading);
         SetRow(heading, 0);
 
+        var nearControls = CreateControls(
+            "NEAR OBSERVER · INTERACTIVE VIEW",
+            detail => SetDetail(NearObserverId, detail),
+            new Thickness(24, 0, 24, 8));
+        Children.Add(nearControls);
+        SetRow(nearControls, 1);
+
+        var nearPanels = CreatePanelPair(
+            "NEAR OBSERVER FRAME · SHARED BY TWO PANELS",
+            _nearLeft,
+            _nearRight);
+        Children.Add(nearPanels);
+        SetRow(nearPanels, 2);
+
+        var distantControls = CreateControls(
+            "DISTANT OBSERVER · SEMANTIC VIEW",
+            detail => SetDetail(DistantObserverId, detail),
+            new Thickness(24, 12, 24, 8));
+        Children.Add(distantControls);
+        SetRow(distantControls, 3);
+
+        var distantPanels = CreatePanelPair(
+            "DISTANT OBSERVER FRAME · SHARED BY TWO PANELS",
+            _distantLeft,
+            _distantRight);
+        Children.Add(distantPanels);
+        SetRow(distantPanels, 4);
+
+        _metrics.Margin = new Thickness(24, 8, 24, 18);
+        _metrics.Foreground = new SolidColorBrush(Color.FromRgb(0, 234, 255));
+        _metrics.FontFamily = new FontFamily("Consolas");
+        _metrics.FontSize = 10;
+        Children.Add(_metrics);
+        SetRow(_metrics, 5);
+
+        SetDetail(NearObserverId, RendererRepresentation.Interactive);
+        SetDetail(DistantObserverId, RendererRepresentation.Semantic);
+    }
+
+    private static StackPanel CreateControls(
+        string heading,
+        Action<RendererRepresentation> onSelected,
+        Thickness margin)
+    {
         var controls = new StackPanel
         {
             Orientation = Orientation.Horizontal,
-            Margin = new Thickness(24, 0, 24, 12)
+            Margin = margin
         };
+        controls.Children.Add(new TextBlock
+        {
+            Text = heading,
+            Foreground = new SolidColorBrush(Color.FromRgb(145, 170, 180)),
+            FontFamily = new FontFamily("Consolas"),
+            FontSize = 10,
+            VerticalAlignment = VerticalAlignment.Center,
+            Margin = new Thickness(0, 0, 12, 0)
+        });
+
         foreach (var detail in Enum.GetValues<RendererRepresentation>())
         {
             var button = new Button
             {
                 Content = detail.ToString().ToUpperInvariant(),
                 Tag = detail,
-                Margin = new Thickness(0, 0, 8, 0),
-                Padding = new Thickness(12, 7, 12, 7),
+                Margin = new Thickness(0, 0, 6, 0),
+                Padding = new Thickness(9, 5, 9, 5),
                 Background = new SolidColorBrush(Color.FromRgb(4, 18, 30)),
                 Foreground = Brushes.White,
                 BorderBrush = new SolidColorBrush(Color.FromRgb(38, 68, 92)),
                 BorderThickness = new Thickness(1),
                 FontFamily = new FontFamily("Consolas"),
+                FontSize = 10,
                 Cursor = System.Windows.Input.Cursors.Hand
             };
-            button.Click += (_, _) => SetDetail((RendererRepresentation)button.Tag);
+            button.Click += (_, _) => onSelected((RendererRepresentation)button.Tag);
             controls.Children.Add(button);
         }
-        Children.Add(controls);
-        SetRow(controls, 1);
 
-        var panels = new Grid { Margin = new Thickness(24, 0, 24, 0) };
-        panels.ColumnDefinitions.Add(new ColumnDefinition());
-        panels.ColumnDefinitions.Add(new ColumnDefinition());
-        panels.Children.Add(CreatePanel("PANEL A · SHARED FRAME", _leftSurface, 0));
-        panels.Children.Add(CreatePanel("PANEL B · SHARED FRAME", _rightSurface, 1));
-        Children.Add(panels);
-        SetRow(panels, 2);
-
-        _metrics.Margin = new Thickness(24, 8, 24, 18);
-        _metrics.Foreground = new SolidColorBrush(Color.FromRgb(0, 234, 255));
-        _metrics.FontFamily = new FontFamily("Consolas");
-        _metrics.FontSize = 11;
-        Children.Add(_metrics);
-        SetRow(_metrics, 3);
-
-        SetDetail(RendererRepresentation.Interactive);
+        return controls;
     }
 
-    private static Border CreatePanel(
+    private static Grid CreatePanelPair(
         string heading,
-        RendererDesktopProofSurface surface,
-        int column)
+        RendererDesktopProofSurface leftSurface,
+        RendererDesktopProofSurface rightSurface)
     {
-        var panel = new Grid { Margin = new Thickness(column == 0 ? 0 : 8, 0, column == 0 ? 8 : 0, 0) };
-        panel.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-        panel.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
-        panel.Children.Add(new TextBlock
+        var panels = new Grid { Margin = new Thickness(24, 0, 24, 0) };
+        panels.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        panels.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+        panels.ColumnDefinitions.Add(new ColumnDefinition());
+        panels.ColumnDefinitions.Add(new ColumnDefinition());
+
+        var label = new TextBlock
         {
             Text = heading,
             Foreground = new SolidColorBrush(Color.FromRgb(145, 170, 180)),
             FontFamily = new FontFamily("Consolas"),
             FontSize = 10,
-            Margin = new Thickness(8, 0, 8, 8)
-        });
-        panel.Children.Add(surface);
-        Grid.SetRow(surface, 1);
+            Margin = new Thickness(0, 0, 0, 6)
+        };
+        panels.Children.Add(label);
+        SetColumnSpan(label, 2);
 
+        panels.Children.Add(CreatePanel(leftSurface, 0));
+        panels.Children.Add(CreatePanel(rightSurface, 1));
+        return panels;
+    }
+
+    private static Border CreatePanel(RendererDesktopProofSurface surface, int column)
+    {
         var border = new Border
         {
             BorderBrush = new SolidColorBrush(Color.FromRgb(38, 68, 92)),
             BorderThickness = new Thickness(1),
-            Child = panel
+            Margin = new Thickness(column == 0 ? 0 : 6, 0, column == 0 ? 6 : 0, 0),
+            Child = surface
         };
-        Grid.SetColumn(border, column);
+        SetRow(border, 1);
+        SetColumn(border, column);
         return border;
     }
 
-    private void SetDetail(RendererRepresentation detail)
+    private void SetDetail(string observerId, RendererRepresentation detail)
     {
-        // Evaluate and construct exactly one frame for this observer revision.
+        var isNear = string.Equals(observerId, NearObserverId, StringComparison.Ordinal);
+        var observerRevision = isNear ? ++_nearObserverRevision : ++_distantObserverRevision;
+        var frameSequence = isNear ? ++_nearFrameSequence : ++_distantFrameSequence;
+
+        // Each observer independently evaluates the same authoritative source snapshot.
         var result = RenderCommandReducer.Reduce(_candidates, detail);
+        var observerPosition = isNear ? Vector3.Zero : new Vector3(0, 0, 100);
         var frame = new RenderFrame(
             new RenderView(
-                System.Numerics.Vector3.Zero,
-                System.Numerics.Matrix4x4.Identity,
-                System.Numerics.Matrix4x4.Identity),
+                observerPosition,
+                Matrix4x4.Identity,
+                Matrix4x4.Identity),
             result.Commands);
         var envelope = new ObserverFrameEnvelope(
-            ObserverId,
-            ++_observerRevision,
+            observerId,
+            observerRevision,
             SourceRevision,
-            ++_frameSequence,
+            frameSequence,
             frame);
 
-        // Fan out the same completed envelope; panels do not evaluate policy or build frames.
-        _router.Route(envelope, ["panel-left", "panel-right"]);
-        if (_router.TryGetFrame("panel-left", out var left) && left is not null)
-            _leftSurface.SetFrame(left);
-        if (_router.TryGetFrame("panel-right", out var right) && right is not null)
-            _rightSurface.SetFrame(right);
+        // Only the completed envelope is fanned out; its two panels do not re-evaluate policy.
+        var panelIds = isNear
+            ? new[] { "near-panel-left", "near-panel-right" }
+            : new[] { "distant-panel-left", "distant-panel-right" };
+        _router.Route(envelope, panelIds);
+
+        if (isNear)
+        {
+            if (_router.TryGetFrame(panelIds[0], out var left) && left is not null)
+                _nearLeft.SetFrame(left);
+            if (_router.TryGetFrame(panelIds[1], out var right) && right is not null)
+                _nearRight.SetFrame(right);
+        }
+        else
+        {
+            if (_router.TryGetFrame(panelIds[0], out var left) && left is not null)
+                _distantLeft.SetFrame(left);
+            if (_router.TryGetFrame(panelIds[1], out var right) && right is not null)
+                _distantRight.SetFrame(right);
+        }
 
         _metrics.Text = string.Create(
             CultureInfo.InvariantCulture,
-            $"Observer: {envelope.ObserverId}  |  Observer revision: {envelope.ObserverRevision}  |  Source revision: {envelope.SourceRevision}  |  Frame: {envelope.FrameSequence}  |  Entities: {result.Metrics.EntitiesRepresented:N0}  |  Candidates: {result.Metrics.InputCommands:N0}  |  Selected: {result.Metrics.OutputCommands:N0}  |  Omitted: {result.Metrics.OmittedCommands:N0}");
+            $"SOURCE REV {SourceRevision}  |  NEAR OBS REV {_nearObserverRevision} / FRAME {_nearFrameSequence}  |  DISTANT OBS REV {_distantObserverRevision} / FRAME {_distantFrameSequence}  |  LAST: {observerId} {detail} · {result.Metrics.OutputCommands:N0}/{result.Metrics.InputCommands:N0} commands");
     }
 
     private sealed class RendererDesktopProofSurface : FrameworkElement
@@ -228,8 +305,9 @@ public sealed class RendererDesktopProofView : Grid
                 }
             }
 
+            var representation = _frame.Commands.FirstOrDefault()?.Representation.ToString().ToUpperInvariant() ?? "EMPTY";
             var note = new FormattedText(
-                $"{_panelName} · {_envelope.ObserverId} · OBS {_envelope.ObserverRevision} · SRC {_envelope.SourceRevision} · FRAME {_envelope.FrameSequence} · {_frame.Commands.FirstOrDefault().Representation.ToString().ToUpperInvariant()}",
+                $"{_panelName} · {_envelope.ObserverId} · OBS {_envelope.ObserverRevision} · SRC {_envelope.SourceRevision} · FRAME {_envelope.FrameSequence} · {representation}",
                 CultureInfo.InvariantCulture,
                 FlowDirection.LeftToRight,
                 new Typeface("Consolas"),
