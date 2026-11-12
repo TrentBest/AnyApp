@@ -62,6 +62,19 @@ Windows/WPF is the first implementation target because AnyApp currently targets 
 
 These facts are the baseline for the next integration; they are not claims that a GPU backend has been implemented.
 
+## Host-owned observer/frame routing proof
+
+The host now has a deliberately narrow provenance envelope in `ObserverFrameEnvelope.cs`:
+
+- `ObserverId`, `ObserverRevision`, and `SourceRevision` identify the observer evaluation and the authoritative source snapshot.
+- `FrameSequence` associates that evaluation with one immutable Renderer `RenderFrame`.
+- `ObserverPanelFrameRouter` fans the same completed envelope out to one or more named AnyApp panels. Panel routing does not evaluate observer policy or manufacture another frame.
+- Observer and panel IDs remain host/test-layer concepts; no public Renderer or GUI API was added.
+
+Deterministic host tests cover two observers sharing one source revision without sharing frame provenance, one observer frame routed to two panels as the same envelope/frame instance, and replacement of one observer's panel frame without mutating another observer's panel.
+
+**Not yet proven by this host slice:** independent Renderer policy/cache decisions and observer-revision invalidation are owned by the Renderer `ObserverRepresentationCoordinator` contract. AnyApp is coordinating with Renderer issue #29 to confirm the supported consumer lifecycle and stability of those APIs before wiring them into the host test. This host envelope/router alone is not evidence that Renderer cache invalidation works. The WPF diagnostic remains CPU/WPF only.
+
 ## Backend audit checkpoint (candidate, not selected)
 
 The current leading prototype candidate is native WebGPU through the Silk.NET 2.23.0 binding/runtime pair:
