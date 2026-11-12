@@ -305,7 +305,7 @@ public sealed class RendererDesktopProofView : Grid
                 }
             }
 
-            var representation = _frame.Commands.FirstOrDefault()?.Representation.ToString().ToUpperInvariant() ?? "EMPTY";
+            var representation = _frame.Commands.Count == 0 ? "EMPTY" : _frame.Commands[0].Representation.ToString().ToUpperInvariant();
             var note = new FormattedText(
                 $"{_panelName} · {_envelope.ObserverId} · OBS {_envelope.ObserverRevision} · SRC {_envelope.SourceRevision} · FRAME {_envelope.FrameSequence} · {representation}",
                 CultureInfo.InvariantCulture,
