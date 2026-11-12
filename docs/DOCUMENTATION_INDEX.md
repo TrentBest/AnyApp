@@ -14,7 +14,7 @@ This is the navigation map for AnyApp, the native Windows host in The Singularit
 
 ## 02 — Architecture and domain guides
 
-- [Pages playground](PAGES-PLAYGROUND.md) — design direction for interactive Experiences, synchronized Renderer/Visualize inspection, safe experimentation, and phased delivery.
+- [Pages playground](PAGES-PLAYGROUND.md) — design direction for interactive Experiences, synchronized Renderer/Visualize inspection, safe experimentation, and phased delivery.\n- [Experience host adapter contract](EXPERIENCE_HOST_ADAPTER_CONTRACT.md) — current discovery/manifestation surface, ownership boundaries, typed interaction gap, and cross-host acceptance gates.
 
 | Subject | Authoritative guide | Scope |
 |---|---|---|
