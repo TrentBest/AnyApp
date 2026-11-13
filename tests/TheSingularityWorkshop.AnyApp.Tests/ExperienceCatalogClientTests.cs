@@ -72,6 +72,82 @@ public sealed class ExperienceCatalogClientTests
         Assert.Equal(new[] { "1.0.0", "2.0.0" }, publications.Select(item => item.Version));
     }
 
+
+    [Fact]
+    public async Task GetManifestAsyncRejectsArtifactWhenContentBytesDoNotMatchPublishedHash()
+    {
+        var content = Encoding.UTF8.GetBytes("{\"experienceId\":41,\"version\":\"1.0.0\",\"runtimeId\":7,\"bundles\":[]}");
+        var publishedHash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(Encoding.UTF8.GetBytes("different bytes")));
+        var publication = new PublishedExperience(41, "1.0.0", publishedHash);
+        var response = System.Text.Json.JsonSerializer.Serialize(new
+        {
+            experienceId = 41,
+            version = "1.0.0",
+            contentHash = publishedHash,
+            contentBase64 = Convert.ToBase64String(content)
+        });
+        using var client = CreateArtifactClient(response, publication);
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => client.GetManifestAsync(publication));
+
+        Assert.Contains("do not match", exception.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task GetManifestAsyncAcceptsArtifactWhenContentBytesMatchPublishedHash()
+    {
+        var content = Encoding.UTF8.GetBytes("{\"experienceId\":41,\"version\":\"1.0.0\",\"runtimeId\":7,\"bundles\":[]}");
+        var hash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(content));
+        var publication = new PublishedExperience(41, "1.0.0", hash);
+        var response = System.Text.Json.JsonSerializer.Serialize(new
+        {
+            experienceId = 41,
+            version = "1.0.0",
+            contentHash = hash,
+            contentBase64 = Convert.ToBase64String(content)
+        });
+        using var client = CreateArtifactClient(response, publication);
+
+        var manifest = await client.GetManifestAsync(publication);
+
+        Assert.Equal(41UL, manifest.ExperienceId);
+        Assert.Equal("1.0.0", manifest.Version);
+        Assert.Equal(7UL, manifest.RuntimeId);
+    }
+
+    private static ExperienceCatalogClient CreateArtifactClient(
+        string response,
+        PublishedExperience publication)
+    {
+        var handler = new ArtifactStubHttpMessageHandler(response, publication);
+        var httpClient = new HttpClient(handler)
+        {
+            BaseAddress = new Uri("https://experiences.test/")
+        };
+
+        return new ExperienceCatalogClient(httpClient);
+    }
+
+    private sealed class ArtifactStubHttpMessageHandler(
+        string response,
+        PublishedExperience publication) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken)
+        {
+            var expectedPath =
+                $"/api/experiences/{publication.ExperienceId}/{Uri.EscapeDataString(publication.Version)}/{publication.ContentHash}";
+            Assert.Equal(expectedPath, request.RequestUri?.AbsolutePath);
+
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(response, Encoding.UTF8, "application/json")
+            });
+        }
+    }
+
     private static ExperienceCatalogClient CreateClient(string response)
     {
         var handler = new StubHttpMessageHandler(response);
