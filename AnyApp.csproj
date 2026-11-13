@@ -87,7 +87,6 @@
     <Error Condition="!Exists('$(WorkshopSourceRoot)/TheSingularityWorkshop.GUI/src/WPF/TheSingularityWorkshop.GUI.WPF.csproj')" Text="Repository-source mode is missing TheSingularityWorkshop.GUI under $(WorkshopSourceRoot)." />
     <Error Condition="'$(WorkshopMicroBundleRepositoryRoot)' == ''" Text="Repository-source mode is missing MicroBundleRepository under $(WorkshopSourceRoot)." />
     <Error Condition="'$(WorkshopExperiencesRoot)' == ''" Text="Repository-source mode is missing Experiences under $(WorkshopSourceRoot)." />
-    <Error Condition="!Exists('$(WorkshopSourceRoot)/TheSingularityWorkshop.Renderer/TheSingularityWorkshop.Renderer.csproj')" Text="Repository-source mode is missing TheSingularityWorkshop.Renderer under $(WorkshopSourceRoot)." />
   </Target>
 
   <!-- Renderer is a source/MicroBundle composition input in both dependency modes, never a NuGet package. -->
