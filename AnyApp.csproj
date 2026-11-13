@@ -58,7 +58,7 @@
 
     <ProjectReference Include="$(WorkshopSourceRoot)/StoryBuilder/src/StoryBuilder.MicroBundle/StoryBuilder.MicroBundle.csproj"
                       Condition="'$(WorkshopUseRepositorySources)' == 'true' and Exists('$(WorkshopSourceRoot)/StoryBuilder/src/StoryBuilder.MicroBundle/StoryBuilder.MicroBundle.csproj')"
-                      AdditionalProperties="WorkshopGuiCoreProject=$(WorkshopSourceRoot)\\TheSingularityWorkshop.GUI\\src\\Core\\TheSingularityWorkshop.GUI.Core.csproj;WorkshopUseRepositorySources=$(WorkshopUseRepositorySources);WorkshopSourceRoot=$(WorkshopSourceRoot)" />
+                      AdditionalProperties="WorkshopGuiCoreProject=$(WorkshopSourceRoot)/TheSingularityWorkshop.GUI/src/Core/TheSingularityWorkshop.GUI.Core.csproj;WorkshopUseRepositorySources=$(WorkshopUseRepositorySources);WorkshopSourceRoot=$(WorkshopSourceRoot)" />
     <ProjectReference Include="$(WorkshopSourceRoot)/StoryBuilder/src/StoryBuilder.Persistence/StoryBuilder.Persistence.csproj"
                       Condition="'$(WorkshopUseRepositorySources)' == 'true' and Exists('$(WorkshopSourceRoot)/StoryBuilder/src/StoryBuilder.Persistence/StoryBuilder.Persistence.csproj')" AdditionalProperties="WorkshopUseRepositorySources=$(WorkshopUseRepositorySources);WorkshopSourceRoot=$(WorkshopSourceRoot)" />
     <ProjectReference Include="$(WorkshopExperiencesRoot)/src/Moniker/TheSingularityWorkshop.Experiences.Moniker.csproj" Condition="'$(WorkshopUseRepositorySources)' == 'true'" AdditionalProperties="WorkshopUseRepositorySources=$(WorkshopUseRepositorySources);WorkshopSourceRoot=$(WorkshopSourceRoot)" />
@@ -69,7 +69,7 @@
   <PropertyGroup Condition="'$(WorkshopUseRepositorySources)' == 'true'">
     <DefineConstants>$(DefineConstants);WORKSHOP_USE_REPOSITORY_SOURCES</DefineConstants>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(WorkshopUseRepositorySources)' == 'true' and Exists('$(MSBuildThisFileDirectory)$(WorkshopSourceRoot)/StoryBuilder/src/StoryBuilder.MicroBundle/StoryBuilder.MicroBundle.csproj')">
+  <PropertyGroup Condition="'$(WorkshopUseRepositorySources)' == 'true' and Exists('$(WorkshopSourceRoot)/StoryBuilder/src/StoryBuilder.MicroBundle/StoryBuilder.MicroBundle.csproj')">
     <DefineConstants>$(DefineConstants);WORKSHOP_STORYBUILDER</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
