@@ -48,7 +48,7 @@ public sealed class ExperienceCatalogClient : IDisposable
             return [];
 
         var validated = new List<PublishedExperience>(publications.Count);
-        var experienceIds = new HashSet<ulong>();
+        var publicationIdentities = new HashSet<(ulong ExperienceId, string Version, string ContentHash)>();
 
         foreach (var publication in publications)
         {
@@ -57,10 +57,13 @@ public sealed class ExperienceCatalogClient : IDisposable
 
             ValidatePublication(publication);
 
-            if (!experienceIds.Add(publication.ExperienceId))
+            if (!publicationIdentities.Add((
+                    publication.ExperienceId,
+                    publication.Version,
+                    publication.ContentHash)))
             {
                 throw new InvalidOperationException(
-                    $"The repository returned more than one publication for Experience {publication.ExperienceId}.");
+                    $"The repository returned the same immutable publication more than once for Experience {publication.ExperienceId}.");
             }
 
             validated.Add(publication);
