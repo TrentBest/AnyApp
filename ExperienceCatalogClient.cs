@@ -27,14 +27,63 @@ public sealed class ExperienceCatalogClient : IDisposable
         };
     }
 
+    internal ExperienceCatalogClient(HttpClient httpClient)
+    {
+        ArgumentNullException.ThrowIfNull(httpClient);
+        if (httpClient.BaseAddress is null || !httpClient.BaseAddress.IsAbsoluteUri)
+            throw new ArgumentException("The HTTP client must have an absolute base address.", nameof(httpClient));
+
+        _httpClient = httpClient;
+    }
+
     public async Task<IReadOnlyList<PublishedExperience>> ListAsync(
         CancellationToken cancellationToken = default)
     {
-        return await _httpClient.GetFromJsonAsync<List<PublishedExperience>>(
-                   "api/experiences",
-                   JsonOptions,
-                   cancellationToken)
-               ?? [];
+        var publications = await _httpClient.GetFromJsonAsync<List<PublishedExperience?>>(
+            "api/experiences",
+            JsonOptions,
+            cancellationToken);
+
+        if (publications is null)
+            return [];
+
+        var validated = new List<PublishedExperience>(publications.Count);
+        var experienceIds = new HashSet<ulong>();
+
+        foreach (var publication in publications)
+        {
+            if (publication is null)
+                throw new InvalidOperationException("The repository returned a null Experience publication.");
+
+            ValidatePublication(publication);
+
+            if (!experienceIds.Add(publication.ExperienceId))
+            {
+                throw new InvalidOperationException(
+                    $"The repository returned more than one publication for Experience {publication.ExperienceId}.");
+            }
+
+            validated.Add(publication);
+        }
+
+        return validated;
+    }
+
+    private static void ValidatePublication(PublishedExperience publication)
+    {
+        if (publication.ExperienceId == 0)
+            throw new InvalidOperationException("The repository returned an Experience publication with ID zero.");
+
+        if (string.IsNullOrWhiteSpace(publication.Version))
+            throw new InvalidOperationException(
+                $"The repository returned an empty version for Experience {publication.ExperienceId}.");
+
+        if (publication.ContentHash.Length != 64 ||
+            publication.ContentHash.Any(character => !Uri.IsHexDigit(character)))
+        {
+            throw new InvalidOperationException(
+                $"The repository returned a malformed SHA-256 content hash for Experience {publication.ExperienceId}.");
+        }
     }
 
     public async Task<ExperienceManifest> GetManifestAsync(
