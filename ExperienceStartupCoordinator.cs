@@ -114,10 +114,9 @@ public sealed record ExperienceStartupDecision(
     ExperienceManifest? Manifest,
     PublishedExperience? Publication,
     bool PersistLastManifest,
-    bool BrowseExperiences = false)
+    bool ShouldBrowseExperiences = false)
 {
-    public static ExperienceStartupDecision BrowseExperiences { get; } = new(null, null, false, BrowseExperiences: true);
+    public static ExperienceStartupDecision BrowseExperiences { get; } = new(null, null, false, ShouldBrowseExperiences: true);
     public static ExperienceStartupDecision LaunchForge { get; } = new(null, null, false);
-    public bool ShouldBrowseExperiences { get; init; }
     public bool ShouldLaunchForge => Manifest is null && !ShouldBrowseExperiences;
 }
