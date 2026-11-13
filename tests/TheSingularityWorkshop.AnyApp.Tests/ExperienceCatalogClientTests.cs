@@ -102,7 +102,7 @@ public sealed class ExperienceCatalogClientTests
         string manifestVersion)
     {
         var content = Encoding.UTF8.GetBytes(
-            $"{{\\"experienceId\\":{manifestExperienceId},\\"version\\":\\"{manifestVersion}\\",\\"runtimeId\\":7,\\"bundles\\":[]}}");
+            $"{{\"experienceId\":{manifestExperienceId},\"version\":\"{manifestVersion}\",\"runtimeId\":7,\"bundles\":[]}}");
         var hash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(content));
         var publication = new PublishedExperience(41, "1.0.0", hash);
         var response = System.Text.Json.JsonSerializer.Serialize(new
