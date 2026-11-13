@@ -3,7 +3,9 @@ using TheSingularityWorkshop.FSM_COS;
 using TheSingularityWorkshop.Experiences.Moniker;
 using TheSingularityWorkshop.Experiences.Moniker.Motion.Wave;
 using TheSingularityWorkshop.Renderer;
+#if WORKSHOP_STORYBUILDER
 using StoryBuilder.MicroBundle;
+#endif
 
 namespace TheSingularityWorkshop.AnyApp;
 
