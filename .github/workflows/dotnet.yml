@@ -272,6 +272,19 @@ jobs:
         if ($LASTEXITCODE -ne 0) { throw "AnyApp source-mode MSBuild evaluation failed." }
         dotnet msbuild AnyApp.csproj -getProperty:Configuration,WorkshopUseRepositorySources,WorkshopSourceRoot,WorkshopExperiencesRoot,WorkshopMicroBundleRepositoryRoot -getItem:ProjectReference,PackageReference -p:Configuration=Release -p:WorkshopUseRepositorySources=false -p:WorkshopSourceRoot="$sourceRoot" "-p:WorkshopGuiCoreProject=$guiCoreProject" | Tee-Object -FilePath $packageLog
         if ($LASTEXITCODE -ne 0) { throw "AnyApp package-mode MSBuild evaluation failed." }
+        $sourceGraph = Get-Content $sourceLog -Raw | ConvertFrom-Json
+        $packageGraph = Get-Content $packageLog -Raw | ConvertFrom-Json
+        if ($sourceGraph.Items.ProjectReference.Count -lt 14 -or $sourceGraph.Items.PackageReference.Count -ne 0) {
+          throw "Source mode must evaluate the complete ProjectReference graph with no PackageReferences."
+        }
+        if ($packageGraph.Items.ProjectReference.Count -ne 1 -or
+            -not ($packageGraph.Items.ProjectReference.Identity -match "TheSingularityWorkshop.Renderer.csproj") -or
+            $packageGraph.Items.PackageReference.Count -ne 9 -or
+            ($packageGraph.Items.PackageReference.Identity -contains "TheSingularityWorkshop.Renderer")) {
+          throw "Package mode must contain exactly the Renderer source/MicroBundle input plus nine ordinary PackageReferences, with no Renderer package."
+        }
+        Write-Host "Verified source mode: $($sourceGraph.Items.ProjectReference.Count) project refs, zero packages."
+        Write-Host "Verified package mode: one Renderer MicroBundle project ref, nine ordinary packages."
         Write-Host "Captured both evaluated item graphs with all CI sibling checkouts present."
         
     - name: Upload evaluated AnyApp dependency graphs
