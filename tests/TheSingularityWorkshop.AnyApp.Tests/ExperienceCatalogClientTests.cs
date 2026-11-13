@@ -51,12 +51,25 @@ public sealed class ExperienceCatalogClientTests
     }
 
     [Fact]
-    public async Task ListAsyncRejectsDuplicateExperienceIds()
+    public async Task ListAsyncRejectsDuplicateImmutablePublications()
     {
         var publication = $"{{\"experienceId\":41,\"version\":\"1.0.0\",\"contentHash\":\"{ValidHash}\"}}";
         using var client = CreateClient($"[{publication},{publication}]");
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => client.ListAsync());
+    }
+
+    [Fact]
+    public async Task ListAsyncAllowsMultipleVersionsOfOneExperience()
+    {
+        var first = $"{{\"experienceId\":41,\"version\":\"1.0.0\",\"contentHash\":\"{ValidHash}\"}}";
+        var second = $"{{\"experienceId\":41,\"version\":\"2.0.0\",\"contentHash\":\"{ValidHash}\"}}";
+        using var client = CreateClient($"[{first},{second}]");
+
+        var publications = await client.ListAsync();
+
+        Assert.Equal(2, publications.Count);
+        Assert.Equal(new[] { "1.0.0", "2.0.0" }, publications.Select(item => item.Version));
     }
 
     private static ExperienceCatalogClient CreateClient(string response)
