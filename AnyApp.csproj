@@ -43,7 +43,6 @@
     <PackageReference Include="TheSingularityWorkshop.GrammarAi" Version="0.1.0-alpha.2" Condition="'$(WorkshopUseRepositorySources)' != 'true'" />
     <PackageReference Include="TheSingularityWorkshop.GUI.WPF" Version="0.1.0-alpha.6" Condition="'$(WorkshopUseRepositorySources)' != 'true'" />
     <PackageReference Include="TheSingularityWorkshop.MicroBundleRepository.Rest" Version="0.1.0-alpha.2" Condition="'$(WorkshopUseRepositorySources)' != 'true'" />
-    <PackageReference Include="TheSingularityWorkshop.Renderer" Version="0.1.0-alpha.2" Condition="'$(WorkshopUseRepositorySources)' != 'true'" />
     <PackageReference Include="TheSingularityWorkshop.Experiences.Moniker" Version="0.1.0-alpha.3" Condition="'$(WorkshopUseRepositorySources)' != 'true'" />
     <PackageReference Include="TheSingularityWorkshop.Experiences.Moniker.Motion.Wave" Version="0.1.0-alpha.1" Condition="'$(WorkshopUseRepositorySources)' != 'true'" />
 
@@ -54,7 +53,7 @@
     <ProjectReference Include="$(WorkshopSourceRoot)/TheSingularityWorkshop.GrammarAi/TheSingularityWorkshop.GrammarAi.csproj" Condition="'$(WorkshopUseRepositorySources)' == 'true'" AdditionalProperties="WorkshopUseRepositorySources=$(WorkshopUseRepositorySources);WorkshopSourceRoot=$(WorkshopSourceRoot)" />
     <ProjectReference Include="$(WorkshopSourceRoot)/TheSingularityWorkshop.GUI/src/WPF/TheSingularityWorkshop.GUI.WPF.csproj" Condition="'$(WorkshopUseRepositorySources)' == 'true'" AdditionalProperties="WorkshopUseRepositorySources=$(WorkshopUseRepositorySources);WorkshopSourceRoot=$(WorkshopSourceRoot)" />
     <ProjectReference Include="$(WorkshopMicroBundleRepositoryRoot)/src/REST/TheSingularityWorkshop.MicroBundleRepository.Rest/TheSingularityWorkshop.MicroBundleRepository.Rest.csproj" Condition="'$(WorkshopUseRepositorySources)' == 'true'" AdditionalProperties="WorkshopUseRepositorySources=$(WorkshopUseRepositorySources);WorkshopSourceRoot=$(WorkshopSourceRoot)" />
-    <ProjectReference Include="$(WorkshopSourceRoot)/TheSingularityWorkshop.Renderer/TheSingularityWorkshop.Renderer.csproj" Condition="'$(WorkshopUseRepositorySources)' == 'true'" AdditionalProperties="WorkshopUseRepositorySources=$(WorkshopUseRepositorySources);WorkshopSourceRoot=$(WorkshopSourceRoot)" />
+    <ProjectReference Include="$(WorkshopSourceRoot)/TheSingularityWorkshop.Renderer/TheSingularityWorkshop.Renderer.csproj" Condition="Exists('$(WorkshopSourceRoot)/TheSingularityWorkshop.Renderer/TheSingularityWorkshop.Renderer.csproj')" AdditionalProperties="WorkshopUseRepositorySources=$(WorkshopUseRepositorySources);WorkshopSourceRoot=$(WorkshopSourceRoot)" />
 
     <ProjectReference Include="$(WorkshopSourceRoot)/StoryBuilder/src/StoryBuilder.MicroBundle/StoryBuilder.MicroBundle.csproj"
                       Condition="'$(WorkshopUseRepositorySources)' == 'true' and Exists('$(WorkshopSourceRoot)/StoryBuilder/src/StoryBuilder.MicroBundle/StoryBuilder.MicroBundle.csproj')"
@@ -89,5 +88,10 @@
     <Error Condition="'$(WorkshopMicroBundleRepositoryRoot)' == ''" Text="Repository-source mode is missing MicroBundleRepository under $(WorkshopSourceRoot)." />
     <Error Condition="'$(WorkshopExperiencesRoot)' == ''" Text="Repository-source mode is missing Experiences under $(WorkshopSourceRoot)." />
     <Error Condition="!Exists('$(WorkshopSourceRoot)/TheSingularityWorkshop.Renderer/TheSingularityWorkshop.Renderer.csproj')" Text="Repository-source mode is missing TheSingularityWorkshop.Renderer under $(WorkshopSourceRoot)." />
+  </Target>
+
+  <!-- Renderer is a source/MicroBundle composition input in both dependency modes, never a NuGet package. -->
+  <Target Name="ValidateWorkshopRendererMicroBundle" BeforeTargets="Restore;ResolveProjectReferences;PrepareForBuild">
+    <Error Condition="!Exists('$(WorkshopSourceRoot)/TheSingularityWorkshop.Renderer/TheSingularityWorkshop.Renderer.csproj')" Text="AnyApp requires the Renderer MicroBundle source at $(WorkshopSourceRoot)/TheSingularityWorkshop.Renderer/TheSingularityWorkshop.Renderer.csproj. Check out TheSingularityWorkshop.Renderer development in the shared workspace." />
   </Target>
 </Project>
