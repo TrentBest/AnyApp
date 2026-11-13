@@ -1,0 +1,9 @@
+<Project>
+  <PropertyGroup>
+    <!-- Local Visual Studio/CLI defaults to the live development source graph. -->
+    <WorkshopUseRepositorySources Condition="'$(WorkshopUseRepositorySources)' == ''">true</WorkshopUseRepositorySources>
+    <!-- CI uses its isolated checkout directory; local workspaces use sibling repositories. -->
+    <WorkshopSourceRoot Condition="'$(WorkshopSourceRoot)' == '' and Exists('$(MSBuildThisFileDirectory)_dependencies/FSM_API/FSM_API/FSM_API.csproj')">$(MSBuildThisFileDirectory)_dependencies</WorkshopSourceRoot>
+    <WorkshopSourceRoot Condition="'$(WorkshopSourceRoot)' == ''">$(MSBuildThisFileDirectory)..</WorkshopSourceRoot>
+  </PropertyGroup>
+</Project>
