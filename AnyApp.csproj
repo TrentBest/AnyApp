@@ -47,9 +47,9 @@
     <PackageReference Include="TheSingularityWorkshop.ProtocolAi" Version="0.1.0-alpha.2" Condition="'$(WorkshopUseRepositorySources)' != 'true'" />
     <PackageReference Include="TheSingularityWorkshop.GrammarAi" Version="0.1.0-alpha.2" Condition="'$(WorkshopUseRepositorySources)' != 'true'" />
     <PackageReference Include="TheSingularityWorkshop.GUI.WPF" Version="0.1.0-alpha.6" Condition="'$(WorkshopUseRepositorySources)' != 'true'" />
-    <PackageReference Include="TheSingularityWorkshop.MicroBundleRepository.Rest" Version="0.1.0-alpha.2" Condition="'$(WorkshopMicroBundleRepositoryRoot)' == '' and '$(WorkshopUseRepositorySources)' != 'true'" />
+    <PackageReference Include="TheSingularityWorkshop.MicroBundleRepository.Rest" Version="0.1.0-alpha.2" Condition="'$(WorkshopUseRepositorySources)' != 'true'" />
     <PackageReference Include="TheSingularityWorkshop.Renderer" Version="0.1.0-alpha.2" Condition="'$(WorkshopUseRepositorySources)' != 'true'" />
-    <PackageReference Include="TheSingularityWorkshop.Experiences.Moniker" Version="0.1.0-alpha.3" Condition="'$(WorkshopExperiencesRoot)' == '' and '$(WorkshopUseRepositorySources)' != 'true'" />
+    <PackageReference Include="TheSingularityWorkshop.Experiences.Moniker" Version="0.1.0-alpha.3" Condition="'$(WorkshopUseRepositorySources)' != 'true'" />
     <PackageReference Include="TheSingularityWorkshop.Experiences.Moniker.Motion.Wave" Version="0.1.0-alpha.1" Condition="'$(WorkshopExperiencesRoot)' == '' and '$(WorkshopUseRepositorySources)' != 'true'" />
 
     <ProjectReference Include="_dependencies/FSM_API/FSM_API/FSM_API.csproj" Condition="'$(WorkshopUseRepositorySources)' == 'true'" />
@@ -58,7 +58,7 @@
     <ProjectReference Include="_dependencies/TheSingularityWorkshop.ProtocolAi/TheSingularityWorkshop.ProtocolAi.csproj" Condition="'$(WorkshopUseRepositorySources)' == 'true'" />
     <ProjectReference Include="_dependencies/TheSingularityWorkshop.GrammarAi/TheSingularityWorkshop.GrammarAi.csproj" Condition="'$(WorkshopUseRepositorySources)' == 'true'" />
     <ProjectReference Include="_dependencies/TheSingularityWorkshop.GUI/src/WPF/TheSingularityWorkshop.GUI.WPF.csproj" Condition="'$(WorkshopUseRepositorySources)' == 'true'" />
-    <ProjectReference Include="$(WorkshopMicroBundleRepositoryRoot)/src/REST/TheSingularityWorkshop.MicroBundleRepository.Rest/TheSingularityWorkshop.MicroBundleRepository.Rest.csproj" Condition="'$(WorkshopMicroBundleRepositoryRoot)' != ''" />
+    <ProjectReference Include="$(WorkshopMicroBundleRepositoryRoot)/src/REST/TheSingularityWorkshop.MicroBundleRepository.Rest/TheSingularityWorkshop.MicroBundleRepository.Rest.csproj" Condition="'$(WorkshopUseRepositorySources)' == 'true' and '$(WorkshopMicroBundleRepositoryRoot)' != ''" />
     <ProjectReference Include="_dependencies/TheSingularityWorkshop.Renderer/TheSingularityWorkshop.Renderer.csproj" Condition="'$(WorkshopUseRepositorySources)' == 'true'" />
 
     <ProjectReference Include="_dependencies/StoryBuilder/src/StoryBuilder.MicroBundle/StoryBuilder.MicroBundle.csproj"
@@ -66,8 +66,8 @@
                       AdditionalProperties="WorkshopGuiCoreProject=$(MSBuildThisFileDirectory)_dependencies\TheSingularityWorkshop.GUI\src\Core\TheSingularityWorkshop.GUI.Core.csproj" />
     <ProjectReference Include="_dependencies/StoryBuilder/src/StoryBuilder.Persistence/StoryBuilder.Persistence.csproj"
                       Condition="'$(WorkshopUseRepositorySources)' == 'true' and Exists('$(MSBuildThisFileDirectory)_dependencies/StoryBuilder/src/StoryBuilder.Persistence/StoryBuilder.Persistence.csproj')" />
-    <ProjectReference Include="$(WorkshopExperiencesRoot)/src/Moniker/TheSingularityWorkshop.Experiences.Moniker.csproj" Condition="'$(WorkshopExperiencesRoot)' != '' and Exists('$(WorkshopExperiencesRoot)/src/Moniker/TheSingularityWorkshop.Experiences.Moniker.csproj')" />
-    <ProjectReference Include="$(WorkshopExperiencesRoot)/src/Moniker.Motion.Wave/TheSingularityWorkshop.Experiences.Moniker.Motion.Wave.csproj" Condition="'$(WorkshopExperiencesRoot)' != '' and Exists('$(WorkshopExperiencesRoot)/src/Moniker.Motion.Wave/TheSingularityWorkshop.Experiences.Moniker.Motion.Wave.csproj')" />
+    <ProjectReference Include="$(WorkshopExperiencesRoot)/src/Moniker/TheSingularityWorkshop.Experiences.Moniker.csproj" Condition="'$(WorkshopUseRepositorySources)' == 'true' and '$(WorkshopExperiencesRoot)' != '' and Exists('$(WorkshopExperiencesRoot)/src/Moniker/TheSingularityWorkshop.Experiences.Moniker.csproj')" />
+    <ProjectReference Include="$(WorkshopExperiencesRoot)/src/Moniker.Motion.Wave/TheSingularityWorkshop.Experiences.Moniker.Motion.Wave.csproj" Condition="'$(WorkshopUseRepositorySources)' == 'true' and '$(WorkshopExperiencesRoot)' != '' and Exists('$(WorkshopExperiencesRoot)/src/Moniker.Motion.Wave/TheSingularityWorkshop.Experiences.Moniker.Motion.Wave.csproj')" />
     <ProjectReference Include="_dependencies/TheSingularityWorkshop.Visualize/TheSingularityWorkshop.Visualize.csproj" Condition="'$(WorkshopUseRepositorySources)' == 'true' and Exists('$(MSBuildThisFileDirectory)_dependencies/TheSingularityWorkshop.Visualize/TheSingularityWorkshop.Visualize.csproj')" />
     <ProjectReference Include="_dependencies/TheSingularityWorkshop.Visualize/integrations/RendererAdapter/TheSingularityWorkshop.Renderer.VisualizeAdapter.csproj" Condition="'$(WorkshopUseRepositorySources)' == 'true' and Exists('$(MSBuildThisFileDirectory)_dependencies/TheSingularityWorkshop.Visualize/integrations/RendererAdapter/TheSingularityWorkshop.Renderer.VisualizeAdapter.csproj')" />
   </ItemGroup>
