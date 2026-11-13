@@ -23,8 +23,7 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
     <PackageReference Include="xunit" Version="2.9.2" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
-    <PackageReference Include="TheSingularityWorkshop.Renderer" Version="0.1.0-alpha.2" Condition="'$(WorkshopUseRepositorySources)' != 'true'" />
-    <ProjectReference Include="$(WorkshopSourceRoot)/TheSingularityWorkshop.Renderer/TheSingularityWorkshop.Renderer.csproj" Condition="'$(WorkshopUseRepositorySources)' == 'true'" AdditionalProperties="WorkshopUseRepositorySources=$(WorkshopUseRepositorySources);WorkshopSourceRoot=$(WorkshopSourceRoot)" />
+    <ProjectReference Include="$(WorkshopSourceRoot)/TheSingularityWorkshop.Renderer/TheSingularityWorkshop.Renderer.csproj" Condition="Exists('$(WorkshopSourceRoot)/TheSingularityWorkshop.Renderer/TheSingularityWorkshop.Renderer.csproj')" AdditionalProperties="WorkshopUseRepositorySources=$(WorkshopUseRepositorySources);WorkshopSourceRoot=$(WorkshopSourceRoot)" />
     <ProjectReference Include="../../AnyApp.csproj" AdditionalProperties="WorkshopUseRepositorySources=$(WorkshopUseRepositorySources);WorkshopSourceRoot=$(WorkshopSourceRoot)" />
     <ProjectReference Include="$(WorkshopTheRoot)/Workshop/Workshop.MicroBundle/Workshop.MicroBundle.csproj" Condition="'$(WorkshopTheRoot)' != ''" />
   </ItemGroup>
