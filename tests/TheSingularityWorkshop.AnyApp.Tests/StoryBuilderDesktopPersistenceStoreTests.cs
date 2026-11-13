@@ -1,3 +1,4 @@
+#if WORKSHOP_STORYBUILDER
 using System.Diagnostics;
 using StoryBuilder.MicroBundle;
 using Xunit;
@@ -132,3 +133,4 @@ public sealed class StoryBuilderDesktopPersistenceStoreTests
         return path;
     }
 }
+#endif
