@@ -1,5 +1,6 @@
 using System.Net.Http;
 using System.Net.Http.Json;
+using System.Security.Cryptography;
 using System.Text.Json;
 
 namespace TheSingularityWorkshop.AnyApp;
@@ -113,7 +114,26 @@ public sealed class ExperienceCatalogClient : IDisposable
             throw new InvalidOperationException("The repository returned an Experience artifact with a different identity.");
         }
 
-        return ExperienceManifest.Parse(Convert.FromBase64String(artifact.ContentBase64));
+        byte[] content;
+        try
+        {
+            content = Convert.FromBase64String(artifact.ContentBase64);
+        }
+        catch (FormatException ex)
+        {
+            throw new InvalidOperationException(
+                "The repository returned an Experience artifact with invalid Base64 content.",
+                ex);
+        }
+
+        var actualHash = Convert.ToHexString(SHA256.HashData(content));
+        if (!string.Equals(actualHash, experience.ContentHash, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException(
+                "The downloaded Experience artifact bytes do not match the published SHA-256 content hash.");
+        }
+
+        return ExperienceManifest.Parse(content);
     }
 
     public void Dispose() => _httpClient.Dispose();
