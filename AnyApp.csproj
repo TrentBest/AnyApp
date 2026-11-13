@@ -87,6 +87,8 @@
     <Error Condition="!Exists('$(WorkshopSourceRoot)/TheSingularityWorkshop.GUI/src/WPF/TheSingularityWorkshop.GUI.WPF.csproj')" Text="Repository-source mode is missing TheSingularityWorkshop.GUI under $(WorkshopSourceRoot)." />
     <Error Condition="'$(WorkshopMicroBundleRepositoryRoot)' == ''" Text="Repository-source mode is missing MicroBundleRepository under $(WorkshopSourceRoot)." />
     <Error Condition="'$(WorkshopExperiencesRoot)' == ''" Text="Repository-source mode is missing Experiences under $(WorkshopSourceRoot)." />
+    <Error Condition="'$(WorkshopExperiencesRoot)' != '' and !Exists('$(WorkshopExperiencesRoot)/src/Moniker/TheSingularityWorkshop.Experiences.Moniker.csproj')" Text="Repository-source mode is missing Experiences.Moniker at $(WorkshopExperiencesRoot)/src/Moniker/TheSingularityWorkshop.Experiences.Moniker.csproj." />
+    <Error Condition="'$(WorkshopExperiencesRoot)' != '' and !Exists('$(WorkshopExperiencesRoot)/src/Moniker.Motion.Wave/TheSingularityWorkshop.Experiences.Moniker.Motion.Wave.csproj')" Text="Repository-source mode is missing Experiences.Moniker.Motion.Wave at $(WorkshopExperiencesRoot)/src/Moniker.Motion.Wave/TheSingularityWorkshop.Experiences.Moniker.Motion.Wave.csproj." />
   </Target>
 
   <!-- Renderer is a source/MicroBundle composition input in both dependency modes, never a NuGet package. -->
