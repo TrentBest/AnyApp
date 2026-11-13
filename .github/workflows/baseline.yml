@@ -27,8 +27,15 @@ jobs:
         ref: development
         path: _dependencies/TheSingularityWorkshop.Visualize
 
+    - name: Checkout Renderer MicroBundle source
+      uses: actions/checkout@v5
+      with:
+        repository: TrentBest/TheSingularityWorkshop.Renderer
+        ref: development
+        path: _dependencies/TheSingularityWorkshop.Renderer
+
     - name: Restore public NuGet dependency graph
-      run: dotnet restore tests/TheSingularityWorkshop.AnyApp.Tests/TheSingularityWorkshop.AnyApp.Tests.csproj -p:WorkshopUseRepositorySources=false --source https://api.nuget.org/v3/index.json
+      run: dotnet restore tests/TheSingularityWorkshop.AnyApp.Tests/TheSingularityWorkshop.AnyApp.Tests.csproj -p:WorkshopUseRepositorySources=false -p:WorkshopSourceRoot="$env:GITHUB_WORKSPACE/_dependencies" --source https://api.nuget.org/v3/index.json
 
     - name: Test AnyApp composition contracts
       run: dotnet test tests/TheSingularityWorkshop.AnyApp.Tests/TheSingularityWorkshop.AnyApp.Tests.csproj --configuration Release -p:WorkshopUseRepositorySources=false --no-restore
