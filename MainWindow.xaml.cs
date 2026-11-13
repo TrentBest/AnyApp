@@ -296,6 +296,12 @@ public partial class MainWindow : Window
                 return await client.GetManifestAsync(publication, cancellationToken);
             });
 
+        if (decision.ShouldBrowseExperiences)
+        {
+            await BrowseExperiencesAsync(GetRepositoryEndpoint());
+            return;
+        }
+
         if (decision.ShouldLaunchForge)
         {
             await LaunchForgeAsync();
