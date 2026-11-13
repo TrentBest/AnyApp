@@ -34,7 +34,7 @@ Do not add a local NuGet feed to this workflow as a substitute for source refere
 The `.github/workflows/baseline.yml` workflow restores the test graph from the public NuGet feed explicitly:
 
 ```powershell
-dotnet restore tests/TheSingularityWorkshop.AnyApp.Tests/TheSingularityWorkshop.AnyApp.Tests.csproj --source https://api.nuget.org/v3/index.json
+dotnet restore tests/TheSingularityWorkshop.AnyApp.Tests/TheSingularityWorkshop.AnyApp.Tests.csproj -p:WorkshopUseRepositorySources=false -p:WorkshopSourceRoot="$env:GITHUB_WORKSPACE/_dependencies" --source https://api.nuget.org/v3/index.json
 ```
 
 It does not create or register a local package feed. In normal/package mode, AnyApp's project file selects published packages for FSM_API, FSM_COS, FSM_UserIO, ProtocolAi, GrammarAi, GUI.WPF, MicroBundleRepository.Rest, and the Moniker Experience packages. Renderer remains a checked-out source/MicroBundle composition input in both modes and is never consumed as a NuGet package. The baseline checks out Renderer under `_dependencies/` and passes that shared root explicitly. The workflow then tests and measures the publish forms using the package graph plus the Renderer source/MicroBundle input.
@@ -45,7 +45,7 @@ It does not create or register a local package feed. In normal/package mode, Any
 
 The Visualize Renderer adapter is currently consumed as a source project because it is an integration project in the Visualize repository rather than a separately published adapter package. The adapter itself must be source-built, and its current project file directly references the Visualize project. Therefore the public-feed baseline validates the published NuGet dependency graph for the package-backed dependencies, but it is not yet a fully source-free Visualize/adapter graph.
 
-This exception is intentionally visible rather than masked by locally packing development artifacts. The [VisualizeLLM handoff](VISUALIZE_LLM_HANDOFF.md) owns the Visualize-side investigation. AnyApp owns its dependency selection, source graph, and consumer CI. Once a supported published adapter package exists, the package-mode baseline should consume that package too.
+The Visualize Renderer adapter is included only in repository-source mode, where the source workflow builds it from the Visualize checkout. Package mode does not pretend that this adapter is a NuGet dependency; it validates the ordinary package-backed host dependencies plus the Renderer source/MicroBundle input. The [VisualizeLLM handoff](VISUALIZE_LLM_HANDOFF.md) owns the Visualize-side investigation, while AnyApp owns its dependency selection, source graph, and consumer CI.
 
 ## Guardrails
 
