@@ -78,7 +78,8 @@ public sealed class ExperienceCatalogClient : IDisposable
             throw new InvalidOperationException(
                 $"The repository returned an empty version for Experience {publication.ExperienceId}.");
 
-        if (publication.ContentHash.Length != 64 ||
+        if (string.IsNullOrEmpty(publication.ContentHash) ||
+            publication.ContentHash.Length != 64 ||
             publication.ContentHash.Any(character => !Uri.IsHexDigit(character)))
         {
             throw new InvalidOperationException(
