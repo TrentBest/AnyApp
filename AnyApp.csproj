@@ -58,7 +58,7 @@
 
     <ProjectReference Include="$(WorkshopSourceRoot)/StoryBuilder/src/StoryBuilder.MicroBundle/StoryBuilder.MicroBundle.csproj"
                       Condition="'$(WorkshopUseRepositorySources)' == 'true' and Exists('$(WorkshopSourceRoot)/StoryBuilder/src/StoryBuilder.MicroBundle/StoryBuilder.MicroBundle.csproj')"
-                      AdditionalProperties="WorkshopGuiCoreProject=$(MSBuildThisFileDirectory)_dependencies\TheSingularityWorkshop.GUI\src\Core\TheSingularityWorkshop.GUI.Core.csproj" />
+                      AdditionalProperties="WorkshopGuiCoreProject=$(WorkshopSourceRoot)\\TheSingularityWorkshop.GUI\\src\\Core\\TheSingularityWorkshop.GUI.Core.csproj;WorkshopUseRepositorySources=$(WorkshopUseRepositorySources);WorkshopSourceRoot=$(WorkshopSourceRoot)" />
     <ProjectReference Include="$(WorkshopSourceRoot)/StoryBuilder/src/StoryBuilder.Persistence/StoryBuilder.Persistence.csproj"
                       Condition="'$(WorkshopUseRepositorySources)' == 'true' and Exists('$(WorkshopSourceRoot)/StoryBuilder/src/StoryBuilder.Persistence/StoryBuilder.Persistence.csproj')" AdditionalProperties="WorkshopUseRepositorySources=$(WorkshopUseRepositorySources);WorkshopSourceRoot=$(WorkshopSourceRoot)" />
     <ProjectReference Include="$(WorkshopExperiencesRoot)/src/Moniker/TheSingularityWorkshop.Experiences.Moniker.csproj" Condition="'$(WorkshopUseRepositorySources)' == 'true'" AdditionalProperties="WorkshopUseRepositorySources=$(WorkshopUseRepositorySources);WorkshopSourceRoot=$(WorkshopSourceRoot)" />
