@@ -28,13 +28,13 @@ jobs:
         path: _dependencies/TheSingularityWorkshop.Visualize
 
     - name: Restore public NuGet dependency graph
-      run: dotnet restore tests/TheSingularityWorkshop.AnyApp.Tests/TheSingularityWorkshop.AnyApp.Tests.csproj --source https://api.nuget.org/v3/index.json
+      run: dotnet restore tests/TheSingularityWorkshop.AnyApp.Tests/TheSingularityWorkshop.AnyApp.Tests.csproj -p:WorkshopUseRepositorySources=false --source https://api.nuget.org/v3/index.json
 
     - name: Test AnyApp composition contracts
-      run: dotnet test tests/TheSingularityWorkshop.AnyApp.Tests/TheSingularityWorkshop.AnyApp.Tests.csproj --configuration Release --no-restore
+      run: dotnet test tests/TheSingularityWorkshop.AnyApp.Tests/TheSingularityWorkshop.AnyApp.Tests.csproj --configuration Release -p:WorkshopUseRepositorySources=false --no-restore
 
     - name: Publish framework-dependent
-      run: dotnet publish AnyApp.csproj --configuration Release --runtime win-x64 --self-contained false --output artifacts/framework-dependent --no-restore
+      run: dotnet publish AnyApp.csproj --configuration Release -p:WorkshopUseRepositorySources=false --runtime win-x64 --self-contained false --output artifacts/framework-dependent --no-restore
 
     - name: Publish self-contained
       run: dotnet publish AnyApp.csproj --configuration Release --runtime win-x64 --self-contained true --output artifacts/self-contained --no-restore
