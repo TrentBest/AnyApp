@@ -197,6 +197,37 @@ jobs:
         ref: development
         path: _dependencies/MicroBundleRepository
 
+    - name: Verify shared default and fail-closed source mode
+      shell: pwsh
+      run: |
+        $projects = @("AnyApp.csproj", "tests/TheSingularityWorkshop.AnyApp.Tests/TheSingularityWorkshop.AnyApp.Tests.csproj")
+        $roots = @()
+        foreach ($project in $projects) {
+          $evaluation = dotnet msbuild $project -getProperty:WorkshopUseRepositorySources,WorkshopSourceRoot -p:Configuration=Release | ConvertFrom-Json
+          if ($LASTEXITCODE -ne 0) { throw "Unable to evaluate shared dependency mode for $project." }
+          if ($evaluation.Properties.WorkshopUseRepositorySources -ne "true") {
+            throw "$project did not inherit the default repository-source mode."
+          }
+          $roots += [IO.Path]::GetFullPath($evaluation.Properties.WorkshopSourceRoot)
+        }
+        if ($roots[0] -ne $roots[1]) {
+          throw "AnyApp and its test project resolved different source roots: $($roots -join '; ')"
+        }
+        Write-Host "Both projects default to source mode and share root $($roots[0])."
+
+        $missingRoot = Join-Path $env:RUNNER_TEMP "anyapp-missing-source-checkout"
+        $diagnostic = Join-Path $env:RUNNER_TEMP "anyapp-missing-source-checkout.log"
+        dotnet msbuild AnyApp.csproj -t:ValidateWorkshopRepositorySources -p:WorkshopUseRepositorySources=true "-p:WorkshopSourceRoot=$missingRoot" *> $diagnostic
+        $validationExitCode = $LASTEXITCODE
+        if ($validationExitCode -eq 0) {
+          throw "Source-mode validation unexpectedly accepted a missing dependency workspace."
+        }
+        if (-not (Select-String -Path $diagnostic -Pattern "missing FSM_API" -Quiet)) {
+          Get-Content $diagnostic
+          throw "Missing-checkout failure did not include the expected actionable FSM_API diagnostic."
+        }
+        Write-Host "Missing-checkout validation failed closed with an actionable diagnostic."
+    
     - name: Restore Renderer source dependency graph
       shell: pwsh
       run: dotnet restore _dependencies/TheSingularityWorkshop.Renderer/TheSingularityWorkshop.Renderer.csproj -p:WorkshopUseRepositorySources=true -p:WorkshopSourceRoot="$env:GITHUB_WORKSPACE/_dependencies"
