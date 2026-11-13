@@ -6,6 +6,26 @@ namespace TheSingularityWorkshop.AnyApp.Tests;
 public sealed class ExperienceStartupCoordinatorTests
 {
     [Fact]
+    public async Task FirstLaunchWithoutCachedExperienceOpensExperienceBrowser()
+    {
+        var listCalls = 0;
+        var decision = await ExperienceStartupCoordinator.ReconcileAsync(
+            _ => Task.FromResult<ExperienceManifest?>(null),
+            _ => Task.FromResult<PublishedExperience?>(null),
+            _ =>
+            {
+                listCalls++;
+                return Task.FromResult<IReadOnlyList<PublishedExperience>>([]);
+            },
+            (_, _) => throw new InvalidOperationException("No manifest should be fetched."));
+
+        Assert.True(decision.ShouldBrowseExperiences);
+        Assert.False(decision.ShouldLaunchForge);
+        Assert.False(decision.PersistLastManifest);
+        Assert.Equal(0, listCalls);
+    }
+
+    [Fact]
     public async Task UnchangedPublicationUsesCachedManifestWithoutFetchingArtifact()
     {
         var manifest = new ExperienceManifest(41, "1.0.0", 1, Array.Empty<ExperienceBundleRequest>());
@@ -135,6 +155,7 @@ public sealed class ExperienceStartupCoordinatorTests
             (_, _) => throw new InvalidOperationException("No fetch should be attempted."));
 
         Assert.True(decision.ShouldLaunchForge);
+        Assert.False(decision.ShouldBrowseExperiences);
     }
 
     [Fact]
