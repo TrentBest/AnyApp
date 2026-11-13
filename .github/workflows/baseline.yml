@@ -20,13 +20,6 @@ jobs:
       with:
         dotnet-version: 8.0.x
 
-    - name: Checkout Visualize dependency
-      uses: actions/checkout@v5
-      with:
-        repository: TrentBest/TheSingularityWorkshop.Visualize
-        ref: development
-        path: _dependencies/TheSingularityWorkshop.Visualize
-
     - name: Checkout Renderer MicroBundle source
       uses: actions/checkout@v5
       with:
