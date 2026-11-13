@@ -38,7 +38,7 @@ public static class ExperienceStartupCoordinator
         }
 
         if (cachedManifest is null)
-            return ExperienceStartupDecision.LaunchForge;
+            return ExperienceStartupDecision.BrowseExperiences;
 
         IReadOnlyList<PublishedExperience> publications;
         try
@@ -113,8 +113,11 @@ public static class ExperienceStartupCoordinator
 public sealed record ExperienceStartupDecision(
     ExperienceManifest? Manifest,
     PublishedExperience? Publication,
-    bool PersistLastManifest)
+    bool PersistLastManifest,
+    bool BrowseExperiences = false)
 {
+    public static ExperienceStartupDecision BrowseExperiences { get; } = new(null, null, false, BrowseExperiences: true);
     public static ExperienceStartupDecision LaunchForge { get; } = new(null, null, false);
-    public bool ShouldLaunchForge => Manifest is null;
+    public bool ShouldBrowseExperiences { get; init; }
+    public bool ShouldLaunchForge => Manifest is null && !ShouldBrowseExperiences;
 }
