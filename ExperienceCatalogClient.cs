@@ -60,7 +60,7 @@ public sealed class ExperienceCatalogClient : IDisposable
             if (!publicationIdentities.Add((
                     publication.ExperienceId,
                     publication.Version,
-                    publication.ContentHash)))
+                    publication.ContentHash.ToUpperInvariant())))
             {
                 throw new InvalidOperationException(
                     $"The repository returned the same immutable publication more than once for Experience {publication.ExperienceId}.");
@@ -95,6 +95,7 @@ public sealed class ExperienceCatalogClient : IDisposable
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(experience);
+        ValidatePublication(experience);
 
         var uri =
             $"api/experiences/{experience.ExperienceId}/{Uri.EscapeDataString(experience.Version)}/{experience.ContentHash}";
