@@ -133,7 +133,15 @@ public sealed class ExperienceCatalogClient : IDisposable
                 "The downloaded Experience artifact bytes do not match the published SHA-256 content hash.");
         }
 
-        return ExperienceManifest.Parse(content);
+        var manifest = ExperienceManifest.Parse(content);
+        if (manifest.ExperienceId != experience.ExperienceId ||
+            !string.Equals(manifest.Version, experience.Version, StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException(
+                "The downloaded Experience manifest identity does not match the selected publication.");
+        }
+
+        return manifest;
     }
 
     public void Dispose() => _httpClient.Dispose();
