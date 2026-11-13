@@ -1,3 +1,4 @@
+#if WORKSHOP_STORYBUILDER
 using System.IO;
 using StoryBuilder.Core.Services;
 using StoryBuilder.Persistence;
@@ -69,3 +70,4 @@ internal static class StoryBuilderDesktopPersistenceStore
         }
     }
 }
+#endif
