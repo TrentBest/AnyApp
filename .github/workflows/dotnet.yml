@@ -229,6 +229,30 @@ jobs:
         $guiCoreProject = Join-Path $sourceRoot "TheSingularityWorkshop.GUI/src/Core/TheSingularityWorkshop.GUI.Core.csproj"
         dotnet restore tests/TheSingularityWorkshop.AnyApp.Tests/TheSingularityWorkshop.AnyApp.Tests.csproj -p:WorkshopUseRepositorySources=true -p:WorkshopSourceRoot="$sourceRoot" "-p:WorkshopGuiCoreProject=$guiCoreProject"
 
+    - name: Capture AnyApp evaluated source and package dependency graphs
+      shell: pwsh
+      run: |
+        $sourceRoot = "$env:GITHUB_WORKSPACE/_dependencies"
+        $guiCoreProject = Join-Path $sourceRoot "TheSingularityWorkshop.GUI/src/Core/TheSingularityWorkshop.GUI.Core.csproj"
+        $sourceLog = "anyapp-source-evaluation.json"
+        $packageLog = "anyapp-package-evaluation.json"
+        dotnet msbuild AnyApp.csproj -getProperty:Configuration,WorkshopUseRepositorySources,WorkshopSourceRoot,WorkshopExperiencesRoot,WorkshopMicroBundleRepositoryRoot -getItem:ProjectReference,PackageReference -p:Configuration=Release -p:WorkshopUseRepositorySources=true -p:WorkshopSourceRoot="$sourceRoot" "-p:WorkshopGuiCoreProject=$guiCoreProject" | Tee-Object -FilePath $sourceLog
+        if ($LASTEXITCODE -ne 0) { throw "AnyApp source-mode MSBuild evaluation failed." }
+        dotnet msbuild AnyApp.csproj -getProperty:Configuration,WorkshopUseRepositorySources,WorkshopSourceRoot,WorkshopExperiencesRoot,WorkshopMicroBundleRepositoryRoot -getItem:ProjectReference,PackageReference -p:Configuration=Release -p:WorkshopUseRepositorySources=false -p:WorkshopSourceRoot="$sourceRoot" "-p:WorkshopGuiCoreProject=$guiCoreProject" | Tee-Object -FilePath $packageLog
+        if ($LASTEXITCODE -ne 0) { throw "AnyApp package-mode MSBuild evaluation failed." }
+        Write-Host "Captured both evaluated item graphs with all CI sibling checkouts present."
+        
+    - name: Upload evaluated AnyApp dependency graphs
+      if: always()
+      uses: actions/upload-artifact@v5
+      with:
+        name: anyapp-msbuild-evaluation-${{ github.run_id }}-${{ github.run_attempt }}
+        path: |
+          anyapp-source-evaluation.json
+          anyapp-package-evaluation.json
+        if-no-files-found: warn
+        retention-days: 30
+
     - name: Restore Renderer adapter in source mode
       shell: pwsh
       run: |
