@@ -5,6 +5,17 @@
 
 AnyApp follows the Workshop's two-mode dependency rule.
 
+## Local Visual Studio and CLI development
+
+The repository includes a root `Directory.Build.props` shared by AnyApp and its test project. Unless explicitly overridden, it selects repository-source mode and resolves one `WorkshopSourceRoot`:
+
+- In CI, when `_dependencies/FSM_API/FSM_API/FSM_API.csproj` exists, the root is the repository's `_dependencies/` directory.
+- In a local sibling workspace, the root is the parent directory containing the checked-out Workshop repositories.
+
+Open `AnyApp.sln` in Visual Studio and select `Release | Any CPU`; restore/build/test use the same source graph without a special property. The CLI behaves the same way. Missing required source checkouts fail with an actionable MSBuild error; source mode never silently falls back to NuGet.
+
+To deliberately evaluate the published-package compatibility graph, pass `-p:WorkshopUseRepositorySources=false` to restore and subsequent build/test/publish commands. CI baseline does this explicitly.
+
 ## Development source integration
 
 The `.github/workflows/dotnet.yml` workflow runs for pushes to `development` and pull requests targeting `development`. It checks out the dependent repositories' `development` branches under `_dependencies/` and builds the source graph with:
