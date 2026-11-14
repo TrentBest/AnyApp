@@ -142,11 +142,120 @@ public sealed class ExperienceCatalogClientTests
         Assert.Equal(7UL, manifest.RuntimeId);
     }
 
+
+    [Fact]
+    public async Task GetManifestAsyncPropagatesCancellation()
+    {
+        var publication = new PublishedExperience(41, "1.0.0", ValidHash);
+        using var cancellation = new CancellationTokenSource();
+        cancellation.Cancel();
+        using var client = CreateArtifactClient(
+            (request, token) => Task.FromCanceled<HttpResponseMessage>(token),
+            publication);
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(
+            () => client.GetManifestAsync(publication, cancellation.Token));
+    }
+
+    [Fact]
+    public async Task GetManifestAsyncRejectsNonSuccessHttpStatus()
+    {
+        var publication = new PublishedExperience(41, "1.0.0", ValidHash);
+        using var client = CreateArtifactClient(
+            (request, token) => Task.FromResult(new HttpResponseMessage(HttpStatusCode.ServiceUnavailable)),
+            publication);
+
+        await Assert.ThrowsAsync<HttpRequestException>(
+            () => client.GetManifestAsync(publication));
+    }
+
+    [Fact]
+    public async Task GetManifestAsyncRejectsEmptyArtifactResponse()
+    {
+        var publication = new PublishedExperience(41, "1.0.0", ValidHash);
+        using var client = CreateArtifactClient(
+            (request, token) => Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent("null", Encoding.UTF8, "application/json")
+            }),
+            publication);
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => client.GetManifestAsync(publication));
+
+        Assert.Contains("empty Experience artifact", exception.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task GetManifestAsyncRejectsInvalidBase64ArtifactContent()
+    {
+        var publication = new PublishedExperience(41, "1.0.0", ValidHash);
+        var response = System.Text.Json.JsonSerializer.Serialize(new
+        {
+            experienceId = publication.ExperienceId,
+            version = publication.Version,
+            contentHash = publication.ContentHash,
+            contentBase64 = "not base64!"
+        });
+        using var client = CreateArtifactClient(
+            (request, token) => Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(response, Encoding.UTF8, "application/json")
+            }),
+            publication);
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => client.GetManifestAsync(publication));
+
+        Assert.Contains("invalid Base64", exception.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.IsType<FormatException>(exception.InnerException);
+    }
+
+    [Theory]
+    [InlineData(42, "1.0.0", "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef")]
+    [InlineData(41, "2.0.0", "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef")]
+    [InlineData(41, "1.0.0", "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789")]
+    public async Task GetManifestAsyncRejectsArtifactWithDifferentIdentity(
+        ulong artifactExperienceId,
+        string artifactVersion,
+        string artifactHash)
+    {
+        var publication = new PublishedExperience(41, "1.0.0", ValidHash);
+        var response = System.Text.Json.JsonSerializer.Serialize(new
+        {
+            experienceId = artifactExperienceId,
+            version = artifactVersion,
+            contentHash = artifactHash,
+            contentBase64 = Convert.ToBase64String(Encoding.UTF8.GetBytes("{}"))
+        });
+        using var client = CreateArtifactClient(
+            (request, token) => Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(response, Encoding.UTF8, "application/json")
+            }),
+            publication);
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => client.GetManifestAsync(publication));
+
+        Assert.Contains("different identity", exception.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
     private static ExperienceCatalogClient CreateArtifactClient(
         string response,
+        PublishedExperience publication) =>
+        CreateArtifactClient(
+            (request, token) => Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(response, Encoding.UTF8, "application/json")
+            }),
+            publication);
+
+    private static ExperienceCatalogClient CreateArtifactClient(
+        Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> sendAsync,
         PublishedExperience publication)
     {
-        var handler = new ArtifactStubHttpMessageHandler(response, publication);
+        var handler = new ArtifactStubHttpMessageHandler(sendAsync, publication);
         var httpClient = new HttpClient(handler)
         {
             BaseAddress = new Uri("https://experiences.test/")
@@ -156,7 +265,7 @@ public sealed class ExperienceCatalogClientTests
     }
 
     private sealed class ArtifactStubHttpMessageHandler(
-        string response,
+        Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> sendAsync,
         PublishedExperience publication) : HttpMessageHandler
     {
         protected override Task<HttpResponseMessage> SendAsync(
@@ -167,10 +276,7 @@ public sealed class ExperienceCatalogClientTests
                 $"/api/experiences/{publication.ExperienceId}/{Uri.EscapeDataString(publication.Version)}/{publication.ContentHash}";
             Assert.Equal(expectedPath, request.RequestUri?.AbsolutePath);
 
-            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
-            {
-                Content = new StringContent(response, Encoding.UTF8, "application/json")
-            });
+            return sendAsync(request, cancellationToken);
         }
     }
 
