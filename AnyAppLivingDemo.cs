@@ -1,7 +1,11 @@
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Threading;
+#if WORKSHOP_USE_REPOSITORY_SOURCES
+using FsmApi = TheSingularityWorkshop.FSM_API.FsmApi;
+#else
 using FsmApi = TheSingularityWorkshop.FSM_API.FSM_API;
+#endif
 using TheSingularityWorkshop.FSM_API;
 
 namespace TheSingularityWorkshop.AnyApp;
