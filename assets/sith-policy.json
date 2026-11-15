@@ -7,11 +7,12 @@
   ],
   "actual_branches": [
     "development",
+    "fix/bridge-origin-allowlist",
     "master"
   ],
-  "branch_count": 2,
-  "status": "COMPLIANT",
-  "evaluated_at": "2026-11-14T11:30:56Z",
-  "workflow_run": "https://github.com/TrentBest/AnyApp/actions/runs/43590371401",
-  "triggering_commit": "c0e2d006da195237097cfd1d1fc5c89a7cbee924"
+  "branch_count": 3,
+  "status": "NON-COMPLIANT",
+  "evaluated_at": "2026-11-15T11:58:32Z",
+  "workflow_run": "https://github.com/TrentBest/AnyApp/actions/runs/43711471828",
+  "triggering_commit": "6de7c1d6af3f57330bb1ecdc68bfd7f27b58338f"
 }
