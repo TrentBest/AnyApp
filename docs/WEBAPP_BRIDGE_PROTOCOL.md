@@ -44,7 +44,7 @@ Privileged HTTP and WebSocket requests require:
 
 The token is compared with a fixed-time comparison. The token is never stored in the Experience manifest.
 
-Allowed non-loopback browser origins are supplied through `ANYAPP_ALLOWED_ORIGINS`. Without that setting, the Workshop WebApp origin is the only configured non-loopback origin.
+Browser origins are matched against an explicit allowlist. Allowed origins are supplied through `ANYAPP_ALLOWED_ORIGINS` as semicolon-separated exact origins (scheme, host, and port); paths, credentials, query strings, fragments, wildcards, and implicit loopback trust are rejected. Without that setting, the Workshop WebApp origin is the only allowed origin. Local development origins such as `http://localhost:5173` must be added explicitly. A loopback address is a transport binding, not proof that a browser origin is trusted.
 
 ## HTTP compatibility surface
 
