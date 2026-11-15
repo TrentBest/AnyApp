@@ -24,4 +24,60 @@ public sealed class AnyAppWebBridgeTests
         Assert.Throws<ArgumentException>(() =>
             bridge.ConfigureEndpoint(new Uri("http://192.0.2.10:48156/")));
     }
+
+    [Theory]
+    [InlineData("http://localhost:5173")]
+    [InlineData("http://127.0.0.1:48156")]
+    [InlineData("http://[::1]:5173")]
+    public void OriginPolicyRejectsLoopbackOriginsUnlessExplicitlyConfigured(string origin)
+    {
+        Assert.False(AnyAppWebBridge.IsAllowedOrigin(origin, null));
+    }
+
+    [Fact]
+    public void OriginPolicyAllowsOnlyTheExactConfiguredOrigin()
+    {
+        const string allowedOrigin = "http://localhost:5173";
+
+        Assert.True(AnyAppWebBridge.IsAllowedOrigin(
+            allowedOrigin,
+            "http://localhost:5173"));
+
+        Assert.False(AnyAppWebBridge.IsAllowedOrigin(
+            "http://localhost:5174",
+            "http://localhost:5173"));
+
+        Assert.False(AnyAppWebBridge.IsAllowedOrigin(
+            "https://localhost:5173",
+            "http://localhost:5173"));
+
+        Assert.False(AnyAppWebBridge.IsAllowedOrigin(
+            "http://127.0.0.1:5173",
+            "http://localhost:5173"));
+    }
+
+    [Theory]
+    [InlineData("http://user@localhost:5173")]
+    [InlineData("http://localhost:5173/untrusted-path")]
+    [InlineData("http://localhost:5173/?token=secret")]
+    [InlineData("null")]
+    [InlineData("")]
+    public void OriginPolicyRejectsMalformedOrNonOriginValues(string origin)
+    {
+        Assert.False(AnyAppWebBridge.IsAllowedOrigin(
+            origin,
+            "http://localhost:5173"));
+    }
+
+    [Fact]
+    public void OriginPolicyAllowsOnlyTheConfiguredWorkshopDefault()
+    {
+        Assert.True(AnyAppWebBridge.IsAllowedOrigin(
+            "https://lemon-ground-09f542010.1.azurestaticapps.net",
+            null));
+
+        Assert.False(AnyAppWebBridge.IsAllowedOrigin(
+            "http://localhost:5173",
+            null));
+    }
 }
