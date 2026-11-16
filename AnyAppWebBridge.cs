@@ -527,8 +527,8 @@ public sealed class AnyAppWebBridge : IDisposable
             (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps) ||
             !string.IsNullOrEmpty(uri.UserInfo) ||
             uri.AbsolutePath != "/" ||
-            !string.IsNullOrEmpty(uri.Query) ||
-            !string.IsNullOrEmpty(uri.Fragment))
+            value!.Contains('?') ||
+            value.Contains('#'))
         {
             return false;
         }
