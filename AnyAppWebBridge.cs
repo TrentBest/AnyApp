@@ -497,30 +497,44 @@ public sealed class AnyAppWebBridge : IDisposable
         return CryptographicOperations.FixedTimeEquals(leftBytes, rightBytes);
     }
 
-    private static bool IsAllowedOrigin(string? origin)
+    private static bool IsAllowedOrigin(string? origin) =>
+        IsAllowedOrigin(origin, Environment.GetEnvironmentVariable("ANYAPP_ALLOWED_ORIGINS"));
+
+    internal static bool IsAllowedOrigin(string? origin, string? configuredOrigins)
     {
-        if (!Uri.TryCreate(origin, UriKind.Absolute, out var uri))
+        if (!TryNormalizeOrigin(origin, out var requestedOrigin))
             return false;
 
-        if (uri.IsLoopback)
-            return true;
-
-        var configured = Environment.GetEnvironmentVariable("ANYAPP_ALLOWED_ORIGINS");
-
-        if (string.IsNullOrWhiteSpace(configured))
-        {
-            return string.Equals(
-                uri.AbsoluteUri.TrimEnd('/'),
-                "https://lemon-ground-09f542010.1.azurestaticapps.net",
-                StringComparison.OrdinalIgnoreCase);
-        }
+        var configured = string.IsNullOrWhiteSpace(configuredOrigins)
+            ? "https://lemon-ground-09f542010.1.azurestaticapps.net"
+            : configuredOrigins;
 
         return configured
             .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .Any(value => string.Equals(
-                value.TrimEnd('/'),
-                uri.AbsoluteUri.TrimEnd('/'),
-                StringComparison.OrdinalIgnoreCase));
+            .Any(value =>
+                TryNormalizeOrigin(value, out var allowedOrigin) &&
+                string.Equals(
+                    requestedOrigin,
+                    allowedOrigin,
+                    StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static bool TryNormalizeOrigin(string? value, out string normalizedOrigin)
+    {
+        normalizedOrigin = string.Empty;
+
+        if (!Uri.TryCreate(value, UriKind.Absolute, out var uri) ||
+            (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps) ||
+            !string.IsNullOrEmpty(uri.UserInfo) ||
+            uri.AbsolutePath != "/" ||
+            !string.IsNullOrEmpty(uri.Query) ||
+            !string.IsNullOrEmpty(uri.Fragment))
+        {
+            return false;
+        }
+
+        normalizedOrigin = uri.GetLeftPart(UriPartial.Authority);
+        return true;
     }
 
     private object Snapshot()
