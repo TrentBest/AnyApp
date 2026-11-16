@@ -50,6 +50,8 @@ public sealed class AnyAppWebBridgeTests
     [InlineData("http://localhost:5173/untrusted-path")]
     [InlineData("http://localhost:5173/?token=secret")]
     [InlineData("http://localhost:5173/#fragment")]
+    [InlineData("http://localhost:5173?")]
+    [InlineData("http://localhost:5173/#")]
     [InlineData("null")]
     [InlineData("")]
     public void OriginPolicyRejectsMalformedOrNonOriginValues(string origin)
