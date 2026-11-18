@@ -81,4 +81,4 @@ public sealed class AnyAppWebBridgeTests
             null));
         Assert.False(AnyAppWebBridge.IsAllowedOrigin("http://localhost:5173", null));
     }
-}\n
+}
