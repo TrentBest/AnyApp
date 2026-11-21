@@ -14,11 +14,13 @@ This is the navigation map for AnyApp, the native Windows host in The Singularit
 
 ## 02 — Architecture and domain guides
 
-- [Pages playground](PAGES-PLAYGROUND.md) — design direction for interactive Experiences, synchronized Renderer/Visualize inspection, safe experimentation, and phased delivery.\n- [Experience host adapter contract](EXPERIENCE_HOST_ADAPTER_CONTRACT.md) — current discovery/manifestation surface, ownership boundaries, typed interaction gap, and cross-host acceptance gates.
+- [Pages playground](PAGES-PLAYGROUND.md) — design direction for interactive Experiences, synchronized Renderer/Visualize inspection, safe experimentation, and phased delivery.
+- [Experience host adapter contract](EXPERIENCE_HOST_ADAPTER_CONTRACT.md) — current discovery/manifestation surface, ownership boundaries, typed interaction gap, and cross-host acceptance gates.
 
 | Subject | Authoritative guide | Scope |
 |---|---|---|
 | Native host and platform boundary | [Theory chapter 01](theory/01-native-host-boundary.md) | Why AnyApp exists and what belongs in the host |
+| Host domain theory | [Theory chapter 02](theory/02-anyapp-as-a-host.md) | Identity, discovery, authorization, composition, execution, presentation, and evidence |
 | Startup and offline recovery | [Experience startup and offline recovery](EXPERIENCE-STARTUP-AND-OFFLINE-RECOVERY.md) | Cached manifest reconciliation and fallback decisions |
 | Experience publication | [Experience publish pipeline](EXPERIENCE_PUBLISH_PIPELINE.md) and [publisher reference](../Publishing/ExperiencePublisher.md) | Host-side publishing flow and implementation |
 | Repository-backed MicroBundles | [Workshop Landing 2111 integration proof](integrations/WORKSHOP_2111_REPOSITORY_TO_WPF.md) and [README: repository-backed composition](../README.md#repository-backed-composition) | FSMB envelope, repository delivery, materialization, FSM_COS composition, semantic root, and WPF handoff |
@@ -51,7 +53,7 @@ A green build is not proof of interactive runtime behavior, production GPU rende
 
 ## 05 — Choose your next step
 
-- To understand why a native host exists, follow the [theory path](theory/README.md).
+- To understand why a native host exists and how it should be designed, follow the [theory path](theory/README.md).
 - To build and test the current host, follow the [README development commands](../README.md#development) and [CI dependency modes](CI-DEPENDENCY-MODES.md).
 - To change a specific subsystem, start with its authoritative guide above, then trace the named source and tests.
 - To propose a new host capability, first identify which neighboring repository owns the contract and open a coordinated issue before duplicating it in AnyApp.
@@ -62,7 +64,6 @@ A green build is not proof of interactive runtime behavior, production GPU rende
 - Label claims as verified, source-checked, conceptual, or planned.
 - Add source/test links when documenting behavior.
 - Update this index when documents move or new authoritative guides are added.
-
 
 ---
 
