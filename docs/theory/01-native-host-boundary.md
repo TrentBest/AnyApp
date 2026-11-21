@@ -17,7 +17,7 @@ If windowing, WPF, HWND handles, or a GPU API leak into portable composition con
 
 The separation has a cost: AnyApp needs adapters between portable runtime/presentation contracts and native facilities. The benefit is that the same Experience composition can be hosted by different platforms without making the composition engine platform-specific.
 
-AnyApp is not the Experience, scheduler, MicroBundle repository, or authoritative composition engine. The current Foundry host-boundary work is separately tracked in [issue #27](https://github.com/TrentBest/AnyApp/issues/27); do not claim that Foundry already owns AnyApp's runtime lifecycle until that integration is implemented and tested.
+AnyApp is not the Experience, scheduler, MicroBundle repository, or authoritative composition engine. The host-boundary work is separately tracked in [AnyApp issue #27](https://github.com/TrentBest/AnyApp/issues/27). The distinct RuntimeAssembly execution handoff is tracked in [FSM_Execution issue #23](https://github.com/TrentBest/TheSingularityWorkshop.FSM_Execution/issues/23); do not claim that this handoff is complete until its typed contract and lifecycle tests exist.
 
 ## 03 — How: manifest, catalog, composition, host
 
@@ -62,7 +62,7 @@ This command is source-checked against the repository's documented workflow. A s
 
 ### What this boundary does not guarantee
 
-- A `RuntimeAssembly` is not automatically a Foundry `WorkflowDefinition`; issue #27 tracks the host/execution contract.
+- A `RuntimeAssembly` is not automatically an FSM_Execution `WorkflowDefinition`; the typed handoff remains a separate upstream contract.
 - The existence of a GPU host integration plan does not mean a production GPU backend is implemented.
 - A successful composition test does not prove the complete interactive desktop experience.
 - A cached Experience cannot guarantee offline launch if required artifacts are absent or invalid.
@@ -80,7 +80,8 @@ This command is source-checked against the repository's documented workflow. A s
 - [FSM_COS documentation](https://github.com/TrentBest/TheSingularityWorkshop.FSM_COS/tree/development) — composition/runtime theory belongs there.
 - [AnyApp documentation index](../DOCUMENTATION_INDEX.md) — authoritative subsystem guides and evidence routes.
 - [CI dependency modes](../CI-DEPENDENCY-MODES.md) — source versus package validation.
-- [Foundry host-boundary issue #27](https://github.com/TrentBest/AnyApp/issues/27) — current integration work and acceptance criteria.
+- [AnyApp host-boundary issue #27](https://github.com/TrentBest/AnyApp/issues/27) — current host integration work and acceptance criteria.
+- [FSM_Execution issue #23](https://github.com/TrentBest/TheSingularityWorkshop.FSM_Execution/issues/23) — typed RuntimeAssembly execution handoff.
 
 
 ---
