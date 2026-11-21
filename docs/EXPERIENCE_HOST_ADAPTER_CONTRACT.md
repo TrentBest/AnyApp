@@ -2,9 +2,9 @@
 
 **Status:** source-backed host contract and integration boundary  
 **Branch:** `development`  
-**Audience:** Experience authors, native/web host implementers, FSM_COS and FSM_Foundry maintainers
+**Audience:** Experience authors, native/web host implementers, FSM_COS and FSM_Execution maintainers
 
-This document defines what AnyApp currently accepts from a composed Experience, what it owns as a host, and what remains an explicit cross-repository contract dependency. It is deliberately not an execution contract for FSM_Foundry and does not invent a second Experience runtime.
+This document defines what AnyApp currently accepts from a composed Experience, what it owns as a host, and what remains an explicit cross-repository contract dependency. It is deliberately not an execution contract for FSM_Execution and does not invent a second Experience runtime.
 
 ## 1. Architectural invariant
 
@@ -23,7 +23,7 @@ Experience identity + manifest
     RuntimeAssembly
        /       \
       v         v
-Presentation   FSM_Foundry
+Presentation   FSM_Execution
 adapter        typed execution
 (AnyApp)       (upstream contract pending)
       \         /
@@ -31,7 +31,7 @@ adapter        typed execution
      Host-observable Experience
 ```
 
-AnyApp is a host/presentation adapter. It is not the owner of Experience rules, a MicroBundle scheduler, or an alternative executor. The RuntimeAssembly-to-Foundry path is tracked separately by [AnyApp #46](https://github.com/TrentBest/AnyApp/issues/46) and [FSM_Foundry #23](https://github.com/TrentBest/TheSingularityWorkshop.FSM_Foundry/issues/23).
+AnyApp is a host/presentation adapter. It is not the owner of Experience rules, a MicroBundle scheduler, or an alternative executor. The RuntimeAssembly-to-FSM_Execution path is tracked separately by [AnyApp #46](https://github.com/TrentBest/AnyApp/issues/46) and [FSM_Execution #23](https://github.com/TrentBest/TheSingularityWorkshop.FSM_Execution/issues/23).
 
 ## 2. Current source-backed host surface
 
@@ -76,7 +76,7 @@ Relevant implementation:
 
 ### 2.3 Interaction: current limit
 
-The current `IAnyAppSurface` contract exposes a root node only. It does **not** define a general typed Experience action/event contract, an execution participant, or a way to submit an action to Foundry.
+The current `IAnyAppSurface` contract exposes a root node only. It does **not** define a general typed Experience action/event contract, an execution participant, or a way to submit an action to FSM_Execution.
 
 AnyApp currently contains host-specific interaction paths, including Forge navigation wiring and a local WebBridge command switch. Those are presentation/shell integrations; they are not the canonical, portable Experience interaction contract and must not be mistaken for one.
 
@@ -89,8 +89,8 @@ The Experience domain owns authoritative, host-independent semantics. A host may
 | Experience identity, manifest, required MicroBundles and artifact closure | Experiences / publication contract | Discover and validate the selected identity and manifest |
 | Bundle resolution, loading, dependency ordering, arbitration | FSM_COS and MicroBundleDomain | Supply the manifest/configuration and consume the resulting assembly |
 | Semantic Experience behavior and authoritative state transitions | Experience MicroBundles | Present state and forward typed user actions |
-| Typed executable participant/provider mapping | Domain + FSM_COS + FSM_Foundry contract | Do not infer executability from a loaded bundle or GUI surface |
-| Scheduling, activation, cancellation, outcomes and cleanup | FSM_Foundry | Submit the typed assembly/plan when the upstream contract exists; present lifecycle state |
+| Typed executable participant/provider mapping | Domain + FSM_COS + FSM_Execution contract | Do not infer executability from a loaded bundle or GUI surface |
+| Scheduling, activation, cancellation, outcomes and cleanup | FSM_Execution | Submit the typed assembly/plan when the upstream contract exists; present lifecycle state |
 | Native windowing, input capture, WPF presentation and host navigation | AnyApp | Implement the Windows adapter |
 | Browser, server and VR presentation/input | Their respective hosts | Keep the same Experience identity and semantics |
 
@@ -104,17 +104,17 @@ The contract must provide, at minimum:
 2. **Typed payload:** the action carries a domain-defined value with explicit validation and versioning. Hosts do not invent or reinterpret domain rules.
 3. **Host neutrality:** the same semantic action can originate from WPF, browser, server, or VR input adapters.
 4. **Authority:** the Experience/domain implementation validates and applies the action. The host is not authoritative for game state or business rules.
-5. **Execution routing:** if an action requires executable work, it is routed through the agreed Foundry-owned execution session; AnyApp does not tick FSM_API groups or call bundle lifecycle methods itself.
+5. **Execution routing:** if an action requires executable work, it is routed through the agreed FSM_Execution-owned execution session; AnyApp does not tick FSM_API groups or call bundle lifecycle methods itself.
 6. **Observable result:** the host receives a typed outcome/state update suitable for presentation, including rejected/invalid actions and execution failure.
-7. **Lifecycle safety:** action submission is rejected once the relevant runtime is stopping or disposed; cancellation and cleanup remain Foundry-owned.
+7. **Lifecycle safety:** action submission is rejected once the relevant runtime is stopping or disposed; cancellation and cleanup remain FSM_Execution-owned.
 
 The concrete public types, capability registration, participant discovery, ordering, and scheduling semantics must be taken from the owning cross-repository contracts. This document intentionally does not define competing types for them.
 
-## 5. RuntimeAssembly → Foundry handoff
+## 5. RuntimeAssembly → FSM_Execution handoff
 
 A loaded `IMicroBundle` is not automatically executable. The current MicroBundle contract provides composition/loading and arbitration; provider IDs are declarations, not executable object references. FSM_COS returns a typed `RuntimeAssembly`, but does not execute it.
 
-Foundry must define the typed provider/participant adapter and own:
+FSM_Execution must define the typed provider/participant adapter and own:
 - binding a loaded provider identity to an explicit compatible typed adapter;
 - rejecting missing, ambiguous, or incompatible registrations;
 - runtime-scoped FSM_API definitions/handles and exclusive scheduling ownership;
@@ -122,9 +122,9 @@ Foundry must define the typed provider/participant adapter and own:
 - quiescing in-flight work before cleanup;
 - terminal outcomes and observable lifecycle state.
 
-In particular, group-wide FSM_API updates/removal cannot be treated as per-runtime operations unless Foundry proves exclusive group ownership. Exact handle/definition ownership is required to prevent one Experience from advancing or destroying another.
+In particular, group-wide FSM_API updates/removal cannot be treated as per-runtime operations unless FSM_Execution proves exclusive group ownership. Exact handle/definition ownership is required to prevent one Experience from advancing or destroying another.
 
-See [FSM_Foundry #23](https://github.com/TrentBest/TheSingularityWorkshop.FSM_Foundry/issues/23) for the authoritative upstream work. AnyApp must integrate with that typed contract once it exists; it must not bridge through a synthetic `WorkflowDefinition`, a local runner, or per-Experience process launching.
+See [FSM_Execution #23](https://github.com/TrentBest/TheSingularityWorkshop.FSM_Execution/issues/23) for the authoritative upstream work. AnyApp must integrate with that typed contract once it exists; it must not bridge through a synthetic `WorkflowDefinition`, a local runner, or per-Experience process launching.
 
 ## 6. Acceptance tests for the host boundary
 
