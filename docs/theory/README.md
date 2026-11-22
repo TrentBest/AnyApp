@@ -11,11 +11,12 @@ This is a modular, source-grounded introduction to the domain AnyApp owns: hosti
 2. [02 — AnyApp as a host](02-anyapp-as-a-host.md) — the deeper model: identity, discovery, authorization, composition, execution, presentation, failure semantics, and ownership.
 3. [03 — Startup, recovery, and continuity](03-startup-recovery-and-continuity.md) — how a host reconciles cached state with a publication authority, preserves recoverable generations, and reasons under network failure.
 4. [04 — Trust boundaries and safe host orchestration](04-trust-boundaries-and-safe-host-orchestration.md) — how the host separates Origin validation, authentication, authorization, discovery, retrieval, composition, and execution while containing untrusted browser, repository, and model input.
-5. [Repository-backed composition](../../README.md#repository-backed-composition) — how immutable artifact identities are delivered and materialized before FSM_COS composes them.
-6. [Presentation and rendering boundaries](../GPU_HOST_INTEGRATION.md) — how host-owned native presentation relates to shared rendering contracts; current GPU material is a plan with acceptance gates, not proof of production GPU rendering.
+5. [05 — Presentation, semantic interaction, and the native adapter](05-presentation-semantic-interaction-and-native-adapters.md) — how semantic GUI roots become native controls, why presentation is not execution authority, and how Renderer/Visualize frame paths remain distinct.
+6. [Repository-backed composition](../../README.md#repository-backed-composition) — how immutable artifact identities are delivered and materialized before FSM_COS composes them.
+7. [Presentation and rendering boundaries](../GPU_HOST_INTEGRATION.md) — how host-owned native presentation relates to shared rendering contracts; current GPU material is a plan with acceptance gates, not proof of production GPU rendering.
 7. [Trusted desktop distribution](../TRUSTED-DISTRIBUTION.md) — how a desktop executable is built and distributed without weakening platform security.
 
-Chapters 01–04 are source-checked theory chapters. The remaining entries route to existing focused guides; they are not represented as completed standalone textbook chapters. Expand them as the source/test inventory and implementation evidence mature.
+Chapters 01–05 are source-checked theory chapters. The remaining entries route to existing focused guides; they are not represented as completed standalone textbook chapters. Expand them as the source/test inventory and implementation evidence mature.
 
 ## How to use this path
 
