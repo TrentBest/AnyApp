@@ -1,0 +1,24 @@
+name: CiAi Repository Contract
+
+on:
+  push:
+    branches: [master, development, integration/ciai-repository-contract]
+    paths:
+      - '**/README.md'
+      - '.ciai/repository.json'
+      - '.github/workflows/ciai-repository.yml'
+  pull_request:
+    branches: [development]
+    paths:
+      - '**/README.md'
+      - '.ciai/repository.json'
+      - '.github/workflows/ciai-repository.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  repository:
+    uses: TrentBest/TheSingularityWorkshop.CiAi/.github/workflows/ciai-repository.yml@feature/ciai-external-observer-and-composition
+    with:
+      ciai-ref: feature/ciai-external-observer-and-composition

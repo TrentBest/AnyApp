@@ -3,6 +3,10 @@
 
 # AnyApp theory and learning path
 
+<!-- CIAI:BADGES:START -->
+[![Sith Policy](https://github.com/TrentBest/AnyApp/actions/workflows/sith-policy.yml/badge.svg)](https://github.com/TrentBest/AnyApp/actions/workflows/sith-policy.yml)
+<!-- CIAI:BADGES:END -->
+
 This is a modular, source-grounded introduction to the domain AnyApp owns: hosting a composed Workshop runtime on a native desktop platform. It does not replace FSM_COS composition theory, GUI/Visualize/Renderer theory, repository contracts, or Experience-domain documentation.
 
 ## Intended learning sequence
