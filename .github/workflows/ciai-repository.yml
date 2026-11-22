@@ -19,6 +19,6 @@ permissions:
 
 jobs:
   repository:
-    uses: TrentBest/TheSingularityWorkshop.CiAi/.github/workflows/ciai-repository.yml@feature/ciai-external-observer-and-composition
+    uses: TrentBest/TheSingularityWorkshop.CiAi/.github/workflows/ciai-repository.yml@ade96a15bf3e97659c62a1aac3339179c872b9a5
     with:
-      ciai-ref: feature/ciai-external-observer-and-composition
+      ciai-ref: ade96a15bf3e97659c62a1aac3339179c872b9a5
