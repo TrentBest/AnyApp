@@ -19,6 +19,6 @@ permissions:
 
 jobs:
   repository:
-    uses: TrentBest/TheSingularityWorkshop.CiAi/.github/workflows/ciai-repository.yml@ade96a15bf3e97659c62a1aac3339179c872b9a5
+    uses: TrentBest/TheSingularityWorkshop.CiAi/.github/workflows/ciai-repository.yml@2d66e8b432be0ba5cf83c7108f259f3bce672e64
     with:
-      ciai-ref: ade96a15bf3e97659c62a1aac3339179c872b9a5
+      ciai-ref: 2d66e8b432be0ba5cf83c7108f259f3bce672e64
