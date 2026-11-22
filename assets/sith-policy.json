@@ -8,11 +8,12 @@
   "actual_branches": [
     "development",
     "fix/bridge-origin-allowlist",
+    "integration/ciai-repository-contract",
     "master"
   ],
-  "branch_count": 3,
+  "branch_count": 4,
   "status": "NON-COMPLIANT",
-  "evaluated_at": "2026-11-21T12:41:53Z",
-  "workflow_run": "https://github.com/TrentBest/AnyApp/actions/runs/44905176708",
-  "triggering_commit": "e8feb54bd653a7beb5da47431e09a1240f801d0a"
+  "evaluated_at": "2026-11-22T12:37:59Z",
+  "workflow_run": "https://github.com/TrentBest/AnyApp/actions/runs/45023272937",
+  "triggering_commit": "45e2634d1e35793626c512239b15af2bd67935b6"
 }
