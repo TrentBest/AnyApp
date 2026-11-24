@@ -1,0 +1,24 @@
+name: CiAi Repository Contract
+
+on:
+  push:
+    branches: [master, development, integration/ciai-repository-contract]
+    paths:
+      - '**/README.md'
+      - '.ciai/repository.json'
+      - '.github/workflows/ciai-repository.yml'
+  pull_request:
+    branches: [development]
+    paths:
+      - '**/README.md'
+      - '.ciai/repository.json'
+      - '.github/workflows/ciai-repository.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  repository:
+    uses: TrentBest/TheSingularityWorkshop.CiAi/.github/workflows/ciai-repository.yml@2d66e8b432be0ba5cf83c7108f259f3bce672e64
+    with:
+      ciai-ref: 2d66e8b432be0ba5cf83c7108f259f3bce672e64

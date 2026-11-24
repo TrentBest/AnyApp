@@ -1,0 +1,28 @@
+{
+  "schema": "ciai.repository.v1",
+  "repository": "TrentBest/AnyApp",
+  "observerProfile": "anyapp-development-v1",
+  "badges": [
+    {
+      "id": "sith-policy",
+      "label": "Sith Policy",
+      "workflowFile": "sith-policy.yml"
+    }
+  ],
+  "dependencies": [
+    { "repository": "TrentBest/FSM_API", "capability": "state-runtime" },
+    { "repository": "TrentBest/TheSingularityWorkshop.FSM_COS", "capability": "composition" },
+    { "repository": "TrentBest/FSM_UserIO", "capability": "interaction" },
+    { "repository": "TrentBest/TheSingularityWorkshop.ProtocolAi", "capability": "protocol-vocabulary" },
+    { "repository": "TrentBest/TheSingularityWorkshop.GrammarAi", "capability": "grammar-vocabulary" },
+    { "repository": "TrentBest/TheSingularityWorkshop.GUI", "capability": "WPF-presentation" },
+    { "repository": "TrentBest/FSM_REST", "capability": "REST-adapter" },
+    { "repository": "TrentBest/TheSingularityWorkshop.MicroBundleDomain", "capability": "microbundle-domain" },
+    { "repository": "TrentBest/TheSingularityWorkshop.MicroBundleRepository", "capability": "REST-repository-adapter" },
+    { "repository": "TrentBest/TheSingularityWorkshop.Experiences", "capability": "Moniker-and-Wave-MicroBundles" },
+    { "repository": "TrentBest/TheSingularityWorkshop.Renderer", "capability": "source-MicroBundle" },
+    { "repository": "TrentBest/StoryBuilder", "capability": "optional-story-MicroBundles" },
+    { "repository": "TrentBest/TheSingularityWorkshop.Visualize", "capability": "visualization-and-renderer-adapter" }
+  ],
+  "extensions": []
+}
